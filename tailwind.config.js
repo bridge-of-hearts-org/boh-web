@@ -1,11 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-
 module.exports = {
-    content: ["./src/**/*.{html,tsx}"],
+    content: ["./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         fontFamily: {
-            "encode-sans": ["Encode Sans", "serif"],
-            "encode-sans-sc": ["Encode Sans SC", "serif"],
+            "encode-sans": ["Encode Sans", "sans-serif"],
+            "encode-sans-sc": ["Encode Sans SC", "sans-serif"],
         },
         extend: {
             colors: {

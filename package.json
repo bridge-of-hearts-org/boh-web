@@ -1,16 +1,17 @@
 {
-    "name": "bridge-of-hearts-frontend",
+    "name": "bridge-of-hearts-web",
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "dev": "webpack-dev-server --open --mode development",
-        "build": "webpack --mode production",
-        "serve": "npx http-server dist"
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start"
     },
     "author": "",
     "license": "ISC",
     "description": "",
     "dependencies": {
+        "next": "^15.1.4",
         "react": "^18.3.1",
         "react-dom": "^18.3.1"
     },
@@ -18,17 +19,12 @@
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
         "autoprefixer": "^10.4.20",
-        "copy-webpack-plugin": "^12.0.2",
         "css-loader": "^7.1.2",
-        "html-webpack-plugin": "^5.6.3",
         "postcss": "^8.4.49",
-        "postcss-loader": "^8.1.1",
+        "prettier-plugin-tailwindcss": "^0.6.9",
         "style-loader": "^4.0.0",
-        "tailwindcss": "^3.4.15",
+        "tailwindcss": "^3.4.17",
         "ts-loader": "^9.5.1",
-        "typescript": "^5.7.2",
-        "webpack": "^5.96.1",
-        "webpack-cli": "^5.1.4",
-        "webpack-dev-server": "^5.1.0"
+        "typescript": "^5.7.2"
     }
 }

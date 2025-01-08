@@ -4,16 +4,16 @@ export default function MenuBar() {
     return (
         <div
             id="header"
-            className="bg-boh-black p-4 shadow-gray-400 shadow-lg flex justify-between items-center"
+            className="flex items-center justify-between bg-boh-black p-4 shadow-lg shadow-gray-400"
         >
-            <div className="">
+            <div className="flex-shrink-0">
                 <img
-                    className="h-[25px]"
+                    className="w-[220px]"
                     src="/images/logo-dark-middle.png"
                     alt="Bridge of Hearts Logo"
                 />
             </div>
-            <div className="text-white flex gap-3 mr-4">
+            <div className="mr-4 flex gap-3 text-white">
                 <Button variant="secondary" color="transparent">
                     Home
                 </Button>
