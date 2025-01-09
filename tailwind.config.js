@@ -23,7 +23,7 @@ module.exports = {
                 "primary-gray": "#B2B2B2",
                 "secondary-gray": "#E4E4E4",
                 "secondary-gray-hover": "#cbcbcb",
-                "boh-white": "#FFF9F2",
+                "boh-off-white": "#fff7ee",
                 "boh-white-hover": "#f1e1d0",
                 "boh-black": "#02040F",
                 "boh-black-hover": "#3d3d3e",
