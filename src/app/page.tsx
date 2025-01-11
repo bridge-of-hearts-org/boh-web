@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Button from "../components/Button";
+import Link from "next/link";
+import Card from "@/components/Card";
 
-export default function Home() {
+export default function HomePage() {
     return (
-        <div>
+        <div className="">
             {/* Hero Section */}
             <div className="m-10 flex flex-col items-center justify-center gap-10 lg:flex-row">
                 <Image
@@ -43,18 +45,20 @@ export default function Home() {
                         </div>
                     </div>
                     <div className="flex justify-center">
-                        <Button variant="secondary" color="green">
-                            View Directory
-                        </Button>
+                        <Link href="/directory">
+                            <Button variant="secondary" color="green">
+                                View Directory
+                            </Button>
+                        </Link>
                     </div>
                 </div>
             </div>
 
             {/* Stat section */}
-            <div className="w-[100%] rounded-3xl bg-[#fff7ee] p-10">
+            <div className="mb-10 w-[100%] rounded-3xl bg-[#e1d7cc] p-10">
                 <div className="flex flex-wrap justify-center gap-4 xl:gap-8">
                     {/* Stat Card */}
-                    <div className="rounded-3xl bg-white p-10 shadow-2xl">
+                    <Card className="p-8">
                         <div className="flex w-[300px] flex-col items-center gap-4">
                             <Image
                                 src="/images/facility-drone-image.jpg"
@@ -68,10 +72,10 @@ export default function Home() {
                                 Sri Lanka, with over <b>10,000 children</b>*
                             </p>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Stat Card */}
-                    <div className="rounded-3xl bg-white p-10 shadow-2xl">
+                    <Card className="p-8">
                         <div className="flex w-[300px] flex-col items-center gap-4">
                             <Image
                                 src="/images/donation-boxes.jpg"
@@ -85,10 +89,10 @@ export default function Home() {
                                 external donations*
                             </p>
                         </div>
-                    </div>
+                    </Card>
 
                     {/* Stat Card */}
-                    <div className="rounded-3xl bg-white p-10 shadow-2xl">
+                    <Card className="p-8">
                         <div className="flex w-[300px] flex-col items-center gap-4">
                             <Image
                                 src="/images/smiling-children-2.jpg"
@@ -102,7 +106,7 @@ export default function Home() {
                                 5-14*
                             </p>
                         </div>
-                    </div>
+                    </Card>
                 </div>
             </div>
         </div>

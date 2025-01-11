@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Encode_Sans, Encode_Sans_SC } from "next/font/google";
 import "./globals.css";
 import MenuBar from "@/components/MenuBar";
+import Footer from "@/components/Footer";
 
 /* Import and configure the fonts */
 const encodeSans = Encode_Sans({ subsets: ["latin"] });
@@ -21,10 +22,17 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body>
-                <div>
-                    <MenuBar></MenuBar>
+                <div className="flex min-h-screen flex-col items-center justify-between bg-gradient-to-br from-white to-orange-100">
+                    <div>
+                        <MenuBar></MenuBar>
+                    </div>
+                    <div className="container justify-self-center">
+                        {children}
+                    </div>
+                    <div>
+                        <Footer></Footer>
+                    </div>
                 </div>
-                <div className="container justify-self-center">{children}</div>
             </body>
         </html>
     );
