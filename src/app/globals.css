@@ -7,3 +7,11 @@
         font-family: "Encode Sans", system-ui, sans-serif;
     }
 }
+
+input {
+    @apply rounded-lg border border-gray-400 px-3 py-2 shadow-inner focus:outline-yellow-900;
+}
+
+label {
+    @apply pl-1 text-sm font-semibold;
+}

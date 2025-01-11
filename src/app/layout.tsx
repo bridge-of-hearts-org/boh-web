@@ -26,7 +26,7 @@ export default function RootLayout({
                     <div>
                         <MenuBar></MenuBar>
                     </div>
-                    <div className="container justify-self-center">
+                    <div className="container my-10 flex-auto px-10">
                         {children}
                     </div>
                     <div>
