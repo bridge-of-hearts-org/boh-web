@@ -1,4 +1,5 @@
 import React, { ComponentProps } from "react";
+import { twMerge } from "tailwind-merge";
 
 type ButtonVariant = "primary" | "secondary";
 type ButtonColor = "green" | "red" | "beige" | "black" | "transparent";
@@ -36,6 +37,7 @@ type ButtonProps = ComponentProps<"button"> & {
 export default function Button({
     variant = "primary",
     color = "green",
+    className,
     ...props
 }: ButtonProps) {
     const styleClasses = buttonStyles[color][variant];
@@ -43,7 +45,10 @@ export default function Button({
     return (
         <button
             {...props}
-            className={`transition-all duration-300 font-semibold font-encode-sans-sc rounded-full px-4 py-2 ${styleClasses}`}
+            className={twMerge(
+                `rounded-full px-4 py-2 font-encode-sans-sc font-semibold transition-all duration-300 ${styleClasses}`,
+                className,
+            )}
         />
     );
 }
