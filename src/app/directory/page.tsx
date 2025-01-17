@@ -3,10 +3,26 @@ import { MapPin, Phone } from "lucide-react";
 import Form from "next/form";
 import Image from "next/image";
 import Link from "next/link";
-import Button from "@/components/Button";
-import Facilities from "../../../test/facilities.json";
+import { ChildCareFacility, PrismaClient } from "@prisma/client";
 
-export default function DirectoryPage() {
+import { prisma } from "@/utils/db";
+import Button from "@/components/Button";
+
+const fetchData = async (): Promise<ChildCareFacility[]> => {
+    try {
+        const facilities = await prisma.childCareFacility.findMany();
+        return facilities;
+    } catch (error) {
+        if (error instanceof Error) {
+            console.log("Error: ", error.stack);
+        }
+        return [];
+    }
+};
+
+export default async function DirectoryPage() {
+    const facilities = await fetchData();
+
     return (
         <div className="lg: flex min-w-[400px] flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
             {/* Filter Card */}
@@ -36,9 +52,9 @@ export default function DirectoryPage() {
                 </Form>
             </Card>
             <div className="flex min-w-[400px] flex-col gap-5 rounded-2xl">
-                {Facilities.map((facility) => {
+                {facilities.map((facility) => {
                     return (
-                        <Card>
+                        <Card key={facility.id}>
                             <div className="flex gap-4">
                                 {facility.photos.length > 0 && (
                                     <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">

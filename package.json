@@ -11,6 +11,7 @@
     "license": "ISC",
     "description": "",
     "dependencies": {
+        "@prisma/client": "^6.2.1",
         "lucide-react": "^0.471.0",
         "next": "^15.1.4",
         "react": "^18.3.1",
