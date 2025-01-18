@@ -63,7 +63,7 @@ export default async function DirectoryPage() {
                                     {facility.photos.length > 0 && (
                                         <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
                                             <Image
-                                                src="/images/facility-drone-image.jpg"
+                                                src={facility.photos[0]}
                                                 alt="facility-icon"
                                                 fill
                                             />

@@ -36,6 +36,7 @@ model ChildCareFacility {
     id        String    @id @default(auto()) @map("_id") @db.ObjectId
     name      String    @unique
     type      String
+    managedBy String
     location  Location  @unique
     contact   Contact   @unique
     residents Residents

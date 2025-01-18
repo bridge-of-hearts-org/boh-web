@@ -43,14 +43,30 @@ export default async function FacilityProfilePage({
             <Card className="w-3/4 min-w-[600px]">
                 <div className="flex flex-col items-center justify-start gap-10 p-5">
                     {/* Photo section */}
-                    <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
-                        <Image
-                            src="/images/facility-directory-icon-default.png"
-                            alt="facility-icon"
-                            fill
-                            className="p-8"
-                        />
-                    </div>
+                    {data.photos.length == 0 && (
+                        <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
+                            <Image
+                                src="/images/facility-directory-icon-default.png"
+                                alt="facility-icon"
+                                fill
+                                className="p-8"
+                            />
+                        </div>
+                    )}
+                    {data.photos.length > 0 && (
+                        <div className="m-10 flex w-full gap-4 overflow-auto rounded-xl bg-boh-off-white p-5">
+                            {data.photos.map((url) => (
+                                <div className="relative block h-[220px] w-[220px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
+                                    <Image
+                                        key={url}
+                                        src={url}
+                                        fill
+                                        alt="Facility Image"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Info sections */}
                     <div className="flex w-full flex-col items-center gap-14">
