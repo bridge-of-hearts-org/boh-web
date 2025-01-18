@@ -6,15 +6,15 @@ import { MapPin, PhoneCall, Users } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/Button";
 
-type FacilityPageProps = {
-    params: {
-        id: string;
-    };
-};
+type FacilityPageProps = { params: Promise<{ id: string }> };
 
 export default async function FacilityProfilePage({
     params,
 }: FacilityPageProps) {
+    if (!params) {
+        throw new Error("Missing params for FacilityProfilePage.");
+    }
+
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
     const { id } = await params;
@@ -59,7 +59,7 @@ export default async function FacilityProfilePage({
                             <div className="text-2xl font-bold">
                                 {data.name}
                             </div>
-                            <div className="text-sm">{data.type}</div>
+                            <div className="">{data.type}</div>
                         </div>
 
                         {/* Location */}
