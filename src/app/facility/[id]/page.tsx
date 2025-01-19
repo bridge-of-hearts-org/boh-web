@@ -5,6 +5,7 @@ import Image from "next/image";
 import { MapPin, PhoneCall, Users } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/Button";
+import ImageCarousel from "./ImageCarousel";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -54,18 +55,7 @@ export default async function FacilityProfilePage({
                         </div>
                     )}
                     {data.photos.length > 0 && (
-                        <div className="m-10 flex w-full gap-4 overflow-auto rounded-xl bg-boh-off-white p-5">
-                            {data.photos.map((url) => (
-                                <div className="relative block h-[220px] w-[220px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
-                                    <Image
-                                        key={url}
-                                        src={url}
-                                        fill
-                                        alt="Facility Image"
-                                    />
-                                </div>
-                            ))}
-                        </div>
+                        <ImageCarousel urls={data.photos} />
                     )}
 
                     {/* Info sections */}
