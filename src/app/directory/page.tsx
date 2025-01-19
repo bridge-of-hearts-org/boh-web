@@ -1,16 +1,60 @@
 import Card from "@/components/Card";
 import { MapPin, Phone } from "lucide-react";
-import Form from "next/form";
 import Image from "next/image";
 import Link from "next/link";
-import { ChildCareFacility, PrismaClient } from "@prisma/client";
+import { ChildCareFacility } from "@prisma/client";
 
 import { prisma } from "@/utils/db";
-import Button from "@/components/Button";
+import FilterCard from "./FilterCard";
 
-const fetchData = async (): Promise<ChildCareFacility[]> => {
+async function fetchData(filterValues: {
+    name: string;
+    district: string;
+    province: string;
+}): Promise<ChildCareFacility[]> {
     try {
-        const facilities = await prisma.childCareFacility.findMany();
+        const prismaFilters = [];
+
+        if (filterValues.name) {
+            prismaFilters.push({
+                name: {
+                    contains: filterValues.name,
+                    mode: "insensitive",
+                },
+            });
+        }
+
+        if (filterValues.district) {
+            prismaFilters.push({
+                location: {
+                    is: {
+                        district: {
+                            equals: filterValues.district,
+                            mode: "insensitive",
+                        },
+                    },
+                },
+            });
+        }
+
+        if (filterValues.province) {
+            prismaFilters.push({
+                location: {
+                    is: {
+                        province: {
+                            contains: filterValues.province,
+                            mode: "insensitive",
+                        },
+                    },
+                },
+            });
+        }
+
+        const facilities = await prisma.childCareFacility.findMany({
+            where: {
+                AND: prismaFilters,
+            },
+        });
         return facilities;
     } catch (error) {
         if (error instanceof Error) {
@@ -18,39 +62,30 @@ const fetchData = async (): Promise<ChildCareFacility[]> => {
         }
         return [];
     }
-};
+}
 
-export default async function DirectoryPage() {
-    const facilities = await fetchData();
+export default async function DirectoryPage(props: {
+    searchParams: Promise<{
+        name?: string;
+        district?: string;
+        province?: string;
+    }>;
+}) {
+    const searchParams = await props.searchParams;
+
+    const filters = {
+        name: searchParams.name || "",
+        district: searchParams.district || "",
+        province: searchParams.province || "",
+    };
+
+    const facilities = await fetchData(filters);
 
     return (
         <div className="flex min-w-[400px] flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
             {/* Filter Card */}
-            <Card className="h-auto">
-                <h1 className="pb-5 text-xl font-semibold">Filters</h1>
-                <Form action="" className="flex flex-col gap-5 py-3">
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="name">Name</label>
-                        <input name="name"></input>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="province">Province</label>
-                        <input name="province" type=""></input>
-                    </div>
-                    <div className="flex flex-col gap-2">
-                        <label htmlFor="district">District</label>
-                        <input name="district" type=""></input>
-                    </div>
-                    <div className="mt-8 flex justify-end gap-5">
-                        <Link href="/directory">
-                            <Button variant="secondary">Clear All</Button>
-                        </Link>
-                        <Link href="/directory">
-                            <Button variant="primary">Apply</Button>
-                        </Link>
-                    </div>
-                </Form>
-            </Card>
+            <FilterCard filters={filters} />
+
             <div className="flex min-w-[400px] flex-col gap-5 rounded-2xl">
                 {facilities.map((facility) => {
                     return (
