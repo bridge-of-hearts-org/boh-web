@@ -12,48 +12,25 @@ export default function Footer() {
                 width={100}
                 height={0}
                 alt="Bridge of Hearts Logo"
-                className="m-5"
+                className="m-5 aspect-square object-contain"
             />
             <div className="flex w-full flex-col items-center justify-between gap-10">
-                <div className="flex w-full items-center justify-center">
-                    <Link href="/">
-                        <Button
-                            className={footerLinkStyle}
-                            variant="secondary"
-                            color="transparent"
-                        >
-                            Home
-                        </Button>
+                {/* <div className="flex w-full flex-col items-center justify-center gap-3 md:flex-row md:gap-7"> */}
+                <div className="flex w-full flex-wrap items-center justify-center gap-5 md:gap-10">
+                    <Link href="/" className={footerLinkStyle}>
+                        Home
                     </Link>
-                    <Link href="/directory">
-                        <Button
-                            className={footerLinkStyle}
-                            variant="secondary"
-                            color="transparent"
-                        >
-                            Directory
-                        </Button>
+                    <Link href="/directory" className={footerLinkStyle}>
+                        Directory
                     </Link>
-                    <Link href="/about">
-                        <Button
-                            className={footerLinkStyle}
-                            variant="secondary"
-                            color="transparent"
-                        >
-                            About
-                        </Button>
+                    <Link href="/about" className={footerLinkStyle}>
+                        About
                     </Link>
-                    <Link href="/contact">
-                        <Button
-                            className={footerLinkStyle}
-                            variant="secondary"
-                            color="transparent"
-                        >
-                            Contact
-                        </Button>
+                    <Link href="/contact" className={footerLinkStyle}>
+                        Contact
                     </Link>
                 </div>
-                <div className="max-w-[900px] px-20 text-center text-[10px] text-white">
+                <div className="max-w-[900px] px-5 text-center text-[10px] text-white md:px-20">
                     <p>
                         Some images displayed on this website are AI-generated.
                     </p>

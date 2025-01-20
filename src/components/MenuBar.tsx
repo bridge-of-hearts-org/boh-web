@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Button from "./Button";
 import Image from "next/image";
+import HamburgerMenu from "./HamburgerMenu";
 
 export default function MenuBar() {
     return (
@@ -16,7 +17,7 @@ export default function MenuBar() {
                     alt="Bridge of Hearts Logo"
                 />
             </div>
-            <div className="mr-4 flex gap-3 text-white">
+            <div className="mr-4 hidden gap-3 text-white md:flex">
                 <Link href="/">
                     <Button variant="secondary" color="transparent">
                         Home
@@ -37,6 +38,9 @@ export default function MenuBar() {
                         Contact
                     </Button>
                 </Link>
+            </div>
+            <div className="md:hidden">
+                <HamburgerMenu />
             </div>
         </div>
     );

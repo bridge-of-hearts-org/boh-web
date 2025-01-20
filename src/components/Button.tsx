@@ -46,7 +46,7 @@ export default function Button({
         <button
             {...props}
             className={twMerge(
-                `rounded-full px-4 py-2 font-encode-sans-sc font-semibold transition-all duration-300 ${styleClasses}`,
+                `rounded-full px-4 py-2 font-encode-sans-sc font-semibold transition-all duration-100 ${styleClasses}`,
                 className,
             )}
         />
