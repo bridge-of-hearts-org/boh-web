@@ -2,58 +2,64 @@ import Card from "@/components/Card";
 import { MapPin, Phone } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChildCareFacility } from "@prisma/client";
+import { ChildCareFacility, Prisma } from "@prisma/client";
 
 import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
 import { DirectoryFilterType, District, Province } from "@/utils/types";
 
-async function fetchData(filterValues: {
-    name: string;
-    district: string;
-    province: string;
-}): Promise<ChildCareFacility[]> {
+function createPrismaFilter(
+    filterValues: DirectoryFilterType,
+): Prisma.ChildCareFacilityWhereInput[] {
+    const filters: Prisma.ChildCareFacilityWhereInput[] = [];
+
+    if (filterValues.name) {
+        filters.push({
+            name: {
+                contains: filterValues.name,
+                mode: "insensitive",
+            },
+        });
+    }
+
+    if (filterValues.district) {
+        filters.push({
+            location: {
+                is: {
+                    district: {
+                        equals: filterValues.district,
+                        mode: "insensitive",
+                    },
+                },
+            },
+        });
+    }
+
+    if (filterValues.province) {
+        filters.push({
+            location: {
+                is: {
+                    province: {
+                        contains: filterValues.province,
+                        mode: "insensitive",
+                    },
+                },
+            },
+        });
+    }
+
+    return filters;
+}
+
+async function fetchData(
+    filterValues: DirectoryFilterType,
+): Promise<ChildCareFacility[]> {
     try {
         const prismaFilters = [];
 
-        if (filterValues.name) {
-            prismaFilters.push({
-                name: {
-                    contains: filterValues.name,
-                    mode: "insensitive",
-                },
-            });
-        }
-
-        if (filterValues.district) {
-            prismaFilters.push({
-                location: {
-                    is: {
-                        district: {
-                            equals: filterValues.district,
-                            mode: "insensitive",
-                        },
-                    },
-                },
-            });
-        }
-
-        if (filterValues.province) {
-            prismaFilters.push({
-                location: {
-                    is: {
-                        province: {
-                            contains: filterValues.province,
-                            mode: "insensitive",
-                        },
-                    },
-                },
-            });
-        }
-
         const facilities = await prisma.childCareFacility.findMany({
             where: {
-                AND: prismaFilters,
+                AND: createPrismaFilter(filterValues),
             },
         });
         return facilities;
