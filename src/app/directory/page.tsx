@@ -89,11 +89,11 @@ export default async function DirectoryPage(props: {
     const facilities = await fetchData(activeFilters);
 
     return (
-        <div className="flex min-w-[400px] flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
+        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
             {/* Filter Card */}
             <FilterCard />
 
-            <div className="flex min-w-[400px] flex-col gap-5 rounded-2xl">
+            <div className="flex flex-col gap-5 rounded-2xl">
                 {facilities.map((facility) => {
                     return (
                         <Link
@@ -101,7 +101,7 @@ export default async function DirectoryPage(props: {
                             href={`/facility/${facility.id}`}
                         >
                             <Card>
-                                <div className="flex gap-4">
+                                <div className="flex flex-col items-center gap-4 sm:flex-row">
                                     {facility.photos.length > 0 && (
                                         <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
                                             <Image
@@ -121,7 +121,7 @@ export default async function DirectoryPage(props: {
                                             />
                                         </div>
                                     )}
-                                    <div className="flex w-full flex-col gap-5">
+                                    <div className="flex w-full flex-col items-center gap-5 sm:items-start">
                                         {/* Title section */}
                                         <div>
                                             <div className="text-lg font-semibold">
@@ -155,7 +155,7 @@ export default async function DirectoryPage(props: {
                                         </div>
 
                                         {/* Region section */}
-                                        <div className="flex flex-col items-end">
+                                        <div className="flex flex-col items-end self-end">
                                             <div className="flex items-center gap-2 text-sm">
                                                 {facility.location.district}
                                             </div>

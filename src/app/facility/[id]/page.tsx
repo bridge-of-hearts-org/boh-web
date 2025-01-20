@@ -36,13 +36,14 @@ export default async function FacilityProfilePage({
         "flex w-full xl:w-2/3 flex-col gap-2 divide-y divide";
     const infoTableStyles = "py-4";
     const infoTableHeaderStyles =
-        "flex items-center justify-start gap-2 pl-5 text-xl";
-    const infoTableRowStyles = "grid grid-cols-[3fr,4fr] items-center gap-4";
+        "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
+    const infoTableRowStyles =
+        "grid grid-cols-[3fr,4fr] items-center gap-4 flex-wrap break-words md:text-base text-sm";
 
     return (
-        <div className="m-5 flex justify-center">
-            <Card className="w-3/4 min-w-[600px]">
-                <div className="flex flex-col items-center justify-start gap-10 p-5">
+        <div className="m-1 flex justify-center md:m-5">
+            <Card className="w-full lg:w-3/4">
+                <div className="flex flex-col items-center justify-start gap-10 p-1 md:p-5">
                     {/* Photo section */}
                     {data.photos.length == 0 && (
                         <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
@@ -145,7 +146,7 @@ export default async function FacilityProfilePage({
                                         </div>
                                         <div className="">
                                             {data.contact.email.length > 0
-                                                ? data.contact.email
+                                                ? data.contact.email.join(", ")
                                                 : noInfoText}
                                         </div>
                                     </div>

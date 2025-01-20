@@ -24,7 +24,7 @@ export default function ImageCarousel({ urls }: { urls: string[] }) {
                 {urls.map((url) => (
                     <div
                         key={url}
-                        className="relative block h-[220px] w-[220px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50 hover:cursor-pointer"
+                        className="relative block h-[220px] w-[220px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50 shadow-md hover:cursor-pointer"
                     >
                         <Image
                             onClick={() => {
@@ -46,7 +46,7 @@ export default function ImageCarousel({ urls }: { urls: string[] }) {
                     }}
                 >
                     <div
-                        className="relative w-4/5 max-w-4xl"
+                        className="relative w-4/5 max-w-4xl shadow-xl"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Enlarged Image */}

@@ -33,11 +33,12 @@ export default function HamburgerMenu() {
                 </Button>
             </div>
             {menuVisible && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-                    onClick={() => setMenuVisible(false)}
-                >
-                    <div className="absolute right-2 top-16 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-gray-900 bg-opacity-80 shadow-lg">
+                <>
+                    <div
+                        className="fixed inset-0 z-50 min-h-screen w-screen bg-black/50"
+                        onClick={() => setMenuVisible(false)}
+                    ></div>
+                    <div className="absolute right-2 top-16 z-50 flex flex-col items-center justify-center gap-3 overflow-hidden rounded-xl bg-gray-900 bg-opacity-80 px-7 text-white shadow-lg">
                         <div
                             className={menuItemStyle}
                             onClick={() => handleMenuItemClick("")}
@@ -63,7 +64,7 @@ export default function HamburgerMenu() {
                             Contact
                         </div>
                     </div>
-                </div>
+                </>
             )}
         </>
     );

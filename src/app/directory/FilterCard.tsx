@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Form from "next/form";
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "@/components/Card";
@@ -83,10 +82,18 @@ export default function FilterCard() {
                     </select>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="district">District</label>
+                    <label
+                        htmlFor="district"
+                        className={
+                            activeFilters.province
+                                ? "text-boh-black"
+                                : "text-gray-400"
+                        }
+                    >
+                        District
+                    </label>
                     <select
                         name="district"
-                        className="disabled:bg-gray-200 disabled:opacity-35"
                         disabled={!activeFilters.province}
                         value={activeFilters.district}
                         onChange={(e) => {
