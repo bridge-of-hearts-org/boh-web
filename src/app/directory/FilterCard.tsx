@@ -1,22 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Form from "next/form";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
+import { District, Province } from "@/utils/types";
 
-export default function FilterCard(props: {
-    filters: {
-        name: string;
-        district: string;
-        province: string;
-    };
-}) {
+type FilterType = {
+    name: string;
+    district: District | "";
+    province: Province | "";
+};
+
+export default function FilterCard() {
     const router = useRouter();
-    const filters = props.filters;
+    const searchParams = useSearchParams();
+
+    const [filters, setFilters] = useState<FilterType>({
+        name: searchParams.get("name") || "",
+        district: searchParams.get("district") as District | "",
+        province: searchParams.get("province") as Province | "",
+    });
+
+    useEffect(() => {
+        setFilters({
+            name: searchParams.get("name") || "",
+            district: searchParams.get("district") as District | "",
+            province: searchParams.get("province") as Province | "",
+        });
+    }, [searchParams]);
 
     function handleFilterSubmit(data: FormData) {
         const params = new URLSearchParams();
@@ -27,8 +42,6 @@ export default function FilterCard(props: {
 
         router.push(`/directory/?${params.toString()}`);
     }
-
-    console.log(filters);
 
     return (
         <Card className="h-auto">

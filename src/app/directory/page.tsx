@@ -84,7 +84,7 @@ export default async function DirectoryPage(props: {
     return (
         <div className="flex min-w-[400px] flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
             {/* Filter Card */}
-            <FilterCard filters={filters} />
+            <FilterCard />
 
             <div className="flex min-w-[400px] flex-col gap-5 rounded-2xl">
                 {facilities.map((facility) => {
