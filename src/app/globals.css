@@ -8,7 +8,8 @@
     }
 }
 
-input {
+input,
+select {
     @apply rounded-lg border border-gray-400 px-3 py-2 shadow-inner focus:outline-yellow-900;
 }
 

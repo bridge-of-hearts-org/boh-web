@@ -7,26 +7,26 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
-import { District, Province } from "@/utils/types";
-
-type FilterType = {
-    name: string;
-    district: District | "";
-    province: Province | "";
-};
+import {
+    DirectoryFilterType,
+    District,
+    Province,
+    ProvincesList,
+    ProvinceToDistrict,
+} from "@/utils/types";
 
 export default function FilterCard() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [filters, setFilters] = useState<FilterType>({
+    const [activeFilters, setActiveFilters] = useState<DirectoryFilterType>({
         name: searchParams.get("name") || "",
         district: searchParams.get("district") as District | "",
         province: searchParams.get("province") as Province | "",
     });
 
     useEffect(() => {
-        setFilters({
+        setActiveFilters({
             name: searchParams.get("name") || "",
             district: searchParams.get("district") as District | "",
             province: searchParams.get("province") as Province | "",
@@ -35,7 +35,6 @@ export default function FilterCard() {
 
     function handleFilterSubmit(data: FormData) {
         const params = new URLSearchParams();
-
         params.set("name", data.get("name")?.toString() || "");
         params.set("district", data.get("district")?.toString() || "");
         params.set("province", data.get("province")?.toString() || "");
@@ -58,27 +57,70 @@ export default function FilterCard() {
                     <input
                         name="name"
                         type="text"
-                        defaultValue={filters.name}
-                    ></input>
-                </div>
-                <div className="flex flex-col gap-2">
-                    <label htmlFor="district">District</label>
-                    <input
-                        name="district"
-                        type="text"
-                        defaultValue={filters.district}
+                        defaultValue={activeFilters.name}
                     ></input>
                 </div>
                 <div className="flex flex-col gap-2">
                     <label htmlFor="province">Province</label>
-                    <input
+                    <select
                         name="province"
-                        type="text"
-                        defaultValue={filters.province}
-                    ></input>
+                        value={activeFilters.province}
+                        onChange={(e) => {
+                            setActiveFilters({
+                                ...activeFilters,
+                                province: e.target.value as Province,
+                            });
+                        }}
+                    >
+                        <option value=""></option>
+                        {ProvincesList.map((province) => {
+                            return (
+                                <option key={province} value={province}>
+                                    {province}
+                                </option>
+                            );
+                        })}
+                    </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="district">District</label>
+                    <select
+                        name="district"
+                        className="disabled:bg-gray-200 disabled:opacity-35"
+                        disabled={!activeFilters.province}
+                        value={activeFilters.district}
+                        onChange={(e) => {
+                            setActiveFilters({
+                                ...activeFilters,
+                                district: e.target.value as District,
+                            });
+                        }}
+                    >
+                        <option value=""></option>
+                        {activeFilters.province &&
+                            ProvinceToDistrict[activeFilters.province].map(
+                                (district) => {
+                                    return (
+                                        <option key={district} value={district}>
+                                            {district}
+                                        </option>
+                                    );
+                                },
+                            )}
+                    </select>
                 </div>
                 <div className="mt-8 flex justify-end gap-5">
-                    <Button variant="secondary" type="reset">
+                    <Button
+                        variant="secondary"
+                        type="reset"
+                        onClick={() => {
+                            setActiveFilters({
+                                name: "",
+                                district: "",
+                                province: "",
+                            });
+                        }}
+                    >
                         Reset
                     </Button>
                     <Button variant="primary" type="submit">

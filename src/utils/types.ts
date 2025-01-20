@@ -40,3 +40,25 @@ export const ProvincesList = [
 
 export type Province = (typeof ProvincesList)[number];
 export type District = (typeof DistrictsList)[number];
+
+export type ProvinceToDistrictType = {
+    readonly [key in Province]: District[];
+};
+
+export const ProvinceToDistrict: ProvinceToDistrictType = {
+    Northern: ["Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya"],
+    "North Western": ["Puttalam", "Kurunegala"],
+    Western: ["Gampaha", "Colombo", "Kalutara"],
+    "North Central": ["Anuradhapura", "Polonnaruwa"],
+    Central: ["Matale", "Kandy", "Nuwara Eliya"],
+    Sabaragamuwa: ["Kegalle", "Ratnapura"],
+    Eastern: ["Trincomalee", "Batticaloa", "Ampara"],
+    Uva: ["Badulla", "Monaragala"],
+    Southern: ["Hambantota", "Matara", "Galle"],
+} as const;
+
+export type DirectoryFilterType = {
+    name: string;
+    district: District | "";
+    province: Province | "";
+};

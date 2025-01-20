@@ -6,6 +6,7 @@ import { ChildCareFacility } from "@prisma/client";
 
 import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
+import { DirectoryFilterType, District, Province } from "@/utils/types";
 
 async function fetchData(filterValues: {
     name: string;
@@ -67,19 +68,19 @@ async function fetchData(filterValues: {
 export default async function DirectoryPage(props: {
     searchParams: Promise<{
         name?: string;
-        district?: string;
-        province?: string;
+        district?: District | "";
+        province?: Province | "";
     }>;
 }) {
     const searchParams = await props.searchParams;
 
-    const filters = {
+    const activeFilters: DirectoryFilterType = {
         name: searchParams.name || "",
-        district: searchParams.district || "",
-        province: searchParams.province || "",
+        district: (searchParams.district as District) || "",
+        province: (searchParams.province as Province) || "",
     };
 
-    const facilities = await fetchData(filters);
+    const facilities = await fetchData(activeFilters);
 
     return (
         <div className="flex min-w-[400px] flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
