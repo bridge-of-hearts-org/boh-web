@@ -20,15 +20,15 @@ export default function FilterCard() {
 
     const [activeFilters, setActiveFilters] = useState<DirectoryFilterType>({
         name: searchParams.get("name") || "",
-        district: searchParams.get("district") as District | "",
-        province: searchParams.get("province") as Province | "",
+        district: (searchParams.get("district") || "") as District | "",
+        province: (searchParams.get("province") || "") as Province | "",
     });
 
     useEffect(() => {
         setActiveFilters({
             name: searchParams.get("name") || "",
-            district: searchParams.get("district") as District | "",
-            province: searchParams.get("province") as Province | "",
+            district: (searchParams.get("district") || "") as District | "",
+            province: (searchParams.get("province") || "") as Province | "",
         });
     }, [searchParams]);
 

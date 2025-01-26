@@ -1,19 +1,18 @@
-import Image from "next/image";
 import Button from "../components/Button";
 import Link from "next/link";
-import Card from "@/components/Card";
+import StatCard from "@/components/StatCard";
+import ImageComponent from "@/components/ImageComponent";
 
 export default function HomePage() {
     return (
         <div className="">
             {/* Hero Section */}
             <div className="m-10 flex flex-col items-center justify-center gap-10 lg:flex-row">
-                <Image
-                    className="rounded-3xl"
-                    width={600}
-                    height={0}
-                    alt="Photo of three smiling children (AI generated)"
-                    src="/images/hero-section-photo.jpg"
+                <ImageComponent
+                    imageSrc="/images/hero-section-photo.jpg"
+                    containerClasses="w-full h-[400px] max-w-[600px]"
+                    imageClasses="object-cover"
+                    imageSizes="600px"
                 />
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
@@ -58,55 +57,18 @@ export default function HomePage() {
             <div className="mb-10 w-[100%] rounded-3xl bg-[#e1d7cc] p-10">
                 <div className="flex flex-wrap justify-center gap-4 xl:gap-8">
                     {/* Stat Card */}
-                    <Card className="p-8">
-                        <div className="flex w-[300px] flex-col items-center gap-4">
-                            <Image
-                                src="/images/facility-drone-image.jpg"
-                                width={330}
-                                height={230}
-                                alt="Drone image of a building (AI generated)"
-                                className="w-max-[100%] rounded-3xl"
-                            />
-                            <p className="text-center">
-                                There are <b>379</b> child care facilities in
-                                Sri Lanka, with over <b>10,000 children</b>*
-                            </p>
-                        </div>
-                    </Card>
-
-                    {/* Stat Card */}
-                    <Card className="p-8">
-                        <div className="flex w-[300px] flex-col items-center gap-4">
-                            <Image
-                                src="/images/donation-boxes.jpg"
-                                width={330}
-                                height={230}
-                                alt="Drone image of a building (AI generated)"
-                                className="w-max-[100%] rounded-3xl"
-                            />
-                            <p className="text-center">
-                                <b>60%</b> of child care facilities run on
-                                external donations*
-                            </p>
-                        </div>
-                    </Card>
-
-                    {/* Stat Card */}
-                    <Card className="p-8">
-                        <div className="flex w-[300px] flex-col items-center gap-4">
-                            <Image
-                                src="/images/smiling-children-2.jpg"
-                                width={330}
-                                height={230}
-                                alt="Drone image of a building (AI generated)"
-                                className="w-max-[100%] rounded-3xl"
-                            />
-                            <p className="text-center">
-                                <b>71%</b> of the children are between ages
-                                5-14*
-                            </p>
-                        </div>
-                    </Card>
+                    <StatCard
+                        imageSrc="/images/facility-drone-image.jpg"
+                        statText="There are 4,000+ child care facilities in Sri Lanka"
+                    />
+                    <StatCard
+                        imageSrc="/images/donation-boxes.jpg"
+                        statText="60% of child care facilities run on external donations"
+                    />
+                    <StatCard
+                        imageSrc="/images/smiling-children-2.jpg"
+                        statText="71% of the children are between ages 5-14"
+                    />
                 </div>
             </div>
         </div>

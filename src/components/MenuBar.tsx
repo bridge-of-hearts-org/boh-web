@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Button from "./Button";
-import Image from "next/image";
 import HamburgerMenu from "./HamburgerMenu";
+import ImageComponent from "./ImageComponent";
 
 export default function MenuBar() {
     return (
@@ -10,12 +10,15 @@ export default function MenuBar() {
             className="absolute left-0 top-0 flex w-screen items-center justify-between bg-boh-black p-4 shadow-lg shadow-gray-400"
         >
             <div className="flex-shrink-0 pl-5">
-                <Image
-                    width={220}
-                    height={0}
-                    src="/images/logo-dark-middle.png"
-                    alt="Bridge of Hearts Logo"
-                />
+                <Link href="/">
+                    <ImageComponent
+                        imageSrc="/images/logo-dark-middle.png"
+                        containerClasses="w-[220px] h-[50px] bg-transparent rounded-none"
+                        imageClasses="object-contain"
+                        imageSizes="220px"
+                        alt="Bridge of Hearts Logo"
+                    />
+                </Link>
             </div>
             <div className="mr-4 hidden gap-3 text-white md:flex">
                 <Link href="/">

@@ -1,12 +1,12 @@
 import Card from "@/components/Card";
 import { MapPin, Phone } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 
 import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
 import { DirectoryFilterType, District, Province } from "@/utils/types";
+import ImageComponent from "@/components/ImageComponent";
 
 function createPrismaFilter(
     filterValues: DirectoryFilterType,
@@ -103,23 +103,20 @@ export default async function DirectoryPage(props: {
                             <Card>
                                 <div className="flex flex-col items-center gap-4 sm:flex-row">
                                     {facility.photos.length > 0 && (
-                                        <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
-                                            <Image
-                                                src={facility.photos[0]}
-                                                alt="facility-icon"
-                                                fill
-                                            />
-                                        </div>
+                                        <ImageComponent
+                                            imageSrc={facility.photos[0]}
+                                            containerClasses="w-[180px] h-[180px]"
+                                            imageClasses="object-cover"
+                                            imageSizes="180px"
+                                        />
                                     )}
                                     {facility.photos.length == 0 && (
-                                        <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
-                                            <Image
-                                                src="/images/facility-directory-icon-default.png"
-                                                alt="facility-icon"
-                                                fill
-                                                className="p-8"
-                                            />
-                                        </div>
+                                        <ImageComponent
+                                            imageSrc="/images/facility-directory-icon-default.png"
+                                            containerClasses="w-[180px] h-[180px] bg-orange-50"
+                                            imageClasses="object-contain p-8"
+                                            imageSizes="180px"
+                                        />
                                     )}
                                     <div className="flex w-full flex-col items-center gap-5 sm:items-start">
                                         {/* Title section */}
