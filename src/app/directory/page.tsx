@@ -7,6 +7,7 @@ import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
 import { DirectoryFilterType, District, Province } from "@/utils/types";
 import ImageComponent from "@/components/ImageComponent";
+import Button from "@/components/Button";
 
 function createPrismaFilter(
     filterValues: DirectoryFilterType,
@@ -89,19 +90,19 @@ export default async function DirectoryPage(props: {
     const facilities = await fetchData(activeFilters);
 
     return (
-        <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[400px,1fr] lg:items-start">
+        <div className="flex flex-col items-center gap-5 xl:grid xl:grid-cols-[400px,1fr] xl:items-start">
             {/* Filter Card */}
             <FilterCard />
 
-            <div className="flex flex-col gap-5 rounded-2xl">
+            <div className="flex w-full flex-col gap-5 rounded-2xl">
                 {facilities.map((facility) => {
                     return (
-                        <Link
-                            key={facility.id}
-                            href={`/facility/${facility.id}`}
-                        >
-                            <Card>
-                                <div className="flex flex-col items-center gap-4 sm:flex-row">
+                        <Card key={facility.id}>
+                            <div className="flex flex-col items-center gap-5 md:flex-row md:items-stretch">
+                                <Link
+                                    href={`/facility/${facility.id}`}
+                                    className="self-center"
+                                >
                                     {facility.photos.length > 0 && (
                                         <ImageComponent
                                             imageSrc={facility.photos[0]}
@@ -118,52 +119,62 @@ export default async function DirectoryPage(props: {
                                             imageSizes="180px"
                                         />
                                     )}
-                                    <div className="flex w-full flex-col items-center gap-5 sm:items-start">
-                                        {/* Title section */}
-                                        <div>
-                                            <div className="text-lg font-semibold">
-                                                {facility.name}
+                                </Link>
+                                <div className="flex grow flex-col justify-center gap-5">
+                                    {/* Title section */}
+                                    <div className="flex flex-col items-center gap-1 md:items-start">
+                                        <div className="text-lg font-semibold">
+                                            {facility.name}
+                                        </div>
+                                        <div className="text-sm">
+                                            {facility.type}
+                                        </div>
+                                    </div>
+
+                                    {/* Address and contact section */}
+                                    <div className="flex flex-col items-center gap-2 md:items-start">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <div>
+                                                <MapPin size={"1rem"} />
                                             </div>
-                                            <div className="text-sm">
-                                                {facility.type}
+                                            <div>
+                                                {facility.location.address}
                                             </div>
                                         </div>
-
-                                        {/* Address and contact section */}
-                                        <div className="flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <div>
-                                                    <MapPin size={"1rem"} />
-                                                </div>
-                                                <div>
-                                                    {facility.location.address}
-                                                </div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <div>
+                                                <Phone size={"1rem"} />
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <div>
-                                                    <Phone size={"1rem"} />
-                                                </div>
-                                                <div>
-                                                    {facility.contact.phone.join(
-                                                        ", ",
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Region section */}
-                                        <div className="flex flex-col items-end self-end">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                {facility.location.district}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm font-semibold">
-                                                {facility.location.province}
+                                            <div>
+                                                {facility.contact.phone.join(
+                                                    ", ",
+                                                )}
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </Card>
-                        </Link>
+                                <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
+                                    <div className="flex flex-col items-center md:items-end">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            {facility.location.district}{" "}
+                                            District
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm font-semibold">
+                                            {facility.location.province}{" "}
+                                            Province
+                                        </div>
+                                    </div>
+                                    <Link href={`/facility/${facility.id}`}>
+                                        <Button
+                                            variant="secondary"
+                                            color="black"
+                                        >
+                                            More Info
+                                        </Button>
+                                    </Link>
+                                </div>
+                            </div>
+                        </Card>
                     );
                 })}
             </div>
