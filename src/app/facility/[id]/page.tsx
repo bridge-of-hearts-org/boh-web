@@ -1,11 +1,12 @@
 import { prisma } from "@/utils/db";
-import NotFound from "./NotFound";
 import Card from "@/components/Card";
 import Image from "next/image";
 import { MapPin, PhoneCall, Users } from "lucide-react";
 import Link from "next/link";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
+import NotFound from "@/app/not-found";
+import ImageComponent from "@/components/ImageComponent";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -19,12 +20,17 @@ export default async function FacilityProfilePage({
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
     const { id } = await params;
+    let data = null;
 
-    const data = await prisma.childCareFacility.findUnique({
-        where: { id: id },
-    });
+    try {
+        data = await prisma.childCareFacility.findUnique({
+            where: { id: id },
+        });
 
-    if (data == null) {
+        if (data == null) {
+            throw new Error("Data not found");
+        }
+    } catch {
         return NotFound();
     }
 
@@ -46,14 +52,12 @@ export default async function FacilityProfilePage({
                 <div className="flex flex-col items-center justify-start gap-10 p-1 md:p-5">
                     {/* Photo section */}
                     {data.photos.length == 0 && (
-                        <div className="relative block h-[180px] w-[180px] flex-shrink-0 overflow-hidden rounded-2xl bg-orange-50">
-                            <Image
-                                src="/images/facility-directory-icon-default.png"
-                                alt="facility-icon"
-                                fill
-                                className="p-8"
-                            />
-                        </div>
+                        <ImageComponent
+                            imageSrc="/images/facility-directory-icon-default.png"
+                            containerClasses="w-[180px] h-[180px] bg-orange-50"
+                            imageClasses="object-contain p-8"
+                            imageSizes="180px"
+                        />
                     )}
                     {data.photos.length > 0 && (
                         <ImageCarousel urls={data.photos} />
@@ -136,7 +140,7 @@ export default async function FacilityProfilePage({
                                         </div>
                                         <div className="">
                                             {data.contact.phone.length > 0
-                                                ? data.contact.phone.join(", ")
+                                                ? data.contact.phone.join(" / ")
                                                 : noInfoText}
                                         </div>
                                     </div>

@@ -54,7 +54,7 @@ export default function HomePage() {
             </div>
 
             {/* Stat section */}
-            <div className="mb-10 w-[100%] rounded-3xl bg-[#e1d7cc] p-10">
+            <div className="mb-10 w-[100%] rounded-3xl bg-[#f0e7df] p-10">
                 <div className="flex flex-wrap justify-center gap-4 xl:gap-8">
                     {/* Stat Card */}
                     <StatCard
