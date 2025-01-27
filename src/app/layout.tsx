@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 import { Encode_Sans, Encode_Sans_SC } from "next/font/google";
+import { Analytics } from "@vercel/analytics/react";
+
 import "./globals.css";
 import MenuBar from "@/components/MenuBar";
 import Footer from "@/components/Footer";
@@ -33,6 +35,7 @@ export default function RootLayout({
                         <Footer></Footer>
                     </div>
                 </div>
+                <Analytics />
             </body>
         </html>
     );
