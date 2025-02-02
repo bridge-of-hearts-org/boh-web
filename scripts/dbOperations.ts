@@ -1,6 +1,7 @@
 import { ChildCareFacility, PrismaClient } from "@prisma/client";
 import { promises as fs } from "fs";
-import path from "path";
+
+const JSON_FNAME = "data/dbData.json";
 
 const prisma = new PrismaClient();
 
@@ -73,7 +74,7 @@ const helpString = "Usage: tsx dbOperations.ts <add|upsert>";
 if (process.argv.length == 3) {
     const cmd = process.argv[2];
 
-    fs.readFile("data.json", "utf-8")
+    fs.readFile(JSON_FNAME, "utf-8")
         .then((data) => {
             return JSON.parse(data);
         })

@@ -3,3 +3,7 @@ dist
 .vscode
 .next
 .env
+scripts/data
+scripts/python/.venv
+scripts/python/config.json
+scripts/python/google-api-key.json
