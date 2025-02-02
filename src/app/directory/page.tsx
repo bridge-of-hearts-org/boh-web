@@ -8,6 +8,7 @@ import FilterCard from "./FilterCard";
 import { DirectoryFilterType, District, Province } from "@/utils/types";
 import ImageComponent from "@/components/ImageComponent";
 import Button from "@/components/Button";
+import PhoneNumberList from "@/components/PhoneNumberList";
 
 function createPrismaFilter(
     filterValues: DirectoryFilterType,
@@ -123,7 +124,7 @@ export default async function DirectoryPage(props: {
                                 <div className="flex grow flex-col justify-center gap-5">
                                     {/* Title section */}
                                     <div className="flex flex-col items-center gap-1 md:items-start">
-                                        <div className="text-lg font-semibold">
+                                        <div className="text-center text-lg font-semibold md:text-left">
                                             {facility.name}
                                         </div>
                                         <div className="text-sm">
@@ -147,9 +148,13 @@ export default async function DirectoryPage(props: {
                                                     <Phone size={"1rem"} />
                                                 </div>
                                                 <div>
-                                                    {facility.contact.phone.join(
-                                                        ", ",
-                                                    )}
+                                                    <PhoneNumberList
+                                                        numbers={
+                                                            facility.contact
+                                                                .phone
+                                                        }
+                                                        orientation="row"
+                                                    />
                                                 </div>
                                             </div>
                                         )}

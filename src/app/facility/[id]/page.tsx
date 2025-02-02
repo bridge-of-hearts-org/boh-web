@@ -7,6 +7,8 @@ import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
 import NotFound from "@/app/not-found";
 import ImageComponent from "@/components/ImageComponent";
+import PhoneNumberList from "@/components/PhoneNumberList";
+import EmailList from "@/components/EmailList";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -35,7 +37,7 @@ export default async function FacilityProfilePage({
     }
 
     /* Constants */
-    const noInfoText = "No Information";
+    const noInfoElement = <span>-</span>;
 
     /* Styles */
     const infoSectionStyles =
@@ -44,7 +46,7 @@ export default async function FacilityProfilePage({
     const infoTableHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
     const infoTableRowStyles =
-        "grid grid-cols-[3fr,4fr] items-center gap-4 flex-wrap break-words md:text-base text-sm";
+        "grid grid-cols-[3fr,4fr] items-center gap-4 flex-wrap break-words md:text-base text-sm break-words";
 
     return (
         <div className="m-1 flex justify-center md:m-5">
@@ -67,10 +69,10 @@ export default async function FacilityProfilePage({
                     <div className="flex w-full flex-col items-center gap-14">
                         {/* Title */}
                         <div className="flex flex-col items-center">
-                            <div className="text-2xl font-bold">
+                            <div className="text-center text-2xl font-bold">
                                 {data.name}
                             </div>
-                            <div className="">{data.type}</div>
+                            <div className="text-center">{data.type}</div>
                         </div>
 
                         {/* Location */}
@@ -139,29 +141,39 @@ export default async function FacilityProfilePage({
                                             Phone
                                         </div>
                                         <div className="">
-                                            {data.contact.phone.length > 0
-                                                ? data.contact.phone.join(" / ")
-                                                : noInfoText}
+                                            <PhoneNumberList
+                                                numbers={data.contact.phone}
+                                                orientation="column"
+                                            />
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
                                             Email
                                         </div>
-                                        <div className="">
-                                            {data.contact.email.length > 0
-                                                ? data.contact.email.join(", ")
-                                                : noInfoText}
+                                        <div className="break-all">
+                                            <EmailList
+                                                emails={data.contact.email}
+                                            />
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            District
+                                            Website
                                         </div>
                                         <div className="">
-                                            {data.contact.website
-                                                ? data.contact.website
-                                                : noInfoText}
+                                            {data.contact.website ? (
+                                                <a
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    href={data.contact.website}
+                                                    className="break-all hover:underline"
+                                                >
+                                                    {data.contact.website}
+                                                </a>
+                                            ) : (
+                                                noInfoElement
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -186,7 +198,7 @@ export default async function FacilityProfilePage({
                                         <div className="">
                                             {data.residents.total
                                                 ? data.residents.total
-                                                : noInfoText}
+                                                : noInfoElement}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
@@ -196,7 +208,7 @@ export default async function FacilityProfilePage({
                                         <div className="">
                                             {data.residents.male
                                                 ? data.residents.male
-                                                : noInfoText}
+                                                : noInfoElement}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
@@ -206,7 +218,7 @@ export default async function FacilityProfilePage({
                                         <div className="">
                                             {data.residents.female
                                                 ? data.residents.female
-                                                : noInfoText}
+                                                : noInfoElement}
                                         </div>
                                     </div>
                                 </div>

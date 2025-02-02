@@ -58,8 +58,16 @@ def generateJson():
     # Clean up data
     df["managedBy"].replace(np.nan, "", inplace=True)
     df["contact.website"].replace(np.nan, "", inplace=True)
+
+    # Strip trailing spaces and slashes in website links
+    df["contact.website"] = df["contact.website"].apply(
+        lambda link: link.strip("/ "))
+
+    # Create lists from phone numbers
     df["contact.phone"] = df["contact.phone"].apply(lambda listStr: [] if pd.isna(
         listStr) else [x.strip() for x in listStr.split(",")])
+
+    # Create lists from email addresses
     df["contact.email"] = df["contact.email"].apply(lambda listStr: [] if pd.isna(
         listStr) else [x.strip() for x in listStr.split(",")])
 
