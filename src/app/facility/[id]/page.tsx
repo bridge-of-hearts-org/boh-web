@@ -184,7 +184,7 @@ export default async function FacilityProfilePage({
                                             Total
                                         </div>
                                         <div className="">
-                                            {data.residents.total > 0
+                                            {data.residents.total
                                                 ? data.residents.total
                                                 : noInfoText}
                                         </div>

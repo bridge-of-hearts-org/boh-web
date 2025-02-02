@@ -27,7 +27,7 @@ type Contact {
 }
 
 type Residents {
-    total  Int
+    total  Int?
     male   Int?
     female Int?
 }
@@ -37,8 +37,8 @@ model ChildCareFacility {
     name      String    @unique
     type      String
     managedBy String
-    location  Location  @unique
-    contact   Contact   @unique
+    location  Location
+    contact   Contact
     residents Residents
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt

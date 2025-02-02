@@ -141,16 +141,18 @@ export default async function DirectoryPage(props: {
                                                 {facility.location.address}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <div>
-                                                <Phone size={"1rem"} />
+                                        {facility.contact.phone.length > 0 && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <div>
+                                                    <Phone size={"1rem"} />
+                                                </div>
+                                                <div>
+                                                    {facility.contact.phone.join(
+                                                        ", ",
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div>
-                                                {facility.contact.phone.join(
-                                                    ", ",
-                                                )}
-                                            </div>
-                                        </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
