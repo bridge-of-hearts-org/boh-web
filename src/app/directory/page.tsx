@@ -138,7 +138,7 @@ export default async function DirectoryPage(props: {
                                             <div>
                                                 <MapPin size={"1rem"} />
                                             </div>
-                                            <div>
+                                            <div className="text-left">
                                                 {facility.location.address}
                                             </div>
                                         </div>
@@ -162,11 +162,11 @@ export default async function DirectoryPage(props: {
                                 </div>
                                 <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
                                     <div className="flex flex-col items-center md:items-end">
-                                        <div className="flex items-center gap-2 text-sm">
+                                        <div className="flex gap-2 text-right text-sm">
                                             {facility.location.district}{" "}
                                             District
                                         </div>
-                                        <div className="flex items-center gap-2 text-sm font-semibold">
+                                        <div className="flex gap-2 text-right text-sm font-semibold">
                                             {facility.location.province}{" "}
                                             Province
                                         </div>
@@ -175,6 +175,7 @@ export default async function DirectoryPage(props: {
                                         <Button
                                             variant="secondary"
                                             color="black"
+                                            className="text-nowrap"
                                         >
                                             More Info
                                         </Button>

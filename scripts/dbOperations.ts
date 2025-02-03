@@ -41,16 +41,25 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                             province: facility.location.province,
                             divisionalSecretariat:
                                 facility.location.divisionalSecretariat,
+                            google: facility.location.google,
                         },
                         contact: {
                             phone: facility.contact.phone,
                             email: facility.contact.email,
                             website: facility.contact.website,
+                            facebook: facility.contact.facebook,
+                            instagram: facility.contact.instagram,
                         },
-                        residents: {
-                            total: facility.residents.total,
-                            male: facility.residents.male,
-                            female: facility.residents.female,
+                        genders: facility.genders,
+                        occupancy: {
+                            total: facility.occupancy.total,
+                            male: facility.occupancy.male,
+                            female: facility.occupancy.female,
+                        },
+                        ageRanges: {
+                            all: facility.ageRanges.all,
+                            male: facility.ageRanges.male,
+                            female: facility.ageRanges.female,
                         },
                     },
                 });

@@ -1,14 +1,16 @@
+import Link from "next/link";
+import { twMerge } from "tailwind-merge";
+import { MapPin, PhoneCall, Users } from "lucide-react";
+
 import { prisma } from "@/utils/db";
 import Card from "@/components/Card";
-import Image from "next/image";
-import { MapPin, PhoneCall, Users } from "lucide-react";
-import Link from "next/link";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
 import NotFound from "@/app/not-found";
 import ImageComponent from "@/components/ImageComponent";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
+import { Gender } from "@prisma/client";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -42,7 +44,7 @@ export default async function FacilityProfilePage({
     /* Styles */
     const infoSectionStyles =
         "flex w-full xl:w-2/3 flex-col gap-2 divide-y divide";
-    const infoTableStyles = "py-4";
+    const infoTableStyles = "py-4 flex flex-col gap-3 pl-10";
     const infoTableHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
     const infoTableRowStyles =
@@ -85,41 +87,34 @@ export default async function FacilityProfilePage({
 
                             {/* Table */}
                             <div className={infoTableStyles}>
-                                <div className="flex flex-col gap-4 pl-10">
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Address
-                                        </div>
-                                        <div className="">
-                                            {data.location.address}
-                                        </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Address</div>
+                                    <div className="">
+                                        {data.location.address}
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Divisional Secretariat
-                                        </div>
-                                        <div className="">
-                                            {
-                                                data.location
-                                                    .divisionalSecretariat
-                                            }
-                                        </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Divisional Secretariat
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            District
-                                        </div>
-                                        <div className="">
-                                            {data.location.district}
-                                        </div>
+                                    <div className="">
+                                        {data.location.divisionalSecretariat}
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Province
-                                        </div>
-                                        <div className="">
-                                            {data.location.province}
-                                        </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        District
+                                    </div>
+                                    <div className="">
+                                        {data.location.district}
+                                    </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Province
+                                    </div>
+                                    <div className="">
+                                        {data.location.province}
                                     </div>
                                 </div>
                             </div>
@@ -135,46 +130,76 @@ export default async function FacilityProfilePage({
 
                             {/* Table */}
                             <div className={infoTableStyles}>
-                                <div className="flex flex-col gap-4 pl-10">
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Phone
-                                        </div>
-                                        <div className="">
-                                            <PhoneNumberList
-                                                numbers={data.contact.phone}
-                                                orientation="column"
-                                            />
-                                        </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Phone</div>
+                                    <div className="">
+                                        <PhoneNumberList
+                                            numbers={data.contact.phone}
+                                            orientation="column"
+                                        />
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Email
-                                        </div>
-                                        <div className="break-all">
-                                            <EmailList
-                                                emails={data.contact.email}
-                                            />
-                                        </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Email</div>
+                                    <div className="break-all">
+                                        <EmailList
+                                            emails={data.contact.email}
+                                        />
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Website
-                                        </div>
-                                        <div className="">
-                                            {data.contact.website ? (
-                                                <a
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    href={data.contact.website}
-                                                    className="break-all hover:underline"
-                                                >
-                                                    {data.contact.website}
-                                                </a>
-                                            ) : (
-                                                noInfoElement
-                                            )}
-                                        </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Website</div>
+                                    <div className="">
+                                        {data.contact.website ? (
+                                            <a
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                href={data.contact.website}
+                                                className="break-all hover:underline"
+                                            >
+                                                {data.contact.website}
+                                            </a>
+                                        ) : (
+                                            noInfoElement
+                                        )}
+                                    </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Facebook
+                                    </div>
+                                    <div className="">
+                                        {data.contact.facebook ? (
+                                            <a
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                href={data.contact.facebook}
+                                                className="break-all hover:underline"
+                                            >
+                                                {data.contact.facebook}
+                                            </a>
+                                        ) : (
+                                            noInfoElement
+                                        )}
+                                    </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Instagram
+                                    </div>
+                                    <div className="">
+                                        {data.contact.instagram ? (
+                                            <a
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                href={data.contact.instagram}
+                                                className="break-all hover:underline"
+                                            >
+                                                {data.contact.instagram}
+                                            </a>
+                                        ) : (
+                                            noInfoElement
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -189,42 +214,125 @@ export default async function FacilityProfilePage({
                             </div>
 
                             {/* Table */}
-                            <div className={infoTableStyles}>
-                                <div className="flex flex-col gap-4 pl-10">
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Total
+                            <div className={twMerge(infoTableStyles, "gap-6")}>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Genders</div>
+                                    <div className="">
+                                        {data.genders == Gender.male
+                                            ? "Male"
+                                            : data.genders == Gender.female
+                                              ? "Female"
+                                              : "Male / Female"}
+                                    </div>
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Occupancy
+                                    </div>
+                                    <div className="">
+                                        <div>
+                                            <div className="grid grid-cols-2">
+                                                <div className="italic">
+                                                    Male
+                                                </div>
+                                                <div>
+                                                    {data.occupancy.male
+                                                        ? data.occupancy.male
+                                                        : data.genders == "male"
+                                                          ? data.occupancy.total
+                                                          : noInfoElement}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="">
-                                            {data.residents.total
-                                                ? data.residents.total
-                                                : noInfoElement}
+                                        <div>
+                                            <div className="grid grid-cols-2">
+                                                <div className="italic">
+                                                    Female
+                                                </div>
+                                                <div>
+                                                    {data.occupancy.female
+                                                        ? data.occupancy.female
+                                                        : data.genders ==
+                                                            "female"
+                                                          ? data.occupancy.total
+                                                          : noInfoElement}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="grid grid-cols-2 font-semibold">
+                                                <div>Total</div>
+                                                <div>
+                                                    {data.occupancy.total
+                                                        ? data.occupancy.total
+                                                        : noInfoElement}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Male
+                                </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">Ages</div>
+                                    <div className="">
+                                        <div>
+                                            <div className="grid grid-cols-2">
+                                                <div className="italic">
+                                                    Male
+                                                </div>
+                                                <div>
+                                                    {data.ageRanges.male
+                                                        ? data.ageRanges.male
+                                                        : data.genders == "male"
+                                                          ? data.ageRanges.all
+                                                          : noInfoElement}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="">
-                                            {data.residents.male
-                                                ? data.residents.male
-                                                : noInfoElement}
+                                        <div>
+                                            <div className="grid grid-cols-2">
+                                                <div className="italic">
+                                                    Female
+                                                </div>
+                                                <div>
+                                                    {data.ageRanges.female
+                                                        ? data.ageRanges.female
+                                                        : data.genders ==
+                                                            "female"
+                                                          ? data.ageRanges.all
+                                                              ? data.ageRanges
+                                                                    .all
+                                                              : noInfoElement
+                                                          : noInfoElement}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Female
-                                        </div>
-                                        <div className="">
-                                            {data.residents.female
-                                                ? data.residents.female
-                                                : noInfoElement}
+                                        <div>
+                                            <div className="grid grid-cols-2 font-semibold">
+                                                <div>Total</div>
+                                                <div>
+                                                    {data.ageRanges.all
+                                                        ? data.ageRanges.all
+                                                        : noInfoElement}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <p className="text-center text-xs italic">
+                        Please email us at{" "}
+                        <a
+                            href="mailto:bridgeofheartslk@gmail.com"
+                            className="hover:underline"
+                        >
+                            bridgeofheartslk@gmail.com
+                        </a>{" "}
+                        if there are any data discrepancies or if you have more
+                        up-to-date information
+                    </p>
 
                     {/* Buttons */}
                     <div className="flex w-full justify-end">

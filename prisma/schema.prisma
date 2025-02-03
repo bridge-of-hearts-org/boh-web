@@ -13,23 +13,40 @@ datasource db {
     url      = env("DATABASE_URL")
 }
 
+enum Gender {
+    male
+    female
+    both
+}
+
 type Location {
     address               String
     province              String
     district              String
     divisionalSecretariat String
+    google                String
+    latitude              Float?
+    longitude             Float?
 }
 
 type Contact {
-    phone   String[]
-    email   String[]
-    website String?
+    phone     String[]
+    email     String[]
+    website   String
+    facebook  String
+    instagram String
 }
 
-type Residents {
+type Occupancy {
     total  Int?
     male   Int?
     female Int?
+}
+
+type AgeRanges {
+    all    String?
+    male   String?
+    female String?
 }
 
 model ChildCareFacility {
@@ -39,7 +56,9 @@ model ChildCareFacility {
     managedBy String
     location  Location
     contact   Contact
-    residents Residents
+    occupancy Occupancy
+    ageRanges AgeRanges
+    genders   Gender
     createdAt DateTime  @default(now())
     updatedAt DateTime  @updatedAt
     photos    String[]

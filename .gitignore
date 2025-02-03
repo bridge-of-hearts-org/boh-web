@@ -3,6 +3,7 @@ dist
 .vscode
 .next
 .env
+*.pyc
 scripts/data
 scripts/python/.venv
 scripts/python/config.json

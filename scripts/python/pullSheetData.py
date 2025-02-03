@@ -10,7 +10,7 @@ CSV_FNAME = "../data/dbData.csv"
 JSON_FNAME = "../data/dbData.json"
 
 
-def pullData(startCell: str, endCell: str):
+def pullData(startCell: str, endCell: str) -> pd.DataFrame:
     config = json.load(open("config.json"))
     apiKeyFname = "google-api-key.json"
     permissions = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
@@ -26,18 +26,20 @@ def pullData(startCell: str, endCell: str):
 
     if not values:
         print("Error: No data found")
+        return pd.DataFrame()
     else:
         df = pd.DataFrame(values[1:])
         df.columns = values[0]
         df.to_csv(CSV_FNAME, index=False)
+        return df
 
 
 def generateJson():
     df = pd.read_csv(CSV_FNAME)
 
     # Define the columns to be selected
-    selectedColumns = ["Name", "Address", "Managed By", "District", "Province", "Divisional Secretariat",
-                       "Phone Numbers", "Email Addresses", "Website", "Count - Male", "Count - Female", "Count - Total"]
+    selectedColumns = ["Name", "Address", "Managed By", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
+                       "Facebook", "Instagram", "Accepted Genders", "Age Range - Male", "Age Range - Female", "Age Range - All", "Count - Male", "Count - Female", "Count - Total"]
 
     # Rename columns
     df = df[selectedColumns].rename(columns={
@@ -47,21 +49,33 @@ def generateJson():
         "District": "location.district",
         "Province": "location.province",
         "Divisional Secretariat": "location.divisionalSecretariat",
+        "Google Maps": "location.google",
         "Phone Numbers": "contact.phone",
         "Email Addresses": "contact.email",
         "Website": "contact.website",
-        "Count - Female": "residents.female",
-        "Count - Male": "residents.male",
-        "Count - Total": "residents.total",
+        "Facebook": "contact.facebook",
+        "Instagram": "contact.instagram",
+        "Accepted Genders": "genders",
+        "Count - Male": "occupancy.male",
+        "Count - Female": "occupancy.female",
+        "Count - Total": "occupancy.total",
+        "Age Range - Male": "ageRanges.male",
+        "Age Range - Female": "ageRanges.female",
+        "Age Range - All": "ageRanges.all",
     })
 
-    # Clean up data
+    # --- Clean up data ---
     df["managedBy"].replace(np.nan, "", inplace=True)
+    df["location.google"].replace(np.nan, "", inplace=True)
     df["contact.website"].replace(np.nan, "", inplace=True)
+    df["contact.facebook"].replace(np.nan, "", inplace=True)
+    df["contact.instagram"].replace(np.nan, "", inplace=True)
+    df["ageRanges.male"].replace(np.nan, "", inplace=True)
+    df["ageRanges.female"].replace(np.nan, "", inplace=True)
+    df["ageRanges.all"].replace(np.nan, "", inplace=True)
 
     # Strip trailing spaces and slashes in website links
-    df["contact.website"] = df["contact.website"].apply(
-        lambda link: link.strip("/ "))
+    df["contact.website"] = df["contact.website"]
 
     # Create lists from phone numbers
     df["contact.phone"] = df["contact.phone"].apply(lambda listStr: [] if pd.isna(
@@ -74,25 +88,42 @@ def generateJson():
     jsonData = []
 
     for _, row in df.iterrows():
+        # --- Validate ---
+        assert row["genders"] in ["Male", "Female", "Both"]
+        assert np.all([number.startswith("0") and len(number) == 10
+                      for number in row["contact.phone"]])
+        assert np.all([email.__contains__("@")
+                      for email in row["contact.email"]])
+
+        # --- Construct the JSON structure ---
         facility = {}
-        facility["name"] = row["name"]
+        facility["name"] = row["name"].strip()
         facility["type"] = "Voluntary Children's Home"
-        facility["managedBy"] = row["managedBy"]
+        facility["managedBy"] = row["managedBy"].strip()
         facility["location"] = {
-            "address": row["location.address"],
-            "district": row["location.district"],
-            "province": row["location.province"],
-            "divisionalSecretariat": row["location.divisionalSecretariat"]
+            "address": row["location.address"].strip(),
+            "district": row["location.district"].strip(),
+            "province": row["location.province"].strip(),
+            "divisionalSecretariat": row["location.divisionalSecretariat"].strip(),
+            "google": row["location.google"].strip("/ ")
         }
         facility["contact"] = {
             "phone": row["contact.phone"],
             "email": row["contact.email"],
-            "website": row["contact.website"]
+            "website": row["contact.website"].strip("/ "),
+            "facebook": row["contact.facebook"].strip("/ "),
+            "instagram": row["contact.instagram"].strip("/ ")
         }
-        facility["residents"] = {
-            "total": int(row["residents.total"]) if not np.isnan(row["residents.total"]) else None,
-            "male": int(row["residents.male"]) if not np.isnan(row["residents.male"]) else None,
-            "female": int(row["residents.female"]) if not np.isnan(row["residents.female"]) else None,
+        facility["genders"] = row["genders"].strip().lower()
+        facility["occupancy"] = {
+            "total": int(row["occupancy.total"]) if not np.isnan(row["occupancy.total"]) else None,
+            "male": int(row["occupancy.male"]) if not np.isnan(row["occupancy.male"]) else None,
+            "female": int(row["occupancy.female"]) if not np.isnan(row["occupancy.female"]) else None
+        }
+        facility["ageRanges"] = {
+            "all": row["ageRanges.all"],
+            "male": row["ageRanges.male"],
+            "female": row["ageRanges.female"]
         }
 
         jsonData.append(facility)
