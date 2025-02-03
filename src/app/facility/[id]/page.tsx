@@ -117,6 +117,25 @@ export default async function FacilityProfilePage({
                                         {data.location.province}
                                     </div>
                                 </div>
+                                <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">
+                                        Google Maps
+                                    </div>
+                                    <div className="">
+                                        {data.location.google ? (
+                                            <a
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                href={data.location.google}
+                                                className="break-all hover:underline"
+                                            >
+                                                {data.location.google}
+                                            </a>
+                                        ) : (
+                                            noInfoElement
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
