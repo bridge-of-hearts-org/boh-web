@@ -59,6 +59,7 @@ export const ProvinceToDistrict: ProvinceToDistrictType = {
 
 export type DirectoryFilterType = {
     name: string;
+    city: string;
     district: District | "";
     province: Province | "";
 };

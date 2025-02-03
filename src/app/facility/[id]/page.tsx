@@ -94,6 +94,10 @@ export default async function FacilityProfilePage({
                                     </div>
                                 </div>
                                 <div className={infoTableRowStyles}>
+                                    <div className="font-semibold">City</div>
+                                    <div className="">{data.location.city}</div>
+                                </div>
+                                <div className={infoTableRowStyles}>
                                     <div className="font-semibold">
                                         Divisional Secretariat
                                     </div>

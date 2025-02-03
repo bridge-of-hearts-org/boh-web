@@ -21,6 +21,7 @@ enum Gender {
 
 type Location {
     address               String
+    city                  String
     province              String
     district              String
     divisionalSecretariat String

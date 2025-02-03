@@ -38,7 +38,7 @@ def generateJson():
     df = pd.read_csv(CSV_FNAME)
 
     # Define the columns to be selected
-    selectedColumns = ["Name", "Address", "Managed By", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
+    selectedColumns = ["Name", "Address", "Managed By", "City", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
                        "Facebook", "Instagram", "Accepted Genders", "Age Range - Male", "Age Range - Female", "Age Range - All", "Count - Male", "Count - Female", "Count - Total"]
 
     # Rename columns
@@ -46,6 +46,7 @@ def generateJson():
         "Name": "name",
         "Managed By": "managedBy",
         "Address": "location.address",
+        "City": "location.city",
         "District": "location.district",
         "Province": "location.province",
         "Divisional Secretariat": "location.divisionalSecretariat",
@@ -66,6 +67,7 @@ def generateJson():
 
     # --- Clean up data ---
     df["managedBy"].replace(np.nan, "", inplace=True)
+    df["location.city"].replace(np.nan, "", inplace=True)
     df["location.google"].replace(np.nan, "", inplace=True)
     df["contact.website"].replace(np.nan, "", inplace=True)
     df["contact.facebook"].replace(np.nan, "", inplace=True)
@@ -102,6 +104,7 @@ def generateJson():
         facility["managedBy"] = row["managedBy"].strip()
         facility["location"] = {
             "address": row["location.address"].strip(),
+            "city": row["location.city"].strip(),
             "district": row["location.district"].strip(),
             "province": row["location.province"].strip(),
             "divisionalSecretariat": row["location.divisionalSecretariat"].strip(),

@@ -37,6 +37,7 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                         managedBy: facility.managedBy,
                         location: {
                             address: facility.location.address,
+                            city: facility.location.city,
                             district: facility.location.district,
                             province: facility.location.province,
                             divisionalSecretariat:

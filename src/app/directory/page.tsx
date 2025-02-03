@@ -24,6 +24,19 @@ function createPrismaFilter(
         });
     }
 
+    if (filterValues.city) {
+        filters.push({
+            location: {
+                is: {
+                    city: {
+                        contains: filterValues.city,
+                        mode: "insensitive",
+                    },
+                },
+            },
+        });
+    }
+
     if (filterValues.district) {
         filters.push({
             location: {
@@ -57,8 +70,6 @@ async function fetchData(
     filterValues: DirectoryFilterType,
 ): Promise<ChildCareFacility[]> {
     try {
-        const prismaFilters = [];
-
         const facilities = await prisma.childCareFacility.findMany({
             where: {
                 AND: createPrismaFilter(filterValues),
@@ -76,6 +87,7 @@ async function fetchData(
 export default async function DirectoryPage(props: {
     searchParams: Promise<{
         name?: string;
+        city?: string;
         district?: District | "";
         province?: Province | "";
     }>;
@@ -84,6 +96,7 @@ export default async function DirectoryPage(props: {
 
     const activeFilters: DirectoryFilterType = {
         name: searchParams.name || "",
+        city: searchParams.city || "",
         district: (searchParams.district as District) || "",
         province: (searchParams.province as Province) || "",
     };
@@ -162,6 +175,9 @@ export default async function DirectoryPage(props: {
                                 </div>
                                 <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
                                     <div className="flex flex-col items-center md:items-end">
+                                        <div className="flex gap-2 text-right text-sm italic">
+                                            {facility.location.city}
+                                        </div>
                                         <div className="flex gap-2 text-right text-sm">
                                             {facility.location.district}{" "}
                                             District
