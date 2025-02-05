@@ -9,10 +9,10 @@ type StatCardProps = {
 export default function StatCard(props: StatCardProps) {
     return (
         <Card className="p-8">
-            <div className="flex w-[300px] flex-col items-center gap-4">
+            <div className="flex w-[280px] flex-col items-center gap-4">
                 <ImageComponent
                     imageSrc={props.imageSrc}
-                    containerClasses="w-[280px] h-[230px]"
+                    containerClasses="w-[90%] h-[230px]"
                     imageClasses="object-cover"
                     imageSizes="280px"
                 />

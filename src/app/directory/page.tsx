@@ -9,6 +9,13 @@ import { DirectoryFilterType, District, Province } from "@/utils/types";
 import ImageComponent from "@/components/ImageComponent";
 import Button from "@/components/Button";
 import PhoneNumberList from "@/components/PhoneNumberList";
+import NavigationBar from "./NavigationBar";
+
+const itemsPerPage = 10;
+
+type FilteredFacilityResponse = Promise<
+    [data: ChildCareFacility[], totalCount: number]
+>;
 
 function createPrismaFilter(
     filterValues: DirectoryFilterType,
@@ -68,19 +75,33 @@ function createPrismaFilter(
 
 async function fetchData(
     filterValues: DirectoryFilterType,
-): Promise<ChildCareFacility[]> {
+    page: number,
+): FilteredFacilityResponse {
     try {
-        const facilities = await prisma.childCareFacility.findMany({
-            where: {
-                AND: createPrismaFilter(filterValues),
-            },
-        });
-        return facilities;
+        const [facilities, totalCount] = await prisma.$transaction([
+            prisma.childCareFacility.findMany({
+                where: {
+                    AND: createPrismaFilter(filterValues),
+                },
+                take: itemsPerPage,
+                skip: (page - 1) * itemsPerPage,
+                orderBy: {
+                    name: "asc",
+                },
+            }),
+            prisma.childCareFacility.count({
+                where: {
+                    AND: createPrismaFilter(filterValues),
+                },
+            }),
+        ]);
+
+        return [facilities, totalCount];
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
         }
-        return [];
+        return [[], 0];
     }
 }
 
@@ -90,6 +111,7 @@ export default async function DirectoryPage(props: {
         city?: string;
         district?: District | "";
         province?: Province | "";
+        page: number;
     }>;
 }) {
     const searchParams = await props.searchParams;
@@ -101,7 +123,10 @@ export default async function DirectoryPage(props: {
         province: (searchParams.province as Province) || "",
     };
 
-    const facilities = await fetchData(activeFilters);
+    const [facilities, totalCount] = await fetchData(
+        activeFilters,
+        searchParams.page || 1, // Default to page 1
+    );
 
     return (
         <div className="flex flex-col items-center gap-5 xl:grid xl:grid-cols-[400px,1fr] xl:items-start">
@@ -201,6 +226,11 @@ export default async function DirectoryPage(props: {
                         </Card>
                     );
                 })}
+                <div className="mt-10 flex justify-center">
+                    <NavigationBar
+                        totalPages={Math.ceil(totalCount / itemsPerPage)}
+                    />
+                </div>
             </div>
         </div>
     );
