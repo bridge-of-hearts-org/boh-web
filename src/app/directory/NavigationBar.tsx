@@ -16,6 +16,7 @@ export default function NavigationBar(props: NavigationProps) {
         params.set("page", pageNumber.toString());
 
         router.push(`/directory/?${params.toString()}`);
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     return (

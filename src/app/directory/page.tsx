@@ -200,14 +200,14 @@ export default async function DirectoryPage(props: {
                                 </div>
                                 <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
                                     <div className="flex flex-col items-center md:items-end">
-                                        <div className="flex gap-2 text-right text-sm italic">
+                                        <div className="flex gap-2 text-right text-sm font-semibold">
                                             {facility.location.city}
                                         </div>
                                         <div className="flex gap-2 text-right text-sm">
                                             {facility.location.district}{" "}
                                             District
                                         </div>
-                                        <div className="flex gap-2 text-right text-sm font-semibold">
+                                        <div className="flex gap-2 text-right text-sm">
                                             {facility.location.province}{" "}
                                             Province
                                         </div>
