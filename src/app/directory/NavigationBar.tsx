@@ -21,17 +21,18 @@ export default function NavigationBar(props: NavigationProps) {
 
     return (
         <div className="flex gap-5">
-            {Array.from({ length: props.totalPages }, (_, i) => (
-                <Button
-                    key={i + 1}
-                    variant="secondary"
-                    color="black"
-                    className="bg-white shadow-md"
-                    onClick={() => handleClick(i + 1)}
-                >
-                    {i + 1}
-                </Button>
-            ))}
+            {props.totalPages > 1 &&
+                Array.from({ length: props.totalPages }, (_, i) => (
+                    <Button
+                        key={i + 1}
+                        variant="secondary"
+                        color="black"
+                        className="bg-white shadow-md"
+                        onClick={() => handleClick(i + 1)}
+                    >
+                        {i + 1}
+                    </Button>
+                ))}
         </div>
     );
 }
