@@ -20,7 +20,7 @@ export default function ImageCarousel({ urls }: { urls: string[] }) {
                     }
                 `}
             </style>
-            <div className="carousel-scrollbar m-10 flex w-full gap-4 overflow-x-auto rounded-xl bg-boh-off-white p-5">
+            <div className="carousel-scrollbar m-10 flex w-full gap-4 overflow-x-auto rounded-3xl bg-boh-off-white p-5">
                 {urls.map((url) => (
                     <ImageComponent
                         key={url}
@@ -32,6 +32,7 @@ export default function ImageCarousel({ urls }: { urls: string[] }) {
                             setEnlargedImage({ url: url, open: true });
                         }}
                         alt="Facility Image"
+                        priority // Mark as priority since the carousel is at the top of the page
                     />
                 ))}
             </div>

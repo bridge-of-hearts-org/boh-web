@@ -1,3 +1,10 @@
+/* ----------- Vercel ----------- */
+
+export const vercelStorageUrl =
+    "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
+
+/* ----------- Administrative areas ----------- */
+
 export const DistrictsList = [
     "Ampara",
     "Anuradhapura",

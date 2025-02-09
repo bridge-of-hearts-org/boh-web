@@ -1,21 +1,39 @@
-import { ChildCareFacility, PrismaClient } from "@prisma/client";
-import { promises as fs } from "fs";
+import fs from "fs";
+import path from "path";
+import { put, list } from "@vercel/blob";
 
-const JSON_FNAME = "data/dbData.json";
+import { ChildCareFacility, PrismaClient } from "@prisma/client";
+
+const JSON_FNAME = path.join(__dirname, "data", "dbData.json");
+const PHOTOS_DIR = path.join(__dirname, "data", "photos");
 
 const prisma = new PrismaClient();
 
-async function addFacilities(jsonData: ChildCareFacility[]) {
-    try {
-        const facilities = await prisma.childCareFacility.createMany({
-            data: jsonData,
+async function vercelUpload(
+    id: string,
+    vercelPath: string,
+    fileBuffer: Buffer<ArrayBufferLike>,
+): Promise<string> {
+    /* Check if the file already exists */
+    const blobs = await list({
+        prefix: id,
+        token: process.env.VERCEL_TOKEN,
+    });
+
+    const blobExists = blobs.blobs.some((blob) => blob.pathname == vercelPath);
+
+    if (!blobExists) {
+        const newBlob = await put(vercelPath, fileBuffer, {
+            access: "public",
+            token: process.env.VERCEL_TOKEN,
+            addRandomSuffix: false,
         });
 
-        console.log(`Successfully added ${facilities.count} facilities`);
-    } catch (error) {
-        console.error("Facility creation failed:", error);
-    } finally {
-        await prisma.$disconnect();
+        console.log("Uploaded successfully! Blob URL:", newBlob.url);
+        return newBlob.url;
+    } else {
+        console.log("File already exists:", vercelPath);
+        return "";
     }
 }
 
@@ -23,9 +41,10 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
     let updatedCount = 0;
 
     await Promise.all(
-        jsonData.map(async (facility) => {
+        jsonData.map(async (facility, idx) => {
             try {
-                await prisma.childCareFacility.upsert({
+                /* Upsert the facility */
+                const entry = await prisma.childCareFacility.upsert({
                     where: {
                         name: facility.name,
                     },
@@ -62,8 +81,34 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                             male: facility.ageRanges.male,
                             female: facility.ageRanges.female,
                         },
+                        photos: facility.photos,
                     },
                 });
+
+                /* Upload any available photos to Vercel blob */
+                const facilityPhotosDir = path.join(PHOTOS_DIR, idx.toString());
+
+                if (
+                    !fs.existsSync(facilityPhotosDir) ||
+                    facility.photos.length == 0
+                ) {
+                    return;
+                }
+
+                await Promise.all(
+                    facility.photos.map(async (fileName) => {
+                        const filePath = path.join(facilityPhotosDir, fileName);
+
+                        if (fs.lstatSync(filePath).isFile()) {
+                            const fileBuffer = fs.readFileSync(filePath);
+                            const blobUrl = await vercelUpload(
+                                entry.id,
+                                `${entry.id}/${fileName}`,
+                                fileBuffer,
+                            );
+                        }
+                    }),
+                );
 
                 updatedCount += 1;
             } catch (error) {
@@ -79,19 +124,18 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
     await prisma.$disconnect();
 }
 
-const helpString = "Usage: tsx dbOperations.ts <add|upsert>";
+const helpString = "Usage: tsx dbOperations.ts upsert";
 
 if (process.argv.length == 3) {
     const cmd = process.argv[2];
 
-    fs.readFile(JSON_FNAME, "utf-8")
+    fs.promises
+        .readFile(JSON_FNAME, "utf-8")
         .then((data) => {
             return JSON.parse(data);
         })
         .then(async (jsonData) => {
-            if (cmd == "add") {
-                await addFacilities(jsonData);
-            } else if (cmd == "upsert") {
+            if (cmd == "upsert") {
                 await upsertFacilities(jsonData);
             } else {
                 console.log(helpString);

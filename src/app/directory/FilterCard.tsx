@@ -12,7 +12,7 @@ import {
     Province,
     ProvincesList,
     ProvinceToDistrict,
-} from "@/utils/types";
+} from "@/utils/defines";
 
 export default function FilterCard() {
     const router = useRouter();

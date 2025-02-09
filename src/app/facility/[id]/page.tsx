@@ -11,6 +11,7 @@ import ImageComponent from "@/components/ImageComponent";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import { Gender } from "@prisma/client";
+import { vercelStorageUrl } from "@/utils/defines";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -64,7 +65,11 @@ export default async function FacilityProfilePage({
                         />
                     )}
                     {data.photos.length > 0 && (
-                        <ImageCarousel urls={data.photos} />
+                        <ImageCarousel
+                            urls={data.photos.map(
+                                (photo) => `${vercelStorageUrl}/${id}/${photo}`,
+                            )}
+                        />
                     )}
 
                     {/* Info sections */}
@@ -346,7 +351,7 @@ export default async function FacilityProfilePage({
                     </div>
 
                     <p className="text-center text-xs italic">
-                        Please email us at{" "}
+                        Please contact us at{" "}
                         <a
                             href="mailto:bridgeofheartslk@gmail.com"
                             className="hover:underline"

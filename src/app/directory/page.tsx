@@ -5,7 +5,12 @@ import { ChildCareFacility, Prisma } from "@prisma/client";
 
 import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
-import { DirectoryFilterType, District, Province } from "@/utils/types";
+import {
+    DirectoryFilterType,
+    District,
+    Province,
+    vercelStorageUrl,
+} from "@/utils/defines";
 import ImageComponent from "@/components/ImageComponent";
 import Button from "@/components/Button";
 import PhoneNumberList from "@/components/PhoneNumberList";
@@ -166,7 +171,7 @@ export default async function DirectoryPage(props: {
                                 >
                                     {facility.photos.length > 0 && (
                                         <ImageComponent
-                                            imageSrc={facility.photos[0]}
+                                            imageSrc={`${vercelStorageUrl}/${facility.id}/${facility.photos[0]}`}
                                             containerClasses="w-[180px] h-[180px]"
                                             imageClasses="object-cover"
                                             imageSizes="180px"

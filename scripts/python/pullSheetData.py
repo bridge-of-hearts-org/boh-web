@@ -1,18 +1,26 @@
 """ This script pull Facility information from the Google Sheet that contains all the data """
 
+import os
+import requests
+import json
+import imghdr
+import hashlib
 import pandas as pd
 import numpy as np
-import json
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
-CSV_FNAME = "../data/dbData.csv"
-JSON_FNAME = "../data/dbData.json"
+DATA_DIR = "../data"
+CSV_FNAME = f"{DATA_DIR}/dbData.csv"
+JSON_FNAME = f"{DATA_DIR}/dbData.json"
+PHOTOS_DIR = f"{DATA_DIR}/photos"
 
 
-def pullData(startCell: str, endCell: str) -> pd.DataFrame:
-    config = json.load(open("config.json"))
-    apiKeyFname = "google-api-key.json"
+def pullData(startCell: str, endCell: str, configFname: str = "config.json", apiKeyFname: str = "google-api-key.json") -> pd.DataFrame:
+    print("Pulling data from the Google Sheet")
+
+    config = json.load(open(configFname))
+    apiKeyFname = apiKeyFname
     permissions = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
     range = f"Database!{startCell}:{endCell}"
 
@@ -28,18 +36,48 @@ def pullData(startCell: str, endCell: str) -> pd.DataFrame:
         print("Error: No data found")
         return pd.DataFrame()
     else:
+        print(
+            f"Successfully pulled data from the Google Sheet: {len(values)-1} facilities")
         df = pd.DataFrame(values[1:])
         df.columns = values[0]
         df.to_csv(CSV_FNAME, index=False)
         return df
 
 
+def downloadPhoto(url: str, outputDir: str) -> str:
+    try:
+        resp = requests.get(url.strip())
+        if resp.status_code == 200:
+            fileType = imghdr.what(None, resp.content)
+
+            if fileType:
+                # Use a trimmed hash of the content as the file name
+                fileHash = hashlib.md5(resp.content).hexdigest()[:16]
+                fileName = f"{fileHash}.{fileType}"
+
+                with open(f"{outputDir}/{fileName}", "wb") as f:
+                    f.write(resp.content)
+                    return fileName
+
+        else:
+            print(f"Error: Could not download photo: {url}")
+
+    except Exception as e:
+        print(f"Error while downloading photo: {url}")
+        print(e.with_traceback())
+
+    return ""
+
+
 def generateJson():
+    print("Generating the JSON file and downloading photos")
+
     df = pd.read_csv(CSV_FNAME)
 
     # Define the columns to be selected
     selectedColumns = ["Name", "Address", "Managed By", "City", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
-                       "Facebook", "Instagram", "Accepted Genders", "Age Range - Male", "Age Range - Female", "Age Range - All", "Count - Male", "Count - Female", "Count - Total"]
+                       "Facebook", "Instagram", "Accepted Genders", "Age Range - Male", "Age Range - Female", "Age Range - All", "Count - Male", "Count - Female", "Count - Total",
+                       "Photos"]
 
     # Rename columns
     df = df[selectedColumns].rename(columns={
@@ -63,33 +101,25 @@ def generateJson():
         "Age Range - Male": "ageRanges.male",
         "Age Range - Female": "ageRanges.female",
         "Age Range - All": "ageRanges.all",
-    })
+        "Photos": "photos",
+    }).fillna("")
 
     # --- Clean up data ---
-    df["managedBy"].replace(np.nan, "", inplace=True)
-    df["location.city"].replace(np.nan, "", inplace=True)
-    df["location.google"].replace(np.nan, "", inplace=True)
-    df["contact.website"].replace(np.nan, "", inplace=True)
-    df["contact.facebook"].replace(np.nan, "", inplace=True)
-    df["contact.instagram"].replace(np.nan, "", inplace=True)
-    df["ageRanges.male"].replace(np.nan, "", inplace=True)
-    df["ageRanges.female"].replace(np.nan, "", inplace=True)
-    df["ageRanges.all"].replace(np.nan, "", inplace=True)
-
     # Strip trailing spaces and slashes in website links
-    df["contact.website"] = df["contact.website"]
+    df["contact.website"] = df["contact.website"].apply(
+        lambda url: url.strip(" /"))
 
     # Create lists from phone numbers
-    df["contact.phone"] = df["contact.phone"].apply(lambda listStr: [] if pd.isna(
-        listStr) else [x.strip() for x in listStr.split(",")])
+    df["contact.phone"] = df["contact.phone"].apply(
+        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",")])
 
     # Create lists from email addresses
-    df["contact.email"] = df["contact.email"].apply(lambda listStr: [] if pd.isna(
-        listStr) else [x.strip() for x in listStr.split(",")])
+    df["contact.email"] = df["contact.email"].apply(
+        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",")])
 
     jsonData = []
 
-    for _, row in df.iterrows():
+    for idx, row in df.iterrows():
         # --- Validate ---
         assert row["genders"] in ["Male", "Female", "Both"]
         assert np.all([number.startswith("0") and len(number) == 10
@@ -119,19 +149,30 @@ def generateJson():
         }
         facility["genders"] = row["genders"].strip().lower()
         facility["occupancy"] = {
-            "total": int(row["occupancy.total"]) if not np.isnan(row["occupancy.total"]) else None,
-            "male": int(row["occupancy.male"]) if not np.isnan(row["occupancy.male"]) else None,
-            "female": int(row["occupancy.female"]) if not np.isnan(row["occupancy.female"]) else None
+            "total": int(row["occupancy.total"]) if row["occupancy.total"] else None,
+            "male": int(row["occupancy.male"]) if row["occupancy.male"] else None,
+            "female": int(row["occupancy.female"]) if row["occupancy.female"] else None
         }
         facility["ageRanges"] = {
             "all": row["ageRanges.all"],
             "male": row["ageRanges.male"],
             "female": row["ageRanges.female"]
         }
+        facility["photos"] = []
 
         jsonData.append(facility)
+        if (row["photos"]):
+            outputDir = f"{PHOTOS_DIR}/{idx}"
+            os.makedirs(outputDir, exist_ok=True)
+
+            for url in row["photos"].split(","):
+                url = url.strip(" /")
+
+                fname = downloadPhoto(url, outputDir)
+                facility["photos"].append(fname)
 
     json.dump(jsonData, open(JSON_FNAME, "w"), indent=4,)
+    print(f"Successfully generated the JSON file with {len(jsonData)} entries")
 
 
 if __name__ == "__main__":
