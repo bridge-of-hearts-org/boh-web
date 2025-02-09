@@ -12,7 +12,7 @@
     "license": "ISC",
     "description": "",
     "dependencies": {
-        "@prisma/client": "^6.2.1",
+        "@prisma/client": "^6.3.1",
         "@vercel/analytics": "^1.4.1",
         "lucide-react": "^0.471.0",
         "next": "^15.1.4",
@@ -22,12 +22,13 @@
     "devDependencies": {
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
+        "@vercel/blob": "^0.27.1",
         "autoprefixer": "^10.4.20",
         "css-loader": "^7.1.2",
         "json-loader": "^0.5.7",
         "postcss": "^8.4.49",
         "prettier-plugin-tailwindcss": "^0.6.9",
-        "prisma": "^6.2.1",
+        "prisma": "^6.3.1",
         "style-loader": "^4.0.0",
         "tailwind-merge": "^2.6.0",
         "tailwindcss": "^3.4.17",
