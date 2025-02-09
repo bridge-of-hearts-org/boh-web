@@ -11,6 +11,8 @@ export default function NavigationBar(props: NavigationProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    const currentPage = searchParams.get("page") || 1;
+
     const handleClick = (pageNumber: number) => {
         const params = new URLSearchParams(searchParams);
         params.set("page", pageNumber.toString());
@@ -27,7 +29,8 @@ export default function NavigationBar(props: NavigationProps) {
                         key={i + 1}
                         variant="secondary"
                         color="black"
-                        className="bg-white shadow-md"
+                        disabled={currentPage == i + 1}
+                        className={`${currentPage == i + 1 ? "border-2 border-gray-400 bg-gray-50 shadow-none" : "bg-white shadow-md"}`}
                         onClick={() => handleClick(i + 1)}
                     >
                         {i + 1}
