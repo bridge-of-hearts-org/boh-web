@@ -12,6 +12,7 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import { Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
+import { Metadata } from "next";
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -368,4 +369,48 @@ export default async function FacilityProfilePage({
             </Card>
         </div>
     );
+}
+
+export async function generateMetadata({
+    params,
+}: FacilityPageProps): Promise<Metadata> {
+    if (!params) {
+        throw new Error("Missing params for FacilityProfilePage.");
+    }
+
+    const { id } = await params;
+    let facility = null;
+
+    try {
+        facility = await prisma.childCareFacility.findUnique({
+            where: { id: id },
+        });
+
+        if (facility == null) {
+            throw new Error("Data not found");
+        }
+    } catch {
+        return {
+            title: "Facility Not Found - Bridge of Hearts",
+            description: "This facility does not exist in our directory.",
+        };
+    }
+
+    return {
+        title: `${facility.name}`,
+        description: `Get details about ${facility.name}, a Child Development Center (Children's Home) in ${facility.location.city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.`,
+        openGraph: {
+            title: `${facility.name}`,
+            description: `Support ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
+            url: `https://bridgeofhearts.lk/facility/${facility.id}`,
+            images:
+                facility.photos.length > 0
+                    ? facility.photos.map((photo) => {
+                          return {
+                              url: `${vercelStorageUrl}/${facility.id}/${photo.fileName}`,
+                          };
+                      })
+                    : [],
+        },
+    };
 }

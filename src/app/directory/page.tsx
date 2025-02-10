@@ -16,6 +16,7 @@ import Button from "@/components/Button";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
+import { Metadata } from "next";
 
 const itemsPerPage = 10;
 
@@ -262,3 +263,9 @@ export default async function DirectoryPage(props: {
         </div>
     );
 }
+
+export const metadata: Metadata = {
+    title: "Directory - Bridge of Hearts",
+    description:
+        "Browse the list of Child Development Centers (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
+};
