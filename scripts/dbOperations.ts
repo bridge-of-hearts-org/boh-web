@@ -96,14 +96,17 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                 }
 
                 await Promise.all(
-                    facility.photos.map(async (fileName) => {
-                        const filePath = path.join(facilityPhotosDir, fileName);
+                    facility.photos.map(async (photo) => {
+                        const filePath = path.join(
+                            facilityPhotosDir,
+                            photo.fileName,
+                        );
 
                         if (fs.lstatSync(filePath).isFile()) {
                             const fileBuffer = fs.readFileSync(filePath);
                             const blobUrl = await vercelUpload(
                                 entry.id,
-                                `${entry.id}/${fileName}`,
+                                `${entry.id}/${photo.fileName}`,
                                 fileBuffer,
                             );
                         }

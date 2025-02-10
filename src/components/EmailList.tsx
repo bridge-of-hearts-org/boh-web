@@ -13,7 +13,7 @@ export default function EmailList(props: PropsType) {
                             <span key={email}>
                                 <a
                                     href={`mailto:${email}`}
-                                    className="hover:underline"
+                                    className="boh-link"
                                 >
                                     {email}
                                 </a>

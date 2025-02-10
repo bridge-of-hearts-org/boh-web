@@ -50,9 +50,14 @@ type AgeRanges {
     female String?
 }
 
+type PhotoEntry {
+    fileName String
+    source   String
+}
+
 model ChildCareFacility {
-    id        String    @id @default(auto()) @map("_id") @db.ObjectId
-    name      String    @unique
+    id        String       @id @default(auto()) @map("_id") @db.ObjectId
+    name      String       @unique
     type      String
     managedBy String
     location  Location
@@ -60,9 +65,9 @@ model ChildCareFacility {
     occupancy Occupancy
     ageRanges AgeRanges
     genders   Gender
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    photos    String[]
+    createdAt DateTime     @default(now())
+    updatedAt DateTime     @updatedAt
+    photos    PhotoEntry[]
 
     @@map("facilities")
 }

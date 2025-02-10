@@ -171,7 +171,7 @@ export default async function DirectoryPage(props: {
                                 >
                                     {facility.photos.length > 0 && (
                                         <ImageComponent
-                                            imageSrc={`${vercelStorageUrl}/${facility.id}/${facility.photos[0]}`}
+                                            imageSrc={`${vercelStorageUrl}/${facility.id}/${facility.photos[0].fileName}`}
                                             containerClasses="w-[180px] h-[180px]"
                                             imageClasses="object-cover"
                                             imageSizes="180px"

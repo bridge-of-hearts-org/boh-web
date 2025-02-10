@@ -12,6 +12,7 @@ type ImageComponentProps = {
     imageClasses?: string;
     alt?: string;
     priority?: boolean;
+    title?: string;
     onClick?: () => void;
 };
 
@@ -37,6 +38,7 @@ export default function ImageComponent(props: ImageComponentProps) {
                 alt={props.alt || "Image"}
                 priority={props.priority || false}
                 loading={props.priority ? undefined : "lazy"}
+                title={props.title || undefined}
                 className={twMerge(
                     `rounded-3xl object-cover transition-opacity duration-500 ${
                         isLoaded ? "opacity-100" : "opacity-0"

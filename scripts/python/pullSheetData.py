@@ -169,7 +169,10 @@ def generateJson():
                 url = url.strip(" /")
 
                 fname = downloadPhoto(url, outputDir)
-                facility["photos"].append(fname)
+                facility["photos"].append({
+                    "fileName": fname,
+                    "source": url
+                })
 
     json.dump(jsonData, open(JSON_FNAME, "w"), indent=4,)
     print(f"Successfully generated the JSON file with {len(jsonData)} entries")

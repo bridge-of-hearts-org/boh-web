@@ -65,11 +65,7 @@ export default async function FacilityProfilePage({
                         />
                     )}
                     {data.photos.length > 0 && (
-                        <ImageCarousel
-                            urls={data.photos.map(
-                                (photo) => `${vercelStorageUrl}/${id}/${photo}`,
-                            )}
-                        />
+                        <ImageCarousel id={id} photos={data.photos} />
                     )}
 
                     {/* Info sections */}
@@ -136,7 +132,7 @@ export default async function FacilityProfilePage({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 href={data.location.google}
-                                                className="break-all hover:underline"
+                                                className="boh-link"
                                             >
                                                 {data.location.google}
                                             </a>
@@ -183,7 +179,7 @@ export default async function FacilityProfilePage({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 href={data.contact.website}
-                                                className="break-all hover:underline"
+                                                className="boh-link"
                                             >
                                                 {data.contact.website}
                                             </a>
@@ -202,7 +198,7 @@ export default async function FacilityProfilePage({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 href={data.contact.facebook}
-                                                className="break-all hover:underline"
+                                                className="boh-link"
                                             >
                                                 {data.contact.facebook}
                                             </a>
@@ -221,7 +217,7 @@ export default async function FacilityProfilePage({
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 href={data.contact.instagram}
-                                                className="break-all hover:underline"
+                                                className="boh-link"
                                             >
                                                 {data.contact.instagram}
                                             </a>
@@ -336,7 +332,7 @@ export default async function FacilityProfilePage({
                                         </div>
                                         <div>
                                             <div className="grid grid-cols-2 font-semibold">
-                                                <div>Total</div>
+                                                <div>All</div>
                                                 <div>
                                                     {data.ageRanges.all
                                                         ? data.ageRanges.all
@@ -354,7 +350,7 @@ export default async function FacilityProfilePage({
                         Please contact us at{" "}
                         <a
                             href="mailto:bridgeofheartslk@gmail.com"
-                            className="hover:underline"
+                            className="boh-link"
                         >
                             bridgeofheartslk@gmail.com
                         </a>{" "}
