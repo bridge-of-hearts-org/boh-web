@@ -44,6 +44,9 @@ export const metadata: Metadata = {
             "Discover childcare facilities in Sri Lanka and help those in need.",
         images: ["/images/logo-seo.jpg"],
     },
+    verification: {
+        google: "33b9UH7TVkrujRctk-PNmohRVd_n8XuKUwa3Y6AAztM",
+    },
 };
 
 export default function RootLayout({
