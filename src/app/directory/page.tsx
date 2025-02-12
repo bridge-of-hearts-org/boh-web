@@ -1,9 +1,7 @@
 import Card from "@/components/Card";
 import { MapPin, Phone } from "lucide-react";
 import Link from "next/link";
-import { ChildCareFacility, Prisma } from "@prisma/client";
 
-import { prisma } from "@/utils/db";
 import FilterCard from "./FilterCard";
 import {
     DirectoryFilterType,
@@ -17,112 +15,9 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
 import { Metadata } from "next";
+import { fetchData } from "./data";
 
 const itemsPerPage = 10;
-
-type FilteredFacilityResponse = Promise<
-    [data: ChildCareFacility[], totalCount: number]
->;
-
-async function fetchData(
-    filterValues: DirectoryFilterType,
-    sortBy: string,
-    page: number,
-): FilteredFacilityResponse {
-    const getFilter = (): Prisma.ChildCareFacilityWhereInput[] => {
-        const filters: Prisma.ChildCareFacilityWhereInput[] = [];
-
-        if (filterValues.name) {
-            filters.push({
-                name: {
-                    contains: filterValues.name,
-                    mode: "insensitive",
-                },
-            });
-        }
-
-        if (filterValues.city) {
-            filters.push({
-                location: {
-                    is: {
-                        city: {
-                            contains: filterValues.city,
-                            mode: "insensitive",
-                        },
-                    },
-                },
-            });
-        }
-
-        if (filterValues.district) {
-            filters.push({
-                location: {
-                    is: {
-                        district: {
-                            equals: filterValues.district,
-                            mode: "insensitive",
-                        },
-                    },
-                },
-            });
-        }
-
-        if (filterValues.province) {
-            filters.push({
-                location: {
-                    is: {
-                        province: {
-                            contains: filterValues.province,
-                            mode: "insensitive",
-                        },
-                    },
-                },
-            });
-        }
-
-        return filters;
-    };
-
-    const getOrderBy = (): Prisma.ChildCareFacilityOrderByWithRelationInput => {
-        if (sortBy == "city") {
-            return {
-                location: {
-                    city: "asc",
-                },
-            };
-        } else {
-            // Order by name by default
-            return {
-                name: "asc",
-            };
-        }
-    };
-
-    try {
-        const [facilities, totalCount] = await prisma.$transaction([
-            prisma.childCareFacility.findMany({
-                where: {
-                    AND: getFilter(),
-                },
-                take: itemsPerPage,
-                skip: (page - 1) * itemsPerPage,
-                orderBy: getOrderBy(),
-            }),
-            prisma.childCareFacility.count({
-                where: {
-                    AND: getFilter(),
-                },
-            }),
-        ]);
-
-        return [facilities, totalCount];
-    } catch (error) {
-        if (error instanceof Error) {
-            console.log("Error: ", error.stack);
-        }
-        return [[], 0];
-    }
-}
 
 export default async function DirectoryPage(props: {
     searchParams: Promise<{
@@ -148,6 +43,7 @@ export default async function DirectoryPage(props: {
         activeFilters,
         searchParams.sortBy || "name",
         currentPage || 1, // Default to page 1
+        itemsPerPage,
     );
 
     return (
