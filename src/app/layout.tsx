@@ -14,7 +14,9 @@ const encodeSansSc = Encode_Sans_SC({ subsets: ["latin"] });
 export const metadata: Metadata = {
     title: "Bridge of Hearts",
     description:
-        "Find and support Child Development Centers (Children's Homes) in Sri Lanka. Our directory provides up-to-date contact details, locations, and resident information. Filter by name, city, district, and province. Continuously updated to ensure accurate data.",
+        "Find and support Child Development Centers (Children's Homes) in Sri Lanka. " +
+        "Our directory provides up-to-date contact details, locations, and resident information. " +
+        "Filter by name, city, district, and province. Continuously updated to ensure accurate data.",
     keywords: [
         "childcare facilities Sri Lanka",
         "children's homes Sri Lanka",

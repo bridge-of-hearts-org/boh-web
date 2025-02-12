@@ -401,7 +401,7 @@ export async function generateMetadata({
         description: `Get details about ${facility.name}, a Child Development Center (Children's Home) in ${facility.location.city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.`,
         openGraph: {
             title: `${facility.name}`,
-            description: `Support ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
+            description: `Get details about ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
             url: `https://bridgeofhearts.lk/facility/${facility.id}`,
             images:
                 facility.photos.length > 0

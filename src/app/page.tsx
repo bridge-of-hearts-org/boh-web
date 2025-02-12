@@ -21,25 +21,25 @@ export default function HomePage() {
                                 Welcome to Bridge of Hearts
                             </p>
                             <p className="mb-2 text-center text-xl font-semibold">
-                                An online directory for child and elder care
-                                facilities in Sri Lanka.
+                                An online directory for Child Development
+                                Centers in Sri Lanka.
                             </p>
                         </div>
                         <div className="flex max-w-[600px] flex-col gap-5">
                             <p>
-                                Our mission is to provide a reliable, regularly
-                                updated resource with comprehensive information
-                                about these essential institutions.
+                                There are more than 300 Child Development
+                                Centers, commonly known as Children's Homes in
+                                Sri Lanka, with more than 10,000 children.
                             </p>
                             <p>
-                                We are currently focusing on child care
-                                facilities as we build the foundation of this
-                                project, with plans to expand to elder care in
-                                the near future.
+                                Our mission is to provide a reliable, regularly
+                                updated resource with comprehensive information
+                                about these facilities, so that donors can find
+                                the places that are most in need.
                             </p>
                             <p>
                                 Together, let's bridge hearts and connect
-                                communities
+                                communities.
                             </p>
                         </div>
                     </div>
