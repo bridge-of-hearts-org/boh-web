@@ -13,6 +13,7 @@ export default function HomePage() {
                     containerClasses="w-full h-[400px] max-w-[600px]"
                     imageClasses="object-cover"
                     imageSizes="600px"
+                    alt="Three children smiling happily at the camera"
                 />
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
@@ -59,14 +60,17 @@ export default function HomePage() {
                     {/* Stat Card */}
                     <StatCard
                         imageSrc="/images/facility-drone-image.jpg"
+                        imageAlt="An aerial view of a children's home, with a playground in front of it, where children are playing"
                         statText="There are 4,000+ child care facilities in Sri Lanka"
                     />
                     <StatCard
                         imageSrc="/images/donation-boxes.jpg"
+                        imageAlt="Three boxes of donations, with clothes, food and stationery supplies"
                         statText="60% of child care facilities run on external donations"
                     />
                     <StatCard
                         imageSrc="/images/smiling-children-2.jpg"
+                        imageAlt="Children in school uniforms smiling at the camera"
                         statText="71% of the children are between ages 5-14"
                     />
                 </div>

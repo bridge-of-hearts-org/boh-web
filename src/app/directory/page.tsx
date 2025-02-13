@@ -72,6 +72,7 @@ export default async function DirectoryPage(props: {
                                             containerClasses="w-[180px] h-[180px]"
                                             imageClasses="object-cover"
                                             imageSizes="180px"
+                                            alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
                                         />
                                     )}
                                     {facility.photos.length == 0 && (
@@ -80,6 +81,7 @@ export default async function DirectoryPage(props: {
                                             containerClasses="w-[180px] h-[180px] bg-orange-50"
                                             imageClasses="object-contain p-8"
                                             imageSizes="180px"
+                                            alt="A picture taken at the children's home facility"
                                         />
                                     )}
                                 </Link>

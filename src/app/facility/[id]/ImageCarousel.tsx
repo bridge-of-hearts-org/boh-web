@@ -42,7 +42,7 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                         onClick={() => {
                             setEnlargedImage({ photo: photo, open: true });
                         }}
-                        alt="Facility Image"
+                        alt="A picture taken at the children's home facility"
                         priority // Mark as priority since the carousel is at the top of the page
                     />
                 ))}
@@ -66,7 +66,7 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                             containerClasses="h-[60vh] w-[80vw] max-w-4xl bg-transparent bg-opacity-70 rounded-none"
                             imageClasses="object-contain rounded-none"
                             imageSizes="(max-width: 1024px) 100vw, (max-width: 1768px) 70vw, 30vw"
-                            alt="Facility Image Enlarged"
+                            alt="A picture taken at the children's home facility"
                             title={`Source: ${enlargedImage.photo.source}`}
                         />
                     </div>

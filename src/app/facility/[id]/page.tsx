@@ -63,6 +63,7 @@ export default async function FacilityProfilePage({
                             containerClasses="w-[180px] h-[180px] bg-orange-50"
                             imageClasses="object-contain p-8"
                             imageSizes="180px"
+                            alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
                         />
                     )}
                     {data.photos.length > 0 && (

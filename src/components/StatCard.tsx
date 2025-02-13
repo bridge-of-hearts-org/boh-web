@@ -3,6 +3,7 @@ import ImageComponent from "./ImageComponent";
 
 type StatCardProps = {
     imageSrc: string;
+    imageAlt: string;
     statText: string;
 };
 
@@ -15,6 +16,7 @@ export default function StatCard(props: StatCardProps) {
                     containerClasses="w-[90%] h-[230px]"
                     imageClasses="object-cover"
                     imageSizes="280px"
+                    alt={props.imageAlt}
                 />
                 <p className="text-center">{props.statText}</p>
             </div>

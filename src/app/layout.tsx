@@ -23,6 +23,7 @@ export const metadata: Metadata = {
         "child development centers Sri Lanka",
         "orphanages Sri Lanka ",
     ],
+    metadataBase: new URL("https://www.bridgeofhearts.lk"),
     openGraph: {
         title: "Bridge of Hearts - A Directory of Child Development Centers in Sri Lanka",
         description:
