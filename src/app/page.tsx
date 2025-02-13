@@ -1,7 +1,15 @@
+import { Metadata } from "next";
+
 import Button from "../components/Button";
 import Link from "next/link";
 import StatCard from "@/components/StatCard";
 import ImageComponent from "@/components/ImageComponent";
+
+export const metadata: Metadata = {
+    title: "Home | Bridge of Hearts",
+    description:
+        "Welcome to Bridge of Hearts, an online directory for Child Development Centers (Children's Homes) in Sri Lanka.",
+};
 
 export default function HomePage() {
     return (

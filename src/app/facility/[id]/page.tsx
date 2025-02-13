@@ -2,7 +2,6 @@ import Link from "next/link";
 import { twMerge } from "tailwind-merge";
 import { MapPin, PhoneCall, Users } from "lucide-react";
 
-import { prisma } from "@/utils/db";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
@@ -13,6 +12,43 @@ import EmailList from "@/components/EmailList";
 import { Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
+import { fetchFacilityById } from "@/app/directory/data";
+
+export async function generateMetadata({
+    params,
+}: FacilityPageProps): Promise<Metadata> {
+    if (!params) {
+        throw new Error("Missing params for FacilityProfilePage.");
+    }
+
+    const { id } = await params;
+    let facility = await fetchFacilityById(id);
+
+    if (!facility) {
+        return {
+            title: "Facility Not Found | Bridge of Hearts",
+            description: "This facility does not exist in our directory.",
+        };
+    }
+
+    return {
+        title: `${facility.name} | Bridge of Hearts`,
+        description: `Get details about ${facility.name}, a Child Development Center (Children's Home) in ${facility.location.city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.`,
+        openGraph: {
+            title: `${facility.name}`,
+            description: `Get details about ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
+            url: `https://bridgeofhearts.lk/facility/${facility.id}`,
+            images:
+                facility.photos.length > 0
+                    ? facility.photos.map((photo) => {
+                          return {
+                              url: `${vercelStorageUrl}/${facility.id}/${photo.fileName}`,
+                          };
+                      })
+                    : [],
+        },
+    };
+}
 
 type FacilityPageProps = { params: Promise<{ id: string }> };
 
@@ -26,17 +62,9 @@ export default async function FacilityProfilePage({
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
     const { id } = await params;
-    let data = null;
+    const data = await fetchFacilityById(id);
 
-    try {
-        data = await prisma.childCareFacility.findUnique({
-            where: { id: id },
-        });
-
-        if (data == null) {
-            throw new Error("Data not found");
-        }
-    } catch {
+    if (!data) {
         return NotFound();
     }
 
@@ -370,48 +398,4 @@ export default async function FacilityProfilePage({
             </Card>
         </div>
     );
-}
-
-export async function generateMetadata({
-    params,
-}: FacilityPageProps): Promise<Metadata> {
-    if (!params) {
-        throw new Error("Missing params for FacilityProfilePage.");
-    }
-
-    const { id } = await params;
-    let facility = null;
-
-    try {
-        facility = await prisma.childCareFacility.findUnique({
-            where: { id: id },
-        });
-
-        if (facility == null) {
-            throw new Error("Data not found");
-        }
-    } catch {
-        return {
-            title: "Facility Not Found - Bridge of Hearts",
-            description: "This facility does not exist in our directory.",
-        };
-    }
-
-    return {
-        title: `${facility.name}`,
-        description: `Get details about ${facility.name}, a Child Development Center (Children's Home) in ${facility.location.city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.`,
-        openGraph: {
-            title: `${facility.name}`,
-            description: `Get details about ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
-            url: `https://bridgeofhearts.lk/facility/${facility.id}`,
-            images:
-                facility.photos.length > 0
-                    ? facility.photos.map((photo) => {
-                          return {
-                              url: `${vercelStorageUrl}/${facility.id}/${photo.fileName}`,
-                          };
-                      })
-                    : [],
-        },
-    };
 }

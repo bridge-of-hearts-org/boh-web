@@ -7,7 +7,7 @@ type FilteredFacilityResponse = Promise<
     [data: ChildCareFacility[], totalCount: number]
 >;
 
-export async function fetchData(
+export async function fetchAllFacilities(
     filterValues: DirectoryFilterType,
     sortBy: string,
     page: number,
@@ -106,4 +106,16 @@ export async function fetchData(
         }
         return [[], 0];
     }
+}
+
+export async function fetchFacilityById(id: string) {
+    let data = null;
+
+    try {
+        data = await prisma.childCareFacility.findUnique({
+            where: { id: id },
+        });
+    } catch {}
+
+    return data;
 }

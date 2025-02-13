@@ -15,9 +15,15 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
 import { Metadata } from "next";
-import { fetchData } from "./data";
+import { fetchAllFacilities } from "./data";
 
 const itemsPerPage = 10;
+
+export const metadata: Metadata = {
+    title: "Directory | Bridge of Hearts",
+    description:
+        "Browse the list of Child Development Centers (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
+};
 
 export default async function DirectoryPage(props: {
     searchParams: Promise<{
@@ -39,7 +45,7 @@ export default async function DirectoryPage(props: {
         province: (searchParams.province as Province) || "",
     };
 
-    const [facilities, totalCount] = await fetchData(
+    const [facilities, totalCount] = await fetchAllFacilities(
         activeFilters,
         searchParams.sortBy || "name",
         currentPage || 1, // Default to page 1
@@ -161,9 +167,3 @@ export default async function DirectoryPage(props: {
         </div>
     );
 }
-
-export const metadata: Metadata = {
-    title: "Directory - Bridge of Hearts",
-    description:
-        "Browse the list of Child Development Centers (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
-};

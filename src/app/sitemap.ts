@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { fetchData } from "./directory/data";
+import { fetchAllFacilities } from "./directory/data";
 import { DirectoryFilterType } from "@/utils/defines";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -12,7 +12,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         province: "",
     };
 
-    const [facilities, totalCount] = await fetchData(
+    const [facilities, totalCount] = await fetchAllFacilities(
         filters,
         "name",
         1, // Page
