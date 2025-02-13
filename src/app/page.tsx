@@ -17,13 +17,13 @@ export default function HomePage() {
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
                         <div>
-                            <p className="mb-2 text-center font-encode-sans-sc text-3xl font-semibold">
+                            <h1 className="mb-2 text-center font-encode-sans-sc text-3xl font-semibold">
                                 Welcome to Bridge of Hearts
-                            </p>
-                            <p className="mb-2 text-center text-xl font-semibold">
+                            </h1>
+                            <h2 className="mb-2 text-center text-xl font-semibold">
                                 An online directory for Child Development
                                 Centers in Sri Lanka.
-                            </p>
+                            </h2>
                         </div>
                         <div className="flex max-w-[600px] flex-col gap-5">
                             <p>

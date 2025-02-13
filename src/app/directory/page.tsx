@@ -86,12 +86,12 @@ export default async function DirectoryPage(props: {
                                 <div className="flex grow flex-col justify-center gap-5">
                                     {/* Title section */}
                                     <div className="flex flex-col items-center gap-1 md:items-start">
-                                        <div className="text-center text-lg font-semibold md:text-left">
+                                        <h1 className="text-center text-lg font-semibold md:text-left">
                                             {facility.name}
-                                        </div>
-                                        <div className="text-sm">
+                                        </h1>
+                                        <h2 className="text-sm">
                                             {facility.type}
-                                        </div>
+                                        </h2>
                                     </div>
 
                                     {/* Address and contact section */}
@@ -124,9 +124,9 @@ export default async function DirectoryPage(props: {
                                 </div>
                                 <div className="flex w-full flex-col items-center justify-between gap-5 pt-0 md:w-1/4 md:items-end">
                                     <div className="flex flex-col items-center md:items-end">
-                                        <div className="flex gap-2 text-right text-sm font-semibold">
+                                        <h2 className="flex gap-2 text-right text-sm font-semibold">
                                             {facility.location.city}
-                                        </div>
+                                        </h2>
                                         <div className="flex gap-2 text-right text-sm">
                                             {facility.location.district}{" "}
                                             District

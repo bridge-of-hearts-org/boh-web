@@ -73,9 +73,9 @@ export default async function FacilityProfilePage({
                     <div className="flex w-full flex-col items-center gap-14">
                         {/* Title */}
                         <div className="flex flex-col items-center">
-                            <div className="text-center text-2xl font-bold">
+                            <h1 className="text-center text-2xl font-bold">
                                 {data.name}
-                            </div>
+                            </h1>
                             <div className="text-center">{data.type}</div>
                         </div>
 
@@ -84,7 +84,7 @@ export default async function FacilityProfilePage({
                             {/* Header */}
                             <div className={infoTableHeaderStyles}>
                                 <MapPin />
-                                <div className="font-semibold">Location</div>
+                                <h2 className="font-semibold">Location</h2>
                             </div>
 
                             {/* Table */}
@@ -150,7 +150,7 @@ export default async function FacilityProfilePage({
                             {/* Header */}
                             <div className={infoTableHeaderStyles}>
                                 <PhoneCall />
-                                <div className="font-semibold">Contact</div>
+                                <h2 className="font-semibold">Contact</h2>
                             </div>
 
                             {/* Table */}
@@ -235,7 +235,7 @@ export default async function FacilityProfilePage({
                             {/* Header */}
                             <div className={infoTableHeaderStyles}>
                                 <Users />
-                                <div className="font-semibold">Residents</div>
+                                <h1 className="font-semibold">Residents</h1>
                             </div>
 
                             {/* Table */}
