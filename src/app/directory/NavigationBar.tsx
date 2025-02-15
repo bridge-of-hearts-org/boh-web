@@ -26,6 +26,7 @@ export default function NavigationBar(props: NavigationProps) {
             {props.totalPages > 1 &&
                 Array.from({ length: props.totalPages }, (_, i) => (
                     <Button
+                        name={`Go to Page ${i + 1}`}
                         key={i + 1}
                         variant="secondary"
                         color="black"

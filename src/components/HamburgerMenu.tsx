@@ -22,6 +22,7 @@ export default function HamburgerMenu() {
         <>
             <div>
                 <Button
+                    name="Menu"
                     className="aspect-square hover:bg-gray-900"
                     variant="secondary"
                     color="transparent"

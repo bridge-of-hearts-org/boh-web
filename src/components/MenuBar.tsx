@@ -17,7 +17,9 @@ export default function MenuBar() {
                         src={MenuLogo}
                         sizes="220px"
                         width={220}
+                        height={50}
                         placeholder="blur"
+                        loading="eager"
                         alt="Bridge of Hearts Logo"
                         className="h-[50px] w-[220px] rounded-none object-contain"
                     />

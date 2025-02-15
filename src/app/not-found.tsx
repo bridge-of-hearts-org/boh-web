@@ -6,7 +6,7 @@ export default function NotFound() {
         <div className="mt-10 flex flex-col items-center justify-center gap-10">
             <h2 className="text-2xl font-semibold">Page Not Found</h2>
             <Link href="/">
-                <Button variant="secondary" color="black">
+                <Button name="Return Home" variant="secondary" color="black">
                     Return Home
                 </Button>
             </Link>

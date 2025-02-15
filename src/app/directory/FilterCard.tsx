@@ -58,14 +58,16 @@ export default function FilterCard() {
                 <div className="flex flex-col gap-2">
                     <label htmlFor="name">Name</label>
                     <input
+                        id="name"
                         name="name"
                         type="text"
                         defaultValue={activeFilters.name}
                     ></input>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="name">City</label>
+                    <label htmlFor="city">City</label>
                     <input
+                        id="city"
                         name="city"
                         type="text"
                         defaultValue={activeFilters.city}
@@ -74,6 +76,7 @@ export default function FilterCard() {
                 <div className="flex flex-col gap-2">
                     <label htmlFor="province">Province</label>
                     <select
+                        id="province"
                         name="province"
                         value={activeFilters.province}
                         onChange={(e) => {
@@ -105,6 +108,7 @@ export default function FilterCard() {
                         District
                     </label>
                     <select
+                        id="district"
                         name="district"
                         disabled={!activeFilters.province}
                         value={activeFilters.district}
