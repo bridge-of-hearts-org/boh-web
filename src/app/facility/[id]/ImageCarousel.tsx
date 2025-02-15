@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import ImageComponent from "@/components/ImageComponent";
 import { PhotoEntry } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
+import ImageComponent from "@/components/ImageComponent";
 
 type ImageCarouselProps = {
     id: string;
@@ -35,15 +35,17 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                 {photos.map((photo) => (
                     <ImageComponent
                         key={photo.fileName}
-                        imageSrc={`${vercelStorageUrl}/${id}/${photo.fileName}`}
-                        containerClasses="h-[220px] w-[220px] shadow-md flex-shrink-0 cursor-pointer"
-                        imageSizes="220px"
-                        imageClasses="object-cover"
+                        src={`${vercelStorageUrl}/${id}/${photo.fileName}`}
+                        sizes="220px"
+                        width={220}
+                        height={220}
                         onClick={() => {
                             setEnlargedImage({ photo: photo, open: true });
                         }}
                         alt="A picture taken at the children's home facility"
                         priority // Mark as priority since the carousel is at the top of the page
+                        loading="eager"
+                        className="h-[220px] w-[220px] cursor-pointer object-cover"
                     />
                 ))}
             </div>
@@ -62,12 +64,13 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                 >
                     <div className="relative">
                         <ImageComponent
-                            imageSrc={`${vercelStorageUrl}/${id}/${enlargedImage.photo.fileName}`}
-                            containerClasses="h-[60vh] w-[80vw] max-w-4xl bg-transparent bg-opacity-70 rounded-none"
-                            imageClasses="object-contain rounded-none"
-                            imageSizes="(max-width: 1024px) 100vw, (max-width: 1768px) 70vw, 30vw"
+                            src={`${vercelStorageUrl}/${id}/${enlargedImage.photo.fileName}`}
+                            sizes="(max-width: 1024px) 90vw, (max-width: 1768px) 70vw, 50vw"
+                            width={1024}
+                            height={768}
                             alt="A picture taken at the children's home facility"
                             title={`Source: ${enlargedImage.photo.source}`}
+                            className="h-[60vh] w-[80vw] max-w-4xl overflow-hidden rounded-3xl object-contain"
                         />
                     </div>
                 </div>

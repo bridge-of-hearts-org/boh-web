@@ -6,7 +6,6 @@ import Card from "@/components/Card";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
 import NotFound from "@/app/not-found";
-import ImageComponent from "@/components/ImageComponent";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import { Gender } from "@prisma/client";
@@ -14,6 +13,9 @@ import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityById } from "@/app/directory/data";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import ImageComponent from "@/components/ImageComponent";
+
+import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
 export async function generateMetadata({
     params,
@@ -104,13 +106,16 @@ export default async function FacilityProfilePage({
                     <div className="flex flex-col items-center justify-start gap-10 p-1 md:p-5">
                         {/* Photo section */}
                         {data.photos.length == 0 && (
-                            <ImageComponent
-                                imageSrc="/images/facility-directory-icon-default.png"
-                                containerClasses="w-[180px] h-[180px] bg-orange-50"
-                                imageClasses="object-contain p-8"
-                                imageSizes="180px"
-                                alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
-                            />
+                            <div className="h-[200px] w-[200px] rounded-3xl bg-orange-50 p-10">
+                                <ImageComponent
+                                    src={DefaultFacilityIconImage}
+                                    sizes="200px"
+                                    placeholder="blur"
+                                    width={200}
+                                    alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
+                                    className="rounded-none"
+                                />
+                            </div>
                         )}
                         {data.photos.length > 0 && (
                             <ImageCarousel id={id} photos={data.photos} />
@@ -447,7 +452,9 @@ export default async function FacilityProfilePage({
                         {/* Buttons */}
                         <div className="flex w-full justify-end">
                             <Link href="/directory">
-                                <Button variant="secondary">Back</Button>
+                                <Button name="Go Back" variant="secondary">
+                                    Back
+                                </Button>
                             </Link>
                         </div>
                     </div>

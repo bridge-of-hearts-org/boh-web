@@ -1,53 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
+import React from "react";
+import Image, { ImageProps } from "next/image";
 import { twMerge } from "tailwind-merge";
-import { Loader } from "lucide-react";
 
-type ImageComponentProps = {
-    imageSrc: string;
-    containerClasses: string;
-    imageSizes: string;
-    imageClasses?: string;
-    alt?: string;
-    priority?: boolean;
-    title?: string;
-    onClick?: () => void;
-};
-
-export default function ImageComponent(props: ImageComponentProps) {
-    const [isLoaded, setIsLoaded] = useState(false);
+export default function ImageComponent({ className, ...props }: ImageProps) {
+    const [loading, setLoading] = React.useState(true);
 
     return (
-        <div
+        <Image
             className={twMerge(
-                `relative flex-shrink-0 overflow-hidden rounded-3xl bg-gray-200 ${isLoaded ? "" : "animate-pulse"}`,
-                props.containerClasses,
+                `rounded-3xl ${loading ? "blur-xl" : "blur-0"} transition-all duration-150`,
+                className,
             )}
-        >
-            {!isLoaded && (
-                <div className="flex size-full items-center justify-center">
-                    <Loader className="animate-spin" />
-                </div>
-            )}
-            <Image
-                src={props.imageSrc}
-                fill
-                sizes={props.imageSizes}
-                alt={props.alt || "Image"}
-                priority={props.priority || false}
-                loading={props.priority ? undefined : "lazy"}
-                title={props.title || undefined}
-                className={twMerge(
-                    `rounded-3xl object-cover transition-opacity duration-500 ${
-                        isLoaded ? "opacity-100" : "opacity-0"
-                    }`,
-                    props.imageClasses,
-                )}
-                onClick={props.onClick}
-                onLoad={() => setIsLoaded(true)}
-            />
-        </div>
+            onLoad={() => {
+                setLoading(false);
+            }}
+            {...props}
+        />
     );
 }

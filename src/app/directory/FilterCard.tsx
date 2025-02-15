@@ -130,6 +130,7 @@ export default function FilterCard() {
                 </div>
                 <div className="mt-8 flex justify-end gap-5">
                     <Button
+                        name="Reset Filters"
                         variant="secondary"
                         type="reset"
                         onClick={() => {
@@ -143,7 +144,11 @@ export default function FilterCard() {
                     >
                         Reset
                     </Button>
-                    <Button variant="primary" type="submit">
+                    <Button
+                        name="Apply Filters"
+                        variant="primary"
+                        type="submit"
+                    >
                         Apply
                     </Button>
                 </div>

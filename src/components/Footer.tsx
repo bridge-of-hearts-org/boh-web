@@ -1,6 +1,8 @@
 import Link from "next/link";
 import ImageComponent from "./ImageComponent";
 
+import FooterLogo from "../../public/images/logo-dark-narrow.png";
+
 const footerLinkStyle = "font-normal text-gray-200";
 
 export default function Footer() {
@@ -8,11 +10,13 @@ export default function Footer() {
         <div className="flex w-screen bg-boh-black p-4 align-middle">
             <Link href="/">
                 <ImageComponent
-                    imageSrc="/images/logo-dark-narrow.png"
-                    containerClasses="w-[100px] h-[100px] bg-transparent rounded-none"
-                    imageClasses="object-contain p-2"
-                    imageSizes="100px"
+                    src={FooterLogo}
+                    placeholder="blur"
+                    width={100}
+                    height={100}
+                    sizes="100px"
                     alt="Bridge of Hearts Logo"
+                    className="h-[100px] w-[100px] rounded-none object-contain p-2"
                 />
             </Link>
             <div className="flex w-full flex-col items-center justify-between gap-10">

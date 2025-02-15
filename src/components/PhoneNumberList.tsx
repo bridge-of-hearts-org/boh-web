@@ -24,7 +24,7 @@ export default function PhoneNumberList(props: PropsType) {
                                 </a>
                                 {props.orientation == "row" &&
                                     idx < props.numbers.length - 1 &&
-                                    ", "}
+                                    " / "}
                             </span>
                         );
                     })}

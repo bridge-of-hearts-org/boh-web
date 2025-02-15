@@ -9,7 +9,6 @@ import {
     Province,
     vercelStorageUrl,
 } from "@/utils/defines";
-import ImageComponent from "@/components/ImageComponent";
 import Button from "@/components/Button";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import NavigationBar from "./NavigationBar";
@@ -17,13 +16,16 @@ import SortingBar from "./SortingBar";
 import { Metadata } from "next";
 import { fetchAllFacilities } from "./data";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import ImageComponent from "@/components/ImageComponent";
+
+import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 
 const itemsPerPage = 10;
 
 export const metadata: Metadata = {
     title: "Directory | Bridge of Hearts",
     description:
-        "Browse the list of Child Development Centers (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
+        "Browse a list of Child Development Centers (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
 };
 
 export default async function DirectoryPage(props: {
@@ -93,21 +95,27 @@ export default async function DirectoryPage(props: {
                                     >
                                         {facility.photos.length > 0 && (
                                             <ImageComponent
-                                                imageSrc={`${vercelStorageUrl}/${facility.id}/${facility.photos[0].fileName}`}
-                                                containerClasses="w-[180px] h-[180px]"
-                                                imageClasses="object-cover"
-                                                imageSizes="180px"
-                                                alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
+                                                src={`${vercelStorageUrl}/${facility.id}/${facility.photos[0].fileName}`}
+                                                sizes="180px"
+                                                width={180}
+                                                height={180}
+                                                alt="A picture taken at the children's home facility"
+                                                className="h-[180px] w-[180px] object-cover"
                                             />
                                         )}
                                         {facility.photos.length == 0 && (
-                                            <ImageComponent
-                                                imageSrc="/images/facility-directory-icon-default.png"
-                                                containerClasses="w-[180px] h-[180px] bg-orange-50"
-                                                imageClasses="object-contain p-8"
-                                                imageSizes="180px"
-                                                alt="A picture taken at the children's home facility"
-                                            />
+                                            <div className="h-[180px] w-[180px] rounded-3xl bg-orange-50 p-10">
+                                                <ImageComponent
+                                                    src={
+                                                        DefaultFacilityIconImage
+                                                    }
+                                                    sizes="180px"
+                                                    placeholder="blur"
+                                                    width={180}
+                                                    alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
+                                                    className="rounded-none"
+                                                />
+                                            </div>
                                         )}
                                     </Link>
                                     <div className="flex grow flex-col justify-center gap-5">
@@ -166,6 +174,7 @@ export default async function DirectoryPage(props: {
                                         </div>
                                         <Link href={`/facility/${facility.id}`}>
                                             <Button
+                                                name="More Informmation"
                                                 variant="secondary"
                                                 color="black"
                                                 className="text-nowrap"

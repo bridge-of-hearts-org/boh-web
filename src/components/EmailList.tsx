@@ -17,7 +17,7 @@ export default function EmailList(props: PropsType) {
                                 >
                                     {email}
                                 </a>
-                                {idx < props.emails.length - 1 && ", "}
+                                {idx < props.emails.length - 1 && " / "}
                             </span>
                         );
                     })}

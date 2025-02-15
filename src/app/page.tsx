@@ -1,9 +1,15 @@
 import { Metadata } from "next";
 
+import React from "react";
 import Button from "../components/Button";
 import Link from "next/link";
 import StatCard from "@/components/StatCard";
 import ImageComponent from "@/components/ImageComponent";
+
+import HeroSectionImage from "../../public/images/hero-section-photo.jpg";
+import StatFacilityDroneImage from "../../public/images/facility-drone-image.jpg";
+import StatDonationBoxesImage from "../../public/images/donation-boxes.jpg";
+import StatSmilingChildrenImage from "../../public/images/smiling-children-2.jpg";
 
 export const metadata: Metadata = {
     title: "Home | Bridge of Hearts",
@@ -15,13 +21,16 @@ export default function HomePage() {
     return (
         <div className="">
             {/* Hero Section */}
-            <div className="m-10 flex flex-col items-center justify-center gap-10 lg:flex-row">
+            <div className="m-10 flex flex-col items-center justify-center gap-10 xl:flex-row">
                 <ImageComponent
-                    imageSrc="/images/hero-section-photo.jpg"
-                    containerClasses="w-full h-[400px] max-w-[600px]"
-                    imageClasses="object-cover"
-                    imageSizes="600px"
+                    src={HeroSectionImage}
+                    loading="eager"
+                    priority={true}
+                    placeholder="blur"
+                    width={640}
+                    sizes="(max-width: 1280px) 80vw, 40vw"
                     alt="Three children smiling happily at the camera"
+                    className=""
                 />
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
@@ -54,7 +63,11 @@ export default function HomePage() {
                     </div>
                     <div className="flex justify-center">
                         <Link href="/directory">
-                            <Button variant="secondary" color="green">
+                            <Button
+                                name="View Directory"
+                                variant="secondary"
+                                color="green"
+                            >
                                 View Directory
                             </Button>
                         </Link>
@@ -67,17 +80,17 @@ export default function HomePage() {
                 <div className="flex flex-wrap justify-center gap-4 xl:gap-8">
                     {/* Stat Card */}
                     <StatCard
-                        imageSrc="/images/facility-drone-image.jpg"
+                        imageSrc={StatFacilityDroneImage}
                         imageAlt="An aerial view of a children's home, with a playground in front of it, where children are playing"
                         statText="There are 4,000+ child care facilities in Sri Lanka"
                     />
                     <StatCard
-                        imageSrc="/images/donation-boxes.jpg"
+                        imageSrc={StatDonationBoxesImage}
                         imageAlt="Three boxes of donations, with clothes, food and stationery supplies"
                         statText="60% of child care facilities run on external donations"
                     />
                     <StatCard
-                        imageSrc="/images/smiling-children-2.jpg"
+                        imageSrc={StatSmilingChildrenImage}
                         imageAlt="Children in school uniforms smiling at the camera"
                         statText="71% of the children are between ages 5-14"
                     />

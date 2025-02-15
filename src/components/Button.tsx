@@ -44,11 +44,13 @@ const getButtonStyles = (
 };
 
 type ButtonProps = ComponentProps<"button"> & {
+    name: string;
     variant?: ButtonVariant;
     color?: ButtonColor;
 };
 
 export default function Button({
+    name,
     variant = "primary",
     color = "green",
     className,
@@ -58,6 +60,7 @@ export default function Button({
 
     return (
         <button
+            name={name}
             {...props}
             className={twMerge(
                 `rounded-full px-4 py-2 font-encode-sans-sc font-semibold transition-all duration-100 ${styleClasses}`,
