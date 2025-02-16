@@ -40,7 +40,7 @@ export async function generateMetadata({
         openGraph: {
             title: `${facility.name}`,
             description: `Get details about ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
-            url: `https://bridgeofhearts.lk/facility/${facility.id}`,
+            url: `https://bridgeofhearts.lk/facility/${facility.slug}`,
             images:
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
@@ -98,7 +98,7 @@ export default async function FacilityProfilePage({
                         },
                         {
                             text: `${data.name}`,
-                            link: `/facility/${data.id}`,
+                            link: `/facility/${data.slug}`,
                         },
                     ]}
                 />

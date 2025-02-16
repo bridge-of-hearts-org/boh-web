@@ -27,7 +27,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     /* Generate the sitemap for the facility pages */
     const facilitySitemap = facilities.map((facility) => ({
-        url: `${baseUrl}/facility/${facility.id}`,
+        url: `${baseUrl}/facility/${facility.slug}`,
         lastModified: new Date(),
     }));
 
