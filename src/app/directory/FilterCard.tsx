@@ -46,7 +46,7 @@ export default function FilterCard() {
     }
 
     return (
-        <Card className="h-auto w-full lg:w-[50%] xl:w-full">
+        <Card className="h-auto w-full xl:w-full">
             <h1 className="pb-5 text-xl font-semibold">Filters</h1>
             <Form
                 action={handleFilterSubmit}

@@ -7,7 +7,7 @@ export default function EmailList(props: PropsType) {
         <span>
             {props.emails.length == 0 && "-"}
             {props.emails.length > 0 && (
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-2">
                     {props.emails.map((email, idx) => {
                         return (
                             <span key={email}>
@@ -17,7 +17,6 @@ export default function EmailList(props: PropsType) {
                                 >
                                     {email}
                                 </a>
-                                {idx < props.emails.length - 1 && " / "}
                             </span>
                         );
                     })}

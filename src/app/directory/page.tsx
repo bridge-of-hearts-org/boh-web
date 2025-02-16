@@ -28,9 +28,14 @@ export default async function DirectoryPage(props: {
 
     return (
         <div className="flex flex-col gap-5">
-            <h1 className="mb-3 text-center text-xl font-bold">
-                Child Development Centers (Children's Homes) of Sri Lanka
-            </h1>
+            <div className="bg-gradient-to-r from-white/10 via-white/100 to-white/10 py-10">
+                <h1 className="text-center font-encode-sans-sc text-xl font-bold">
+                    Child Development Centers
+                </h1>
+                <h2 className="mb-3 text-center text-sm font-semibold">
+                    Find information about Children's Homes across Sri Lanka
+                </h2>
+            </div>
             <div>
                 <Breadcrumbs
                     hierarchy={[
