@@ -57,7 +57,7 @@ export async function FacilityCards(props: FacilityCardProps) {
                         <Card key={facility.id}>
                             <div className="flex flex-col items-center gap-5 md:flex-row md:items-stretch">
                                 <Link
-                                    href={`/facility/${facility.id}`}
+                                    href={`/facility/${facility.slug}`}
                                     className="self-center"
                                 >
                                     {facility.photos.length > 0 && (
@@ -139,7 +139,7 @@ export async function FacilityCards(props: FacilityCardProps) {
                                             Province
                                         </p>
                                     </div>
-                                    <Link href={`/facility/${facility.id}`}>
+                                    <Link href={`/facility/${facility.slug}`}>
                                         <Button
                                             name="More Informmation"
                                             variant="secondary"

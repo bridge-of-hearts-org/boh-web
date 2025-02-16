@@ -108,12 +108,12 @@ export async function fetchAllFacilities(
     }
 }
 
-export async function fetchFacilityById(id: string) {
+export async function fetchFacilityBySlug(slug: string) {
     let data = null;
 
     try {
         data = await prisma.childCareFacility.findUnique({
-            where: { id: id },
+            where: { slug: slug },
         });
     } catch {}
 

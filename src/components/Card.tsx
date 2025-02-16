@@ -8,7 +8,7 @@ export default function Card({ className, ...props }: CardProps) {
         <div
             {...props}
             className={twMerge(
-                "rounded-3xl border bg-white p-5 shadow-sm",
+                "rounded-3xl border border-gray-300 bg-white p-5 shadow-sm",
                 className,
             )}
         ></div>

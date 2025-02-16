@@ -8,12 +8,12 @@ import ImageCarousel from "./ImageCarousel";
 import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
-import { fetchFacilityById } from "@/app/directory/data";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import ImageComponent from "@/components/ImageComponent";
+import { fetchFacilityBySlug } from "@/app/directory/data";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -24,8 +24,8 @@ export async function generateMetadata({
         throw new Error("Missing params for FacilityProfilePage.");
     }
 
-    const { id } = await params;
-    let facility = await fetchFacilityById(id);
+    const { slug } = await params;
+    let facility = await fetchFacilityBySlug(slug);
 
     if (!facility) {
         return {
@@ -53,7 +53,7 @@ export async function generateMetadata({
     };
 }
 
-type FacilityPageProps = { params: Promise<{ id: string }> };
+type FacilityPageProps = { params: Promise<{ slug: string }> };
 
 export default async function FacilityProfilePage({
     params,
@@ -64,8 +64,8 @@ export default async function FacilityProfilePage({
 
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
-    const { id } = await params;
-    const data = await fetchFacilityById(id);
+    const { slug } = await params;
+    const data = await fetchFacilityBySlug(slug);
 
     if (!data) {
         return NotFound();
@@ -118,7 +118,7 @@ export default async function FacilityProfilePage({
                             </div>
                         )}
                         {data.photos.length > 0 && (
-                            <ImageCarousel id={id} photos={data.photos} />
+                            <ImageCarousel id={data.id} photos={data.photos} />
                         )}
 
                         {/* Info sections */}

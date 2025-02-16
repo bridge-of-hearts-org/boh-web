@@ -75,13 +75,14 @@ def generateJson():
     df = pd.read_csv(CSV_FNAME)
 
     # Define the columns to be selected
-    selectedColumns = ["Name", "Address", "Managed By", "City", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
+    selectedColumns = ["Name", "Slug", "Address", "Managed By", "City", "District", "Province", "Divisional Secretariat", "Google Maps", "Phone Numbers", "Email Addresses", "Website",
                        "Facebook", "Instagram", "Accepted Genders", "Age Range - Male", "Age Range - Female", "Age Range - All", "Count - Male", "Count - Female", "Count - Total",
                        "Photos"]
 
     # Rename columns
     df = df[selectedColumns].rename(columns={
         "Name": "name",
+        "Slug": "slug",
         "Managed By": "managedBy",
         "Address": "location.address",
         "City": "location.city",
@@ -130,6 +131,7 @@ def generateJson():
         # --- Construct the JSON structure ---
         facility = {}
         facility["name"] = row["name"].strip()
+        facility["slug"] = row["slug"].strip()
         facility["type"] = "Voluntary Children's Home"
         facility["managedBy"] = row["managedBy"].strip()
         facility["location"] = {

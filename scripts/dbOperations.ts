@@ -52,6 +52,7 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                     update: {
                         /* Uncomment the fields that need to updated */
                         name: facility.name,
+                        slug: facility.slug,
                         type: facility.type,
                         managedBy: facility.managedBy,
                         location: {
