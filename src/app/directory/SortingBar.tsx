@@ -28,8 +28,12 @@ export default function SortingBar(props: SortingBarProps) {
 
     useEffect(() => {
         const params = new URLSearchParams(searchParams);
+        const currentPage = searchParams.get("page") || "1";
+        const currentSortBy = searchParams.get("sortBy") || "name";
+        const newPage = currentSortBy === sortBy ? currentPage : "1";
+
         params.set("sortBy", sortBy);
-        params.set("page", "1");
+        params.set("page", newPage);
         router.push(`/directory/?${params.toString()}`);
         window.scrollTo({ top: 0, behavior: "smooth" });
     }, [sortBy]);
