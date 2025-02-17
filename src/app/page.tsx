@@ -35,8 +35,11 @@ export default function HomePage() {
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
                         <div>
-                            <h1 className="mb-2 text-center font-encode-sans-sc text-3xl font-semibold">
-                                Welcome to Bridge of Hearts
+                            <h1 className="text-center font-encode-sans-sc text-xl font-semibold">
+                                Welcome to the
+                            </h1>
+                            <h1 className="mb-4 text-center font-encode-sans-sc text-3xl font-semibold">
+                                Bridge of Hearts Project
                             </h1>
                             <h2 className="mb-2 text-center text-xl font-semibold">
                                 An online directory for Child Development
