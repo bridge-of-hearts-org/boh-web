@@ -28,7 +28,7 @@ export default async function DirectoryPage(props: {
 
     return (
         <div className="flex flex-col gap-5">
-            <div className="bg-gradient-to-r from-white/10 via-white/100 to-white/10 py-10">
+            <div className="bg-gradient-to-r from-white/10 via-orange-100/50 to-white/10 py-10">
                 <h1 className="text-center font-encode-sans-sc text-xl font-bold">
                     Child Development Centers
                 </h1>

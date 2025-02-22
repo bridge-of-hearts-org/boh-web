@@ -23,6 +23,10 @@ label {
     @apply pl-1 text-sm font-semibold;
 }
 
+strong {
+    @apply font-semibold;
+}
+
 /* width */
 ::-webkit-scrollbar {
     width: 15px;

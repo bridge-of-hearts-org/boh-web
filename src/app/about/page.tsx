@@ -1,49 +1,78 @@
 import ImageComponent from "@/components/ImageComponent";
-import HeroImage from "../../../public/images/children-silhouette.jpg";
+import VolunteerIcon from "../../../public/images/volunteer-hands-icon.png";
+import ChildrenIcon from "../../../public/images/children-icon.png";
+import DonationIcon from "../../../public/images/donation-icon.png";
 
 export default function About() {
     return (
         <div>
-            <div className="bg-gradient-to-r from-white/10 via-white/100 to-white/10 py-10">
+            <div className="mb-10 bg-gradient-to-r from-white/10 via-orange-100/50 to-white/10 py-10">
                 <h1 className="text-center font-encode-sans-sc text-xl font-bold">
                     About Us
                 </h1>
             </div>
-            <div className="flex justify-center p-10">
-                <div className="flex flex-col items-center">
+            <div className="flex flex-col gap-5 px-10 text-justify lg:px-20">
+                <div className="flex justify-center gap-10">
                     <ImageComponent
-                        src={HeroImage}
-                        placeholder="blur"
-                        height={300}
-                        title="Photo by Jess Zoerb on Unsplash"
-                        alt="Sillhoutte of children playing on a field with a sunset in the background"
+                        src={VolunteerIcon}
+                        height={100}
+                        alt="Three hands holding each other"
+                        title="Icon created by Freepik - Flaticon"
+                        className="object-contain"
                     />
                 </div>
-            </div>
-            <div className="flex flex-col gap-5 px-10 text-center lg:px-20">
                 <p>
-                    Bridge of Hearts is a volunteer-driven initiative dedicated
-                    to creating a brighter future for children in Sri Lanka. Our
-                    platform helps connect donors with children's homes across
-                    island, ensuring that donations and resources are
-                    distributed equitably to places that need them the most.
+                    <strong>Bridge of Hearts</strong> is a volunteer-driven
+                    initiative dedicated to creating a brighter future for
+                    children in Sri Lanka. Our platform connects donors with
+                    children's homes across the island, ensuring that donations
+                    and resources are distributed equitably to the places that
+                    need them the most.
                 </p>
+                <div className="flex justify-center gap-10">
+                    <ImageComponent
+                        src={ChildrenIcon}
+                        width={100}
+                        alt="Three hands holding each other"
+                        title="Children icons created by Freepik - Flaticon"
+                        className="object-contain"
+                    />
+                </div>
+                <div className="flex flex-col gap-5">
+                    <p>
+                        We started this project with a simple vision: to bridge
+                        the gap between generosity and need. By providing a
+                        transparent and comprehensive directory of children's
+                        homes, we aim to empower donors to make informed
+                        decisions and support the facilities that are often
+                        overlooked.
+                    </p>
+                    <p>
+                        It is our intention to continuously expand our reach by
+                        adding new children's homes to the directory. Soon, we
+                        will have information on all{" "}
+                        <strong>350+ facilities</strong> across the island,
+                        ensuring that no home, big or small, is left behind.
+                    </p>
+                </div>
+                <div className="flex justify-center gap-10">
+                    <ImageComponent
+                        src={DonationIcon}
+                        width={100}
+                        alt="Three hands holding each other"
+                        title="Food donation icons created by iconixarPro - Flaticon"
+                        className="object-contain"
+                    />
+                </div>
                 <p>
-                    We started this project with a simple vision: to bridge the
-                    gap between generosity and need. By providing a transparent
-                    and comprehensive directory of children's homes, we aim to
-                    empower donors to make informed decisions and support
-                    facilities that are often overlooked.
-                </p>
-                <p>
-                    We are continuously working to expand our reach, adding new
-                    children's homes to the directory. Soon, we will have
-                    information of all 350+ facilities in the island, ensuring
-                    that no home, big or small, is left behind.
-                </p>
-                <p>
-                    Together, we can create a network of hope, love, and
-                    care—because every child deserves a chance.
+                    Together, we're working to change the landscape of child
+                    care donations in Sri Lanka. While the most well-known
+                    facilities receive the majority of support, our platform
+                    ensures that every child—no matter where they live—has the
+                    opportunity to thrive. We are{" "}
+                    <strong>actively expanding</strong> our reach to include
+                    data from all 9 provinces, starting with the Western
+                    Province, so that no child is left behind.
                 </p>
             </div>
         </div>

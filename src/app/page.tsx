@@ -27,7 +27,7 @@ export default function HomePage() {
                     loading="eager"
                     priority={true}
                     placeholder="blur"
-                    width={640}
+                    width={700}
                     sizes="(max-width: 1280px) 80vw, 40vw"
                     alt="Three children smiling happily at the camera"
                     className=""
@@ -46,21 +46,35 @@ export default function HomePage() {
                                 Centers in Sri Lanka.
                             </h2>
                         </div>
+
                         <div className="flex max-w-[600px] flex-col gap-5">
                             <p>
-                                There are more than 300 Child Development
-                                Centers, commonly known as Children's Homes in
-                                Sri Lanka, with more than 10,000 children.
+                                Every child deserves love, care, and a chance
+                                for a brighter future. Yet, in Sri Lanka, more
+                                than <strong>10,000 children</strong> live in
+                                over 370 Child Development Centers commonly
+                                known as children's homes seeking stability and
+                                support.
                             </p>
                             <p>
-                                Our mission is to provide a reliable, regularly
-                                updated resource with comprehensive information
-                                about these facilities, so that donors can find
-                                the places that are most in need.
+                                At <strong>Bridge of Hearts</strong>, we believe
+                                in the power of connection. Our mission is to
+                                provide a trusted, up-to-date resource that
+                                shines a light on these homes, making it easier
+                                for donors to find and support the children who
+                                need it most.
                             </p>
                             <p>
-                                Together, let's bridge hearts and connect
-                                communities.
+                                With{" "}
+                                <strong>60% of child care facilities</strong>{" "}
+                                relying on external donations, your generosity
+                                can make a life-changing impact. Whether you
+                                give, volunteer, or spread the word you become
+                                part of a movement that bridges hearts and
+                                strengthens communities.
+                            </p>
+                            <p>
+                                Together, let's bring hope, one child at a time.
                             </p>
                         </div>
                     </div>
@@ -85,7 +99,7 @@ export default function HomePage() {
                     <StatCard
                         imageSrc={StatFacilityDroneImage}
                         imageAlt="An aerial view of a children's home, with a playground in front of it, where children are playing"
-                        statText="There are 4,000+ child care facilities in Sri Lanka"
+                        statText="There are 379 child care facilities in Sri Lanka"
                     />
                     <StatCard
                         imageSrc={StatDonationBoxesImage}

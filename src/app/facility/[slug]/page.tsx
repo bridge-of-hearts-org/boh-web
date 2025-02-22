@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Script from "next/script";
 import { twMerge } from "tailwind-merge";
 import { MapPin, PhoneCall, Users } from "lucide-react";
 
@@ -70,6 +71,55 @@ export default async function FacilityProfilePage({
     if (!data) {
         return NotFound();
     }
+
+    // Construct JSON-LD structured data
+    const jsonLdData = {
+        "@context": "https://schema.org",
+        "@type": ["Organization", "ResidentialFacility"],
+        parentOrganization: data.managedBy
+            ? {
+                  "@type": "Organization",
+                  name: data.managedBy,
+              }
+            : undefined,
+        name: data.name,
+        description: `A Child Development Center (Children's Home) located in ${data.location.city}, ${data.location.district}, Sri Lanka.`,
+        address: {
+            "@type": "PostalAddress",
+            streetAddress: data.location.address || "",
+            addressLocality: data.location.city,
+            addressRegion: data.location.district,
+            addressCountry: "Sri Lanka",
+        },
+        url: `https://bridgeofhearts.lk/facility/${data.slug}`,
+        telephone: data.contact.phone || undefined,
+        email: data.contact.email || undefined,
+        sameAs: [
+            data.contact.facebook,
+            data.contact.instagram,
+            data.contact.website,
+        ].filter(Boolean),
+        image:
+            data.photos.length > 0
+                ? data.photos.map(
+                      (photo) =>
+                          `${vercelStorageUrl}/${data.id}/${photo.fileName}`,
+                  )
+                : [`${vercelStorageUrl}/default-facility-image.jpg`],
+        knowsAbout: [
+            "Child Care",
+            "Child Welfare",
+            "Residential Care",
+            "Child Development",
+        ],
+        keywords: [
+            "children's home",
+            "orphanage",
+            "child development centre",
+            "correction home",
+            data.type,
+        ].join(","),
+    };
 
     /* Constants */
     const noInfoElement = <span>-</span>;
@@ -460,6 +510,11 @@ export default async function FacilityProfilePage({
                     </div>
                 </Card>
             </div>
+            <Script
+                type="application/ld+json"
+                id="json-ld-facility"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdData) }}
+            />
         </div>
     );
 }

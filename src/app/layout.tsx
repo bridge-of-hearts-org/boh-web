@@ -32,7 +32,7 @@ export const metadata: Metadata = {
         siteName: "Bridge of Hearts",
         images: [
             {
-                url: "/images/logo-seo.jpg",
+                url: "/images/opengraph-cover.jpg",
                 width: 1200,
                 height: 630,
                 alt: "Bridge of Hearts - A Directory of Child Development Centers in Sri Lanka",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
         title: "Bridge of Hearts",
         description:
             "Discover childcare facilities in Sri Lanka and help those in need.",
-        images: ["/images/logo-seo.jpg"],
+        images: ["/images/opengraph-cover.jpg"],
     },
     verification: {
         google: "33b9UH7TVkrujRctk-PNmohRVd_n8XuKUwa3Y6AAztM",
