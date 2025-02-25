@@ -16,6 +16,7 @@ export default function About() {
                     <ImageComponent
                         src={VolunteerIcon}
                         height={100}
+                        sizes="100px"
                         alt="Three hands holding each other"
                         title="Icon created by Freepik - Flaticon"
                         className="object-contain"
@@ -32,7 +33,8 @@ export default function About() {
                 <div className="flex justify-center gap-10">
                     <ImageComponent
                         src={ChildrenIcon}
-                        width={100}
+                        height={100}
+                        sizes="100px"
                         alt="Three hands holding each other"
                         title="Children icons created by Freepik - Flaticon"
                         className="object-contain"
@@ -58,7 +60,8 @@ export default function About() {
                 <div className="flex justify-center gap-10">
                     <ImageComponent
                         src={DonationIcon}
-                        width={100}
+                        height={100}
+                        sizes="100px"
                         alt="Three hands holding each other"
                         title="Food donation icons created by iconixarPro - Flaticon"
                         className="object-contain"
