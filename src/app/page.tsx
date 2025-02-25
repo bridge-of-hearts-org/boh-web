@@ -3,13 +3,13 @@ import { Metadata } from "next";
 import React from "react";
 import Button from "../components/Button";
 import Link from "next/link";
-import StatCard from "@/components/StatCard";
 import ImageComponent from "@/components/ImageComponent";
 
 import HeroSectionImage from "../../public/images/hero-section-photo.jpg";
 import StatFacilityDroneImage from "../../public/images/facility-drone-image.jpg";
 import StatDonationBoxesImage from "../../public/images/donation-boxes.jpg";
 import StatSmilingChildrenImage from "../../public/images/smiling-children-2.jpg";
+import Card from "@/components/Card";
 
 export const metadata: Metadata = {
     title: "Home | Bridge of Hearts",
@@ -52,9 +52,10 @@ export default function HomePage() {
                                 Every child deserves love, care, and a chance
                                 for a brighter future. Yet, in Sri Lanka, more
                                 than <strong>10,000 children</strong> live in
-                                over 370 Child Development Centers commonly
-                                known as children's homes seeking stability and
-                                support.
+                                over{" "}
+                                <strong>370 Child Development Centers</strong>{" "}
+                                commonly known as children's homes seeking
+                                stability and support.
                             </p>
                             <p>
                                 At <strong>Bridge of Hearts</strong>, we believe
@@ -65,13 +66,12 @@ export default function HomePage() {
                                 need it most.
                             </p>
                             <p>
-                                With{" "}
-                                <strong>60% of child care facilities</strong>{" "}
-                                relying on external donations, your generosity
-                                can make a life-changing impact. Whether you
-                                give, volunteer, or spread the word you become
-                                part of a movement that bridges hearts and
-                                strengthens communities.
+                                With most child care facilities relying on
+                                external donations, your generosity can make a
+                                life-changing impact. Whether you give,
+                                volunteer, or spread the word you become part of
+                                a movement that bridges hearts and strengthens
+                                communities.
                             </p>
                             <p>
                                 Together, let's bring hope, one child at a time.
@@ -95,22 +95,48 @@ export default function HomePage() {
             {/* Stat section */}
             <div className="mb-10 w-[100%] rounded-3xl bg-[#f0e7df] p-10">
                 <div className="flex flex-wrap justify-center gap-4 xl:gap-8">
-                    {/* Stat Card */}
-                    <StatCard
-                        imageSrc={StatFacilityDroneImage}
-                        imageAlt="An aerial view of a children's home, with a playground in front of it, where children are playing"
-                        statText="There are 379 child care facilities in Sri Lanka"
-                    />
-                    <StatCard
-                        imageSrc={StatDonationBoxesImage}
-                        imageAlt="Three boxes of donations, with clothes, food and stationery supplies"
-                        statText="60% of child care facilities run on external donations"
-                    />
-                    <StatCard
-                        imageSrc={StatSmilingChildrenImage}
-                        imageAlt="Children in school uniforms smiling at the camera"
-                        statText="71% of the children are between ages 5-14"
-                    />
+                    <Card className="p-8">
+                        <div className="flex w-[280px] flex-col items-center gap-4">
+                            <ImageComponent
+                                src={StatFacilityDroneImage}
+                                sizes="280px"
+                                height={230}
+                                alt="An aerial view of a children's home, with a playground in front of it, where children are playing"
+                            />
+                            <p className="text-center">
+                                There are more than <strong>370</strong> child
+                                care facilities in Sri Lanka
+                            </p>
+                        </div>
+                    </Card>
+                    <Card className="p-8">
+                        <div className="flex w-[280px] flex-col items-center gap-4">
+                            <ImageComponent
+                                src={StatDonationBoxesImage}
+                                sizes="280px"
+                                height={230}
+                                alt="Three boxes of donations, with clothes, food and stationery supplies"
+                            />
+                            <p className="text-center">
+                                <strong>60%</strong> of child care facilities
+                                run on external donations
+                            </p>
+                        </div>
+                    </Card>
+                    <Card className="p-8">
+                        <div className="flex w-[280px] flex-col items-center gap-4">
+                            <ImageComponent
+                                src={StatSmilingChildrenImage}
+                                sizes="280px"
+                                height={230}
+                                alt="Children in school uniforms smiling at the camera"
+                            />
+                            <p className="text-center">
+                                <strong>71%</strong> of the children are between
+                                ages <strong>5-14</strong>
+                            </p>
+                        </div>
+                    </Card>
                 </div>
             </div>
         </div>
