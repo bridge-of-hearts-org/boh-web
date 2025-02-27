@@ -12,7 +12,7 @@ import StatSmilingChildrenImage from "../../public/images/smiling-children-2.jpg
 import Card from "@/components/Card";
 
 export const metadata: Metadata = {
-    title: "Home | Bridge of Hearts",
+    title: "Bridge of Hearts | Find Children's Homes in Sri Lanka",
     description:
         "Welcome to Bridge of Hearts, an online directory for Child Development Centers (Children's Homes) in Sri Lanka.",
 };

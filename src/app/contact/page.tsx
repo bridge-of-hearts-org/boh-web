@@ -2,6 +2,7 @@
 
 import ImageComponent from "@/components/ImageComponent";
 import emailIcon from "../../../public/images/email-icon.png";
+import Link from "next/link";
 
 export default function Contact() {
     return (
@@ -39,6 +40,12 @@ export default function Contact() {
                         support the children.
                     </p>
                 </div>
+                <p className="text-center">
+                    <Link href="/directory" className="boh-link">
+                        Explore our directory of Child Development Centers
+                        (Children's Homes) in Sri Lanka.
+                    </Link>
+                </p>
             </div>
         </div>
     );

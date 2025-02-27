@@ -115,7 +115,7 @@ export default async function FacilityProfilePage({
         keywords: [
             "children's home",
             "orphanage",
-            "child development centre",
+            "child development center",
             "correction home",
             data.type,
         ].join(","),
