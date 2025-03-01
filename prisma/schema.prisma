@@ -17,6 +17,7 @@ enum Gender {
     male
     female
     both
+    unknown
 }
 
 type Location {
@@ -69,6 +70,7 @@ model ChildCareFacility {
     createdAt DateTime     @default(now())
     updatedAt DateTime     @updatedAt
     photos    PhotoEntry[]
+    sources   String[]
 
     @@map("facilities")
 }

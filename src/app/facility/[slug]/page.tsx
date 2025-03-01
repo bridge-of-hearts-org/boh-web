@@ -373,7 +373,9 @@ export default async function FacilityProfilePage({
                                                 ? "Male"
                                                 : data.genders == Gender.female
                                                   ? "Female"
-                                                  : "Male / Female"}
+                                                  : data.genders == Gender.both
+                                                    ? "Male / Female"
+                                                    : noInfoElement}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
