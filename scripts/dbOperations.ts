@@ -10,13 +10,13 @@ const PHOTOS_DIR = path.join(__dirname, "data", "photos");
 const prisma = new PrismaClient();
 
 async function vercelUpload(
-    id: string,
+    slug: string,
     vercelPath: string,
     fileBuffer: Buffer<ArrayBufferLike>,
 ): Promise<string> {
     /* Check if the file already exists */
     const blobs = await list({
-        prefix: id,
+        prefix: slug,
         token: process.env.VERCEL_TOKEN,
     });
 
@@ -106,8 +106,8 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                         if (fs.lstatSync(filePath).isFile()) {
                             const fileBuffer = fs.readFileSync(filePath);
                             const blobUrl = await vercelUpload(
-                                entry.id,
-                                `${entry.id}/${photo.fileName}`,
+                                entry.slug,
+                                `${entry.slug}/${photo.fileName}`,
                                 fileBuffer,
                             );
                         }
