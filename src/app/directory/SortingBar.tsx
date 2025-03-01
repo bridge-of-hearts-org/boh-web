@@ -35,7 +35,6 @@ export default function SortingBar(props: SortingBarProps) {
         params.set("sortBy", sortBy);
         params.set("page", newPage);
         router.push(`/directory/?${params.toString()}`);
-        window.scrollTo({ top: 0, behavior: "smooth" });
     }, [sortBy]);
 
     useEffect(() => {

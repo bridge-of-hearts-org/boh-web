@@ -42,7 +42,6 @@ export default function FilterCard() {
         params.set("province", data.get("province")?.toString() || "");
 
         router.push(`/directory/?${params.toString()}`);
-        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     return (
