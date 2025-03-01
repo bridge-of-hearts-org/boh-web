@@ -46,7 +46,7 @@ export async function generateMetadata({
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
                           return {
-                              url: `${vercelStorageUrl}/${facility.id}/${photo.fileName}`,
+                              url: `${vercelStorageUrl}/${facility.slug}/${photo.fileName}`,
                           };
                       })
                     : [],
@@ -103,9 +103,9 @@ export default async function FacilityProfilePage({
             data.photos.length > 0
                 ? data.photos.map(
                       (photo) =>
-                          `${vercelStorageUrl}/${data.id}/${photo.fileName}`,
+                          `${vercelStorageUrl}/${data.slug}/${photo.fileName}`,
                   )
-                : [`${vercelStorageUrl}/default-facility-image.jpg`],
+                : ["public/images/facility-directory-icon-default.png"],
         knowsAbout: [
             "Child Care",
             "Child Welfare",
@@ -168,7 +168,10 @@ export default async function FacilityProfilePage({
                             </div>
                         )}
                         {data.photos.length > 0 && (
-                            <ImageCarousel id={data.id} photos={data.photos} />
+                            <ImageCarousel
+                                slug={data.slug}
+                                photos={data.photos}
+                            />
                         )}
 
                         {/* Info sections */}

@@ -62,7 +62,7 @@ export async function FacilityCards(props: FacilityCardProps) {
                                 >
                                     {facility.photos.length > 0 && (
                                         <ImageComponent
-                                            src={`${vercelStorageUrl}/${facility.id}/${facility.photos[0].fileName}`}
+                                            src={`${vercelStorageUrl}/${facility.slug}/${facility.photos[0].fileName}`}
                                             sizes="180px"
                                             width={180}
                                             height={180}

@@ -6,11 +6,11 @@ import { vercelStorageUrl } from "@/utils/defines";
 import ImageComponent from "@/components/ImageComponent";
 
 type ImageCarouselProps = {
-    id: string;
+    slug: string;
     photos: PhotoEntry[];
 };
 
-export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
+export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
     const [enlargedImage, setEnlargedImage] = useState<{
         open: boolean;
         photo: PhotoEntry;
@@ -35,7 +35,7 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                 {photos.map((photo) => (
                     <ImageComponent
                         key={photo.fileName}
-                        src={`${vercelStorageUrl}/${id}/${photo.fileName}`}
+                        src={`${vercelStorageUrl}/${slug}/${photo.fileName}`}
                         sizes="220px"
                         width={220}
                         height={220}
@@ -64,7 +64,7 @@ export default function ImageCarousel({ id, photos }: ImageCarouselProps) {
                 >
                     <div className="relative">
                         <ImageComponent
-                            src={`${vercelStorageUrl}/${id}/${enlargedImage.photo.fileName}`}
+                            src={`${vercelStorageUrl}/${slug}/${enlargedImage.photo.fileName}`}
                             sizes="(max-width: 1024px) 90vw, (max-width: 1768px) 70vw, 50vw"
                             width={1024}
                             height={768}
