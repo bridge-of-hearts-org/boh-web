@@ -177,7 +177,7 @@ def generateJson():
 
             jsonData.append(facility)
             if (row["photos"]):
-                outputDir = f"{PHOTOS_DIR}/{idx}"
+                outputDir = f"{PHOTOS_DIR}/{facility['slug']}"
                 os.makedirs(outputDir, exist_ok=True)
 
                 for url in row["photos"].split("|"):

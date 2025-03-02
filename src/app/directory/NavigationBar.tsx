@@ -51,7 +51,9 @@ export default function NavigationBar(props: NavigationProps) {
                             {Array.from(
                                 { length: props.totalPages },
                                 (_, i) => (
-                                    <option value={i + 1}>{i + 1}</option>
+                                    <option key={i} value={i + 1}>
+                                        {i + 1}
+                                    </option>
                                 ),
                             )}
                         </select>
