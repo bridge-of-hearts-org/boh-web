@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { put, list } from "@vercel/blob";
+import { config } from "dotenv";
 
 import { ChildCareFacility, PrismaClient } from "@prisma/client";
 
@@ -87,7 +88,7 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                 });
 
                 /* Upload any available photos to Vercel blob */
-                const facilityPhotosDir = path.join(PHOTOS_DIR, idx.toString());
+                const facilityPhotosDir = path.join(PHOTOS_DIR, entry.slug);
 
                 if (
                     !fs.existsSync(facilityPhotosDir) ||
@@ -132,6 +133,11 @@ const helpString = "Usage: tsx dbOperations.ts upsert";
 
 if (process.argv.length == 3) {
     const cmd = process.argv[2];
+
+    config({
+        override: true,
+    });
+    console.log(`Connecting to database: ${process.env.DATABASE_URL}`);
 
     fs.promises
         .readFile(JSON_FNAME, "utf-8")

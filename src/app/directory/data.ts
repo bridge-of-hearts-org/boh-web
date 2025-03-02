@@ -1,5 +1,6 @@
 import { DirectoryFilterType } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
+import { config } from "dotenv";
 
 import { prisma } from "@/utils/db";
 
@@ -13,6 +14,14 @@ export async function fetchAllFacilities(
     page: number,
     itemsPerPage: number,
 ): FilteredFacilityResponse {
+    /* Reload .env */
+    if (process.env.NODE_ENV === "development") {
+        config({
+            override: true,
+        });
+        console.log(`Connecting to database: ${process.env.DATABASE_URL}`);
+    }
+
     const getFilter = (): Prisma.ChildCareFacilityWhereInput[] => {
         const filters: Prisma.ChildCareFacilityWhereInput[] = [];
 
