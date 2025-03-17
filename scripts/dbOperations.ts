@@ -47,7 +47,7 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
                 /* Upsert the facility */
                 const entry = await prisma.childCareFacility.upsert({
                     where: {
-                        name: facility.name,
+                        slug: facility.slug,
                     },
                     create: facility,
                     update: {

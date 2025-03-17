@@ -7,6 +7,7 @@ import imghdr
 import hashlib
 import pandas as pd
 import numpy as np
+from threading import Thread
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 
@@ -44,7 +45,7 @@ def pullData(startCell: str, endCell: str, configFname: str = "config.json", api
         return df
 
 
-def downloadPhoto(facilityName: str, url: str, outputDir: str) -> str:
+def downloadPhoto(facilityName: str, url: str, outputDir: str, photosList: list) -> str:
     try:
         resp = requests.get(url.strip())
         if resp.status_code == 200:
@@ -57,7 +58,10 @@ def downloadPhoto(facilityName: str, url: str, outputDir: str) -> str:
 
                 with open(f"{outputDir}/{fileName}", "wb") as f:
                     f.write(resp.content)
-                    return fileName
+                    photosList.append({
+                            "fileName": fileName,
+                            "source": url
+                        })
             else:
                 print(f"Error: Could not determine file type: {facilityName} | {url}")
         else:
@@ -115,16 +119,16 @@ def generateJson():
 
     # Create lists from phone numbers
     df["contact.phone"] = df["contact.phone"].apply(
-        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",")]
+        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",") if x.strip()]
     )
 
     # Create lists from email addresses
     df["contact.email"] = df["contact.email"].apply(
-        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",")]
+        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split(",") if x.strip()]
         )
 
     df["sources"] = df["sources"].apply(
-        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split("|")]
+        lambda listStr: [] if not listStr.strip() else [x.strip() for x in listStr.split("|") if x.strip()]
     )
 
     jsonData = []
@@ -180,16 +184,17 @@ def generateJson():
                 outputDir = f"{PHOTOS_DIR}/{facility['slug']}"
                 os.makedirs(outputDir, exist_ok=True)
 
+                threads = []
                 for url in row["photos"].split("|"):
                     url = url.strip(" /")
 
                     if url:
-                        fname = downloadPhoto(row["name"], url, outputDir)
-                        if fname:
-                            facility["photos"].append({
-                                "fileName": fname,
-                                "source": url
-                            })
+                        t = Thread(target=downloadPhoto, args=(facility["name"], url, outputDir, facility["photos"]))
+                        t.start()
+                        threads.append(t)
+
+                for t in threads:
+                    t.join()
 
     json.dump(jsonData, open(JSON_FNAME, "w"), indent=4,)
     print(f"Successfully generated the JSON file with {len(jsonData)} entries")
@@ -197,7 +202,7 @@ def generateJson():
 
 if __name__ == "__main__":
     endColumn = "AE"
-    endRow = 94
+    endRow = 89
 
     pullData("A1", f"{endColumn}{endRow}")
     generateJson()
