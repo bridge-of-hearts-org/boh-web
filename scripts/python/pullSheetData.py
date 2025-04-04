@@ -23,7 +23,7 @@ def pullData(startCell: str, endCell: str, configFname: str = "config.json", api
     config = json.load(open(configFname))
     apiKeyFname = apiKeyFname
     permissions = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-    range = f"Database!{startCell}:{endCell}"
+    range = f"Western Province!{startCell}:{endCell}"
 
     creds = service_account.Credentials.from_service_account_file(
         apiKeyFname, scopes=permissions)
@@ -44,12 +44,27 @@ def pullData(startCell: str, endCell: str, configFname: str = "config.json", api
         df.to_csv(CSV_FNAME, index=False)
         return df
 
+def isUtf8(content: bytes) -> bool:
+    try:
+        content.decode()
+    except UnicodeDecodeError:
+        return False
 
 def downloadPhoto(facilityName: str, url: str, outputDir: str, photosList: list) -> str:
     try:
         resp = requests.get(url.strip())
         if resp.status_code == 200:
             fileType = imghdr.what(None, resp.content)
+
+            if not isUtf8(resp.content):
+                if not fileType and url.endswith(".jpg"):
+                    fileType = "jpg"
+                elif not fileType and url.endswith(".jpeg"):
+                    fileType = "jpeg"
+                elif not fileType and url.endswith(".png"):
+                    fileType = "png"
+                elif not fileType and url.endswith(".webp"):
+                    fileType = "webp"
 
             if fileType:
                 # Use a trimmed hash of the content as the file name
@@ -202,7 +217,7 @@ def generateJson():
 
 if __name__ == "__main__":
     endColumn = "AE"
-    endRow = 89
+    endRow = 100
 
     pullData("A1", f"{endColumn}{endRow}")
     generateJson()
