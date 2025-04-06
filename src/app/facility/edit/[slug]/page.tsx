@@ -1,10 +1,11 @@
 import Form from "next/form";
 import { MapPin, PhoneCall } from "lucide-react";
 
-import { fetchFacilityBySlug } from "@/app/directory/data";
 import NotFound from "@/app/not-found";
 import Card from "@/components/Card";
 import { DistrictsList, ProvincesList } from "@/utils/defines";
+import { getServerAuth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
 
@@ -15,7 +16,14 @@ export default async function FacilityEditPage({ params }: FacilityPageProps) {
 
     /* NextJS requirement: params should be awaited before accessing 
             https://nextjs.org/docs/messages/sync-dynamic-apis*/
-    // const { slug } = await params;
+    const { slug } = await params;
+
+    const session = await getServerAuth();
+    if (!session) {
+        const currentPath = `/facility/edit/${slug}`;
+        redirect(`/admin/login?callbackUrl=${encodeURIComponent(currentPath)}`);
+    }
+
     // const data = await fetchFacilityBySlug(slug);
 
     const data = {
