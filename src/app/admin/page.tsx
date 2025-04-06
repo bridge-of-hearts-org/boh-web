@@ -1,7 +1,6 @@
-import Button from "@/components/Button";
-import { getServerAuth } from "@/lib/auth";
-import { signOut } from "next-auth/react";
 import { redirect } from "next/navigation";
+
+import { getServerAuth } from "@/lib/auth";
 import Dashboard from "./dashboard";
 
 export default async function AdminDashboard() {
