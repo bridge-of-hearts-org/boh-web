@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import Form from "next/form";
+import { twMerge } from "tailwind-merge";
+import { CircleX, MapPin, PhoneCall, Users } from "lucide-react";
+
 import Card from "@/components/Card";
-import { ChildCareFacility } from "@prisma/client";
+import { ChildCareFacility, Gender } from "@prisma/client";
 import { DistrictsList, ProvincesList } from "@/utils/defines";
-import { MapPin, PhoneCall } from "lucide-react";
 import Button from "@/components/Button";
 
 type EditFormProps = {
@@ -14,12 +16,60 @@ type EditFormProps = {
 
 export default function EditForm(props: EditFormProps) {
     const [formData, setFormData] = useState<ChildCareFacility>(props.data);
+    const [mewPhoneNumber, setNewPhoneNumber] = useState("");
+    const [newEmailAddress, setNewEmailAddress] = useState("");
 
     const inputRowStyle =
         "w-full grid grid-cols-[1fr,3fr] gap-3 items-center grow";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
+
+    const clearFormData = () => {
+        setFormData({
+            ...formData,
+            name: "",
+            type: "",
+            managedBy: "",
+            description: "",
+            location: {
+                address: "",
+                city: "",
+                divisionalSecretariat: "",
+                district: "",
+                province: "",
+                google: "",
+                latitude: 0,
+                longitude: 0,
+            },
+            contact: {
+                phone: [],
+                email: [],
+                website: "",
+                facebook: "",
+                instagram: "",
+            },
+            genders: "unknown",
+            occupancy: { male: 0, female: 0, total: 0 },
+            ageRanges: { male: "", female: "", all: "" },
+        });
+    };
+
+    const isValidPhoneNumber = (value: string): boolean => {
+        if (/0[0-9]{9}/.test(value)) {
+            return true;
+        }
+
+        return false;
+    };
+
+    const isValidEmailAddress = (value: string): boolean => {
+        if (/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) {
+            return true;
+        }
+
+        return false;
+    };
 
     return (
         <Card className="flex w-full flex-col items-center gap-8 p-10">
@@ -62,6 +112,7 @@ export default function EditForm(props: EditFormProps) {
                                 })
                             }
                         >
+                            <option value=""></option>
                             <option value="Voluntary Children's Home">
                                 Voluntary Children's Home
                             </option>
@@ -172,6 +223,7 @@ export default function EditForm(props: EditFormProps) {
                                 })
                             }
                         >
+                            <option value=""></option>
                             {DistrictsList.map((district) => (
                                 <option key={district} value={district}>
                                     {district}
@@ -195,6 +247,7 @@ export default function EditForm(props: EditFormProps) {
                                 })
                             }
                         >
+                            <option value=""></option>
                             {ProvincesList.map((province) => (
                                 <option key={province} value={province}>
                                     {province}
@@ -225,25 +278,345 @@ export default function EditForm(props: EditFormProps) {
                 <section className={sectionStyle}>
                     <div className={sectionHeaderStyles}>
                         <PhoneCall />
-                        <h2 className="font-semibold">Contact</h2>
+                        <h2 className="font-semibold">Contact Info</h2>
                     </div>
 
-                    {/* <div className={inputRowStyle}>
-                        <label>Phone</label>
+                    {/* Phone numbers */}
+                    <div className={inputRowStyle}>
+                        <label>Phone Numbers</label>
+                        <div className="flex grow gap-5">
+                            <input
+                                className="grow"
+                                value={mewPhoneNumber}
+                                onChange={(e) =>
+                                    setNewPhoneNumber(e.target.value)
+                                }
+                            ></input>
+                            <Button
+                                name="Add"
+                                variant="secondary"
+                                color="black"
+                                onClick={(e) => {
+                                    e.preventDefault();
+
+                                    if (isValidPhoneNumber(mewPhoneNumber)) {
+                                        setFormData({
+                                            ...formData,
+                                            contact: {
+                                                ...formData.contact,
+                                                phone: [
+                                                    ...formData.contact.phone,
+                                                    mewPhoneNumber,
+                                                ],
+                                            },
+                                        });
+                                        setNewPhoneNumber("");
+                                    } else {
+                                        alert("Invalid phone number");
+                                    }
+                                }}
+                            >
+                                Add
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Current list of phone numbers */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <div className="flex gap-3">
+                            {formData.contact.phone.map((phone) => (
+                                <div
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    key={phone}
+                                >
+                                    <span>{phone}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setFormData({
+                                                ...formData,
+                                                contact: {
+                                                    ...formData.contact,
+                                                    phone: formData.contact.phone.filter(
+                                                        (p) => p !== phone,
+                                                    ),
+                                                },
+                                            });
+                                        }}
+                                    >
+                                        <CircleX />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Email addresses */}
+                    <div className={twMerge(inputRowStyle, "pt-10")}>
+                        <label>Email Addresses</label>
+                        <div className="flex grow gap-5">
+                            <input
+                                className="grow"
+                                value={newEmailAddress}
+                                onChange={(e) =>
+                                    setNewEmailAddress(e.target.value)
+                                }
+                            ></input>
+                            <Button
+                                name="Add"
+                                variant="secondary"
+                                color="black"
+                                onClick={(e) => {
+                                    e.preventDefault();
+
+                                    if (isValidEmailAddress(newEmailAddress)) {
+                                        setFormData({
+                                            ...formData,
+                                            contact: {
+                                                ...formData.contact,
+                                                email: [
+                                                    ...formData.contact.email,
+                                                    newEmailAddress,
+                                                ],
+                                            },
+                                        });
+                                        setNewEmailAddress("");
+                                    } else {
+                                        alert("Invalid email address");
+                                    }
+                                }}
+                            >
+                                Add
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Current list of email addresses */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <div className="flex gap-3">
+                            {formData.contact.email.map((email) => (
+                                <div
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    key={email}
+                                >
+                                    <span>{email}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setFormData({
+                                                ...formData,
+                                                contact: {
+                                                    ...formData.contact,
+                                                    email: formData.contact.email.filter(
+                                                        (p) => p !== email,
+                                                    ),
+                                                },
+                                            });
+                                        }}
+                                    >
+                                        <CircleX />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Website */}
+                    <div className={twMerge(inputRowStyle, "pt-10")}>
+                        <label>Website</label>
                         <input
                             className="grow"
-                            value={formData.contact.phone}
+                            value={formData.contact.website}
                             onChange={(e) =>
                                 setFormData({
                                     ...formData,
                                     contact: {
                                         ...formData.contact,
-                                        phone: e.target.value,
+                                        website: e.target.value,
                                     },
                                 })
                             }
                         ></input>
-                    </div> */}
+                    </div>
+
+                    {/* Facebook */}
+                    <div className={inputRowStyle}>
+                        <label>Facebook</label>
+                        <input
+                            className="grow"
+                            value={formData.contact.facebook}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    contact: {
+                                        ...formData.contact,
+                                        facebook: e.target.value,
+                                    },
+                                })
+                            }
+                        ></input>
+                    </div>
+
+                    {/* Instagram */}
+                    <div className={inputRowStyle}>
+                        <label>Instagram</label>
+                        <input
+                            className="grow"
+                            value={formData.contact.instagram}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    contact: {
+                                        ...formData.contact,
+                                        instagram: e.target.value,
+                                    },
+                                })
+                            }
+                        ></input>
+                    </div>
+                </section>
+
+                {/* Resident Info */}
+                <section className={sectionStyle}>
+                    <div className={sectionHeaderStyles}>
+                        <Users />
+                        <h2 className="font-semibold">Resident Info</h2>
+                    </div>
+
+                    {/* Genders */}
+                    <div className={inputRowStyle}>
+                        <label>Genders</label>
+                        <select
+                            className="grow"
+                            value={formData.genders}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    genders: e.target.value as Gender,
+                                })
+                            }
+                        >
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="both">Both</option>
+                            <option value="unknown">Unknown</option>
+                        </select>
+                    </div>
+
+                    {/* Occupancy */}
+                    <div className={twMerge(inputRowStyle, "pt-8")}>
+                        <label>Current Occupants</label>
+                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                            <div className="flex flex-col gap-2">
+                                <label>Male</label>
+                                <input
+                                    className="grow"
+                                    value={formData.occupancy.male || ""}
+                                    type="number"
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            occupancy: {
+                                                ...formData.occupancy,
+                                                male: Number(e.target.value),
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label>Female</label>
+                                <input
+                                    className="grow"
+                                    value={formData.occupancy.female || ""}
+                                    type="number"
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            occupancy: {
+                                                ...formData.occupancy,
+                                                female: Number(e.target.value),
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label>Total</label>
+                                <input
+                                    className="grow"
+                                    value={formData.occupancy.total || ""}
+                                    type="number"
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            occupancy: {
+                                                ...formData.occupancy,
+                                                total: Number(e.target.value),
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Ages */}
+                    <div className={twMerge(inputRowStyle, "pt-8")}>
+                        <label>Current Age Ranges</label>
+                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                            <div className="flex flex-col gap-2">
+                                <label>Male</label>
+                                <input
+                                    className="grow"
+                                    value={formData.ageRanges.male || ""}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            ageRanges: {
+                                                ...formData.ageRanges,
+                                                male: e.target.value,
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label>Female</label>
+                                <input
+                                    className="grow"
+                                    value={formData.ageRanges.female || ""}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            ageRanges: {
+                                                ...formData.ageRanges,
+                                                female: e.target.value,
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                            <div className="flex flex-col gap-2">
+                                <label>All</label>
+                                <input
+                                    className="grow"
+                                    value={formData.ageRanges.all || ""}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            ageRanges: {
+                                                ...formData.ageRanges,
+                                                all: e.target.value,
+                                            },
+                                        })
+                                    }
+                                ></input>
+                            </div>
+                        </div>
+                    </div>
                 </section>
 
                 {/* Buttons */}
@@ -255,6 +628,23 @@ export default function EditForm(props: EditFormProps) {
                         onClick={() => setFormData(props.data)}
                     >
                         Reset
+                    </Button>
+                    <Button
+                        name="Reset"
+                        variant="secondary"
+                        color="red"
+                        onClick={clearFormData}
+                    >
+                        Clear
+                    </Button>
+                    <Button
+                        name="Reset"
+                        type="submit"
+                        variant="primary"
+                        color="green"
+                        onClick={() => setFormData(props.data)}
+                    >
+                        Submit
                     </Button>
                 </div>
             </Form>
