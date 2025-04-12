@@ -9,6 +9,7 @@ import Card from "@/components/Card";
 import { ChildCareFacility, Gender } from "@prisma/client";
 import { DistrictsList, ProvincesList } from "@/utils/defines";
 import Button from "@/components/Button";
+import { updateFacility } from "@/app/actions/data";
 
 type EditFormProps = {
     data: ChildCareFacility;
@@ -19,13 +20,14 @@ export default function EditForm(props: EditFormProps) {
     const [mewPhoneNumber, setNewPhoneNumber] = useState("");
     const [newEmailAddress, setNewEmailAddress] = useState("");
 
+    /* Common styles */
     const inputRowStyle =
         "w-full grid grid-cols-[1fr,3fr] gap-3 items-center grow";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
 
-    const clearFormData = () => {
+    const handleClear = () => {
         setFormData({
             ...formData,
             name: "",
@@ -55,6 +57,13 @@ export default function EditForm(props: EditFormProps) {
         });
     };
 
+    const handleSubmit = async () => {
+        /* The fact that we are in the edit page means that the database entry exists */
+        const status = await updateFacility(formData);
+        alert(status);
+    };
+
+    /* Validation functions */
     const isValidPhoneNumber = (value: string): boolean => {
         if (/0[0-9]{9}/.test(value)) {
             return true;
@@ -633,7 +642,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="red"
-                        onClick={clearFormData}
+                        onClick={handleClear}
                     >
                         Clear
                     </Button>
@@ -642,7 +651,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
-                        onClick={() => setFormData(props.data)}
+                        onClick={handleSubmit}
                     >
                         Submit
                     </Button>

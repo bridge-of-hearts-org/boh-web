@@ -1,11 +1,9 @@
 import { redirect } from "next/navigation";
-import { MapPin, PhoneCall } from "lucide-react";
 
 import NotFound from "@/app/not-found";
 import { getServerAuth } from "@/lib/auth";
-import { fetchFacilityBySlug } from "@/app/directory/data";
+import { fetchFacilityBySlug } from "@/app/actions/data";
 import EditForm from "./EditForm";
-import { ChildCareFacility } from "@prisma/client";
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
 

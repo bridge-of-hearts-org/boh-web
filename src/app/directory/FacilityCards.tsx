@@ -7,7 +7,7 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import Button from "@/components/Button";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
-import { fetchAllFacilities } from "./data";
+import { fetchAllFacilities } from "../actions/data";
 import {
     DirectoryFilterType,
     District,
