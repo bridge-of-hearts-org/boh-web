@@ -1,6 +1,6 @@
 "use server";
 
-import { DirectoryFilterType } from "@/utils/defines";
+import { ChildCareFacilityInput, DirectoryFilterType } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 
@@ -131,45 +131,36 @@ export async function fetchFacilityBySlug(slug: string) {
     return data;
 }
 
-export async function updateFacility(data: ChildCareFacility): Promise<string> {
+export async function updateFacility(
+    data: ChildCareFacilityInput,
+): Promise<string> {
     try {
         await prisma.childCareFacility.update({
             where: {
                 slug: data.slug,
             },
-            data: {
-                name: data.name,
-                slug: data.slug,
-                type: data.type,
-                managedBy: data.managedBy,
-                location: {
-                    address: data.location.address,
-                    city: data.location.city,
-                    district: data.location.district,
-                    province: data.location.province,
-                    divisionalSecretariat: data.location.divisionalSecretariat,
-                    google: data.location.google,
-                },
-                contact: {
-                    phone: data.contact.phone,
-                    email: data.contact.email,
-                    website: data.contact.website,
-                    facebook: data.contact.facebook,
-                    instagram: data.contact.instagram,
-                },
-                genders: data.genders,
-                occupancy: {
-                    total: data.occupancy.total,
-                    male: data.occupancy.male,
-                    female: data.occupancy.female,
-                },
-                ageRanges: {
-                    all: data.ageRanges.all,
-                    male: data.ageRanges.male,
-                    female: data.ageRanges.female,
-                },
-                photos: data.photos,
-            },
+            data: data,
+        });
+    } catch (error) {
+        console.log("Ran into prisma error", error);
+
+        if (error instanceof Error) {
+            return error.message;
+        } else {
+            console.log(error);
+            return `Unknown Error: ${error}`;
+        }
+    }
+
+    return "success";
+}
+
+export async function addFacility(
+    data: ChildCareFacilityInput,
+): Promise<string> {
+    try {
+        await prisma.childCareFacility.create({
+            data: data,
         });
     } catch (error) {
         console.log("Ran into prisma error", error);

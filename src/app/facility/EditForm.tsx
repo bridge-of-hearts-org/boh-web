@@ -4,19 +4,48 @@ import { useState } from "react";
 import Form from "next/form";
 import { twMerge } from "tailwind-merge";
 import { CircleX, MapPin, PhoneCall, Users } from "lucide-react";
+import { redirect } from "next/navigation";
 
 import Card from "@/components/Card";
 import { ChildCareFacility, Gender } from "@prisma/client";
-import { DistrictsList, ProvincesList } from "@/utils/defines";
+import {
+    DistrictsList,
+    emptyChildCareFacilityDbObject,
+    ProvincesList,
+} from "@/utils/defines";
 import Button from "@/components/Button";
-import { updateFacility } from "@/app/actions/data";
+import { addFacility, updateFacility } from "@/app/actions/data";
+import Link from "next/link";
+import { removeKeys } from "@/utils/utils";
 
-type EditFormProps = {
-    data: ChildCareFacility;
+type EditFormProps =
+    | { newFacility: true; data?: never }
+    | { newFacility: false; data: ChildCareFacility };
+
+const validate = (data: ChildCareFacility) => {
+    if (!data.slug) {
+        return "Slug is required";
+    }
+
+    if (!data.name) {
+        return "Name is required";
+    }
+
+    return "success";
 };
 
 export default function EditForm(props: EditFormProps) {
-    const [formData, setFormData] = useState<ChildCareFacility>(props.data);
+    if (!props.newFacility && !props.data) {
+        return (
+            <h1 className="justify-center text-2xl font-semibold">
+                Something went wrong
+            </h1>
+        );
+    }
+
+    const data = props.data || emptyChildCareFacilityDbObject;
+
+    const [formData, setFormData] = useState<ChildCareFacility>(data);
     const [mewPhoneNumber, setNewPhoneNumber] = useState("");
     const [newEmailAddress, setNewEmailAddress] = useState("");
 
@@ -28,39 +57,30 @@ export default function EditForm(props: EditFormProps) {
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
 
     const handleClear = () => {
-        setFormData({
-            ...formData,
-            name: "",
-            type: "",
-            managedBy: "",
-            description: "",
-            location: {
-                address: "",
-                city: "",
-                divisionalSecretariat: "",
-                district: "",
-                province: "",
-                google: "",
-                latitude: 0,
-                longitude: 0,
-            },
-            contact: {
-                phone: [],
-                email: [],
-                website: "",
-                facebook: "",
-                instagram: "",
-            },
-            genders: "unknown",
-            occupancy: { male: 0, female: 0, total: 0 },
-            ageRanges: { male: "", female: "", all: "" },
-        });
+        setFormData(emptyChildCareFacilityDbObject);
     };
 
     const handleSubmit = async () => {
-        /* The fact that we are in the edit page means that the database entry exists */
-        const status = await updateFacility(formData);
-        alert(status);
+        const status = validate(formData);
+
+        if (status !== "success") {
+            alert(status);
+            return;
+        }
+
+        if (props.newFacility) {
+            const status = await addFacility(
+                removeKeys(formData, ["id", "createdAt", "updatedAt"]),
+            );
+            alert(status);
+            redirect("/admin");
+        } else {
+            /* The fact that we are in the edit page means that the database entry exists */
+            const status = await updateFacility(
+                removeKeys(formData, ["id", "createdAt", "updatedAt"]),
+            );
+            alert(status);
+        }
     };
 
     /* Validation functions */
@@ -96,6 +116,19 @@ export default function EditForm(props: EditFormProps) {
             >
                 {/* Basic Info */}
                 <section className="flex flex-col items-center gap-5">
+                    <div className={inputRowStyle}>
+                        <label>Database Slug</label>
+                        <input
+                            className="grow"
+                            value={formData.slug}
+                            onChange={(e) =>
+                                setFormData({
+                                    ...formData,
+                                    slug: e.target.value,
+                                })
+                            }
+                        ></input>
+                    </div>
                     <div className={inputRowStyle}>
                         <label>Name</label>
                         <input
@@ -630,11 +663,16 @@ export default function EditForm(props: EditFormProps) {
 
                 {/* Buttons */}
                 <div className="flex justify-end gap-5 pt-10">
+                    <Link href="/admin">
+                        <Button name="Reset" variant="secondary" color="black">
+                            Back to Table
+                        </Button>
+                    </Link>
                     <Button
                         name="Reset"
                         variant="secondary"
                         color="black"
-                        onClick={() => setFormData(props.data)}
+                        onClick={() => setFormData(data)}
                     >
                         Reset
                     </Button>

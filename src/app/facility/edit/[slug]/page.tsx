@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import NotFound from "@/app/not-found";
 import { getServerAuth } from "@/lib/auth";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import EditForm from "./EditForm";
+import EditForm from "../../EditForm";
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
 
@@ -31,7 +31,7 @@ export default async function FacilityEditPage({ params }: FacilityPageProps) {
 
     return (
         <article>
-            <EditForm data={data} />
+            <EditForm data={data} newFacility={false} />
         </article>
     );
 }
