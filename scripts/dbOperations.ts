@@ -4,6 +4,8 @@ import { put, list } from "@vercel/blob";
 import { config } from "dotenv";
 
 import { ChildCareFacility, PrismaClient } from "@prisma/client";
+import { removeKeys } from "../src/utils/utils";
+import { ChildCareFacilityInput } from "../src/utils/defines";
 
 const JSON_FNAME = path.join(__dirname, "data", "dbData.json");
 const PHOTOS_DIR = path.join(__dirname, "data", "photos");
@@ -129,6 +131,50 @@ async function upsertFacilities(jsonData: ChildCareFacility[]) {
     await prisma.$disconnect();
 }
 
+async function updateFacilities() {
+    /* Pull current data */
+    let currentFacilities = await prisma.childCareFacility.findMany({});
+    let updatedCount = 0;
+
+    await Promise.all(
+        currentFacilities.map(async (facility, idx) => {
+            try {
+                /* Make the changes */
+                if (
+                    !("description" in facility) ||
+                    facility.description == null
+                ) {
+                    facility.description = "";
+                }
+
+                (facility as ChildCareFacilityInput) = removeKeys(facility, [
+                    "createdAt",
+                    "updatedAt",
+                    "id",
+                ]);
+
+                /* Update the database */
+                await prisma.childCareFacility.update({
+                    where: {
+                        slug: facility.slug,
+                    },
+                    data: facility,
+                });
+
+                updatedCount += 1;
+            } catch (error) {
+                console.error("Facility update failed:", error);
+                console.error("Facility:", facility);
+            }
+        }),
+    );
+
+    console.log(
+        `Successfully updated/inserted ${updatedCount} / ${currentFacilities.length} facilities`,
+    );
+    await prisma.$disconnect();
+}
+
 const helpString = "Usage: tsx dbOperations.ts upsert";
 
 if (process.argv.length == 3) {
@@ -147,6 +193,8 @@ if (process.argv.length == 3) {
         .then(async (jsonData) => {
             if (cmd == "upsert") {
                 await upsertFacilities(jsonData);
+            } else if (cmd == "update") {
+                await updateFacilities();
             } else {
                 console.log(helpString);
             }
