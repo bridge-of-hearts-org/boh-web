@@ -1,4 +1,6 @@
-import { DirectoryFilterType } from "@/utils/defines";
+"use server";
+
+import { ChildCareFacilityInput, DirectoryFilterType } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 
@@ -127,4 +129,49 @@ export async function fetchFacilityBySlug(slug: string) {
     } catch {}
 
     return data;
+}
+
+export async function updateFacility(
+    data: ChildCareFacilityInput,
+): Promise<string> {
+    try {
+        await prisma.childCareFacility.update({
+            where: {
+                slug: data.slug,
+            },
+            data: data,
+        });
+    } catch (error) {
+        console.log("Ran into prisma error", error);
+
+        if (error instanceof Error) {
+            return error.message;
+        } else {
+            console.log(error);
+            return `Unknown Error: ${error}`;
+        }
+    }
+
+    return "success";
+}
+
+export async function addFacility(
+    data: ChildCareFacilityInput,
+): Promise<string> {
+    try {
+        await prisma.childCareFacility.create({
+            data: data,
+        });
+    } catch (error) {
+        console.log("Ran into prisma error", error);
+
+        if (error instanceof Error) {
+            return error.message;
+        } else {
+            console.log(error);
+            return `Unknown Error: ${error}`;
+        }
+    }
+
+    return "success";
 }

@@ -4,8 +4,12 @@ import HamburgerMenu from "./HamburgerMenu";
 import ImageComponent from "./ImageComponent";
 
 import MenuLogo from "../../public/images/logo-dark-middle.png";
+import { getServerAuth } from "@/lib/auth";
 
-export default function MenuBar() {
+export default async function MenuBar() {
+    const session = await getServerAuth();
+    const inAdminSession = session ? true : false;
+
     return (
         <div
             id="header"
@@ -25,7 +29,19 @@ export default function MenuBar() {
                     />
                 </Link>
             </div>
-            <div className="mr-4 hidden gap-3 text-white md:flex">
+
+            {inAdminSession && (
+                <Link
+                    href="/admin"
+                    className="flex flex-grow justify-end px-10"
+                >
+                    <Button name="Home" variant="secondary" color="red">
+                        Admin Session
+                    </Button>
+                </Link>
+            )}
+
+            <nav className="mr-4 hidden gap-3 text-white md:flex">
                 <Link href="/">
                     <Button name="Home" variant="secondary" color="transparent">
                         Home
@@ -58,7 +74,7 @@ export default function MenuBar() {
                         Contact
                     </Button>
                 </Link>
-            </div>
+            </nav>
             <div className="md:hidden">
                 <HamburgerMenu />
             </div>

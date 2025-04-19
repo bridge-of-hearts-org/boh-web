@@ -1,5 +1,8 @@
 /* ----------- Vercel ----------- */
 
+import { ChildCareFacility } from "@prisma/client";
+import { removeKeys } from "./utils";
+
 export const vercelStorageUrl =
     "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
 
@@ -69,4 +72,42 @@ export type DirectoryFilterType = {
     city: string;
     district: District | "";
     province: Province | "";
+};
+
+export type ChildCareFacilityInput = Omit<
+    ChildCareFacility,
+    "id" | "createdAt" | "updatedAt"
+>;
+
+export const emptyChildCareFacilityDbObject: ChildCareFacility = {
+    id: "",
+    name: "",
+    slug: "",
+    type: "",
+    managedBy: "",
+    description: "",
+    location: {
+        address: "",
+        city: "",
+        divisionalSecretariat: "",
+        district: "",
+        province: "",
+        google: "",
+        latitude: 0,
+        longitude: 0,
+    },
+    contact: {
+        phone: [],
+        email: [],
+        website: "",
+        facebook: "",
+        instagram: "",
+    },
+    genders: "unknown",
+    occupancy: { male: 0, female: 0, total: 0 },
+    ageRanges: { male: "", female: "", all: "" },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    sources: [],
+    photos: [],
 };
