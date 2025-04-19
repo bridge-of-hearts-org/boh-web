@@ -89,9 +89,13 @@ export async function FacilityCards(props: FacilityCardProps) {
                                 <div className="flex grow flex-col justify-center gap-5">
                                     {/* Title section */}
                                     <div className="flex flex-col items-center gap-1 md:items-start">
-                                        <h2 className="text-center text-lg font-semibold md:text-left">
-                                            {facility.name}
-                                        </h2>
+                                        <Link
+                                            href={`/facility/${facility.slug}`}
+                                        >
+                                            <h2 className="text-center text-lg font-semibold md:text-left">
+                                                {facility.name}
+                                            </h2>
+                                        </Link>
                                         <div className="text-sm">
                                             {facility.type}
                                         </div>
