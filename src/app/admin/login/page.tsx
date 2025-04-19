@@ -1,15 +1,15 @@
 "use client";
 
 import Form from "next/form";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Button from "@/components/Button";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function LoginPage() {
+function LoginForm() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const callbackUrl = searchParams.get("callbackUrl") || "/directory";
+    const callbackUrl = searchParams.get("callbackUrl") || "/admin";
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     const handleSubmit = async (data: FormData) => {
@@ -53,5 +53,24 @@ export default function LoginPage() {
 
             {errorMessage && <p className="text-red-500">{errorMessage}</p>}
         </Form>
+    );
+}
+
+// Loading fallback component
+function LoginFormFallback() {
+    return (
+        <div className="flex flex-col items-center gap-5">
+            <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
+            <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
+            <div className="h-10 w-32 animate-pulse rounded bg-gray-200"></div>
+        </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<LoginFormFallback />}>
+            <LoginForm />
+        </Suspense>
     );
 }
