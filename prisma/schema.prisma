@@ -57,20 +57,21 @@ type PhotoEntry {
 }
 
 model ChildCareFacility {
-    id        String       @id @default(auto()) @map("_id") @db.ObjectId
-    name      String       @unique
-    slug      String       @unique
-    type      String
-    managedBy String
-    location  Location
-    contact   Contact
-    occupancy Occupancy
-    ageRanges AgeRanges
-    genders   Gender
-    createdAt DateTime     @default(now())
-    updatedAt DateTime     @updatedAt
-    photos    PhotoEntry[]
-    sources   String[]
+    id          String       @id @default(auto()) @map("_id") @db.ObjectId
+    name        String       @unique
+    slug        String       @unique
+    type        String
+    managedBy   String
+    description String
+    location    Location
+    contact     Contact
+    occupancy   Occupancy
+    ageRanges   AgeRanges
+    genders     Gender
+    createdAt   DateTime     @default(now())
+    updatedAt   DateTime     @updatedAt
+    photos      PhotoEntry[]
+    sources     String[]
 
     @@map("facilities")
 }

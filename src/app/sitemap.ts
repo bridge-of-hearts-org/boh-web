@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { fetchAllFacilities } from "./directory/data";
+import { fetchAllFacilities } from "./actions/data";
 import { DirectoryFilterType } from "@/utils/defines";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -22,7 +22,7 @@ export default function Footer() {
             </Link>
             <div className="flex w-full flex-col items-center justify-between gap-8">
                 {/* <div className="flex w-full flex-col items-center justify-center gap-3 md:flex-row md:gap-7"> */}
-                <div className="flex w-full flex-wrap items-center justify-center gap-5 md:gap-10">
+                <nav className="flex w-full flex-wrap items-center justify-center gap-5 md:gap-10">
                     <Link href="/" className={footerLinkStyle}>
                         Home
                     </Link>
@@ -35,7 +35,7 @@ export default function Footer() {
                     <Link href="/contact" className={footerLinkStyle}>
                         Contact
                     </Link>
-                </div>
+                </nav>
                 <div className="max-w-[900px] px-5 text-center text-[10px] italic text-white md:px-20">
                     <p>
                         Some images displayed on this website are AI-generated.

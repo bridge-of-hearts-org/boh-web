@@ -14,7 +14,7 @@ import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
-import { fetchFacilityBySlug } from "@/app/directory/data";
+import { fetchFacilityBySlug } from "@/app/actions/data";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
