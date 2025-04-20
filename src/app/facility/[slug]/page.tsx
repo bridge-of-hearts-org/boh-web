@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
-import { MapPin, PhoneCall, Users } from "lucide-react";
+import { Link2, MapPin, PhoneCall, Users } from "lucide-react";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
@@ -488,6 +488,40 @@ export default async function FacilityProfilePage({
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className={infoSectionStyles}>
+                                {/* Header */}
+                                <div className={infoTableHeaderStyles}>
+                                    <Link2 />
+                                    <h1 className="font-semibold">Sources</h1>
+                                </div>
+
+                                {/* Table */}
+                                <div
+                                    className={twMerge(
+                                        infoTableStyles,
+                                        "gap-1",
+                                    )}
+                                >
+                                    {data.sources.map((source, idx) => {
+                                        return (
+                                            <ul className="flex list-disc gap-1">
+                                                <li>
+                                                    <a
+                                                        key={idx}
+                                                        href={source}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="boh-link"
+                                                    >
+                                                        {source}
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         </div>
