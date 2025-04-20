@@ -23,14 +23,30 @@ export default function Contact() {
                 <div className="w-3/4 text-center lg:w-2/3">
                     <p>
                         We'd love to hear from you! If you have any questions or
-                        feedback, feel free to reach out to us at
+                        feedback, feel free to reach out to us.
                     </p>
-                    <a
-                        href="mailto:bridgeofheartslk@gmail.com"
-                        className="boh-link text-lg"
-                    >
-                        bridgeofheartslk@gmail.com
-                    </a>
+                    <div className="flex flex-col">
+                        <div className="flex items-center justify-center gap-1">
+                            <span className="font-semibold">Email: </span>
+                            <a
+                                href="mailto:bridgeofheartslk@gmail.com"
+                                className="boh-link text-lg"
+                            >
+                                bridgeofheartslk@gmail.com
+                            </a>
+                        </div>
+                        <div className="flex items-center justify-center gap-1">
+                            <span className="font-semibold">Facebook: </span>
+                            <a
+                                href="https://www.facebook.com/people/The-Bridge-of-Hearts-Project/61573039696750/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="boh-link"
+                            >
+                                The Bridge of Hearts Project
+                            </a>
+                        </div>
+                    </div>
                     <p className="mt-5">
                         If you have up-to-date information about any children's
                         home listed on our website or know of a facility that
