@@ -753,7 +753,7 @@ export default function EditForm(props: EditFormProps) {
                 </section>
 
                 {/* Buttons */}
-                <div className="flex justify-end gap-5 pt-10">
+                <div className="flex flex-col items-center justify-end gap-5 pt-10 md:flex-row">
                     <Link href="/admin">
                         <Button name="Reset" variant="secondary" color="black">
                             Back to Table
