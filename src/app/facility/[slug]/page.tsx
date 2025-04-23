@@ -491,6 +491,7 @@ export default async function FacilityProfilePage({
                                 </div>
                             </div>
 
+                            {/* Sources */}
                             <div className={infoSectionStyles}>
                                 {/* Header */}
                                 <div className={infoTableHeaderStyles}>

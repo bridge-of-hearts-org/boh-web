@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Form from "next/form";
 import { twMerge } from "tailwind-merge";
-import { CircleX, MapPin, PhoneCall, Users } from "lucide-react";
+import { CircleX, Link2, MapPin, PhoneCall, Users } from "lucide-react";
 import { redirect } from "next/navigation";
 
 import Card from "@/components/Card";
@@ -46,8 +46,9 @@ export default function EditForm(props: EditFormProps) {
     const data = props.data || emptyChildCareFacilityDbObject;
 
     const [formData, setFormData] = useState<ChildCareFacility>(data);
-    const [mewPhoneNumber, setNewPhoneNumber] = useState("");
+    const [newPhoneNumber, setNewPhoneNumber] = useState("");
     const [newEmailAddress, setNewEmailAddress] = useState("");
+    const [newSource, setNewSource] = useState("");
 
     /* Common styles */
     const inputRowStyle =
@@ -85,19 +86,41 @@ export default function EditForm(props: EditFormProps) {
 
     /* Validation functions */
     const isValidPhoneNumber = (value: string): boolean => {
-        if (/0[0-9]{9}/.test(value)) {
-            return true;
+        if (!/0[0-9]{9}/.test(value)) {
+            alert("Invalid phone number. Must start with 0 and have 10 digits");
+            return false;
         }
 
-        return false;
+        return true;
     };
 
     const isValidEmailAddress = (value: string): boolean => {
-        if (/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) {
-            return true;
+        if (!/^[\w\-\.]+@([\w-]+\.)+[\w-]{2,4}$/.test(value)) {
+            alert("Invalid email address");
+            return false;
         }
 
-        return false;
+        return true;
+    };
+
+    const isValidUrl = (value: string, list: string[]): boolean => {
+        if (
+            !/((http(s)?:\/\/)(www\.)?|www\.)[a-zA-Z0-9@:%._+~#?&\/=]+/.test(
+                value,
+            )
+        ) {
+            alert(
+                'Invalid URL. Must start with "http://", "https://" or "www."',
+            );
+            return false;
+        }
+
+        if (list.includes(value)) {
+            alert("Source already exists");
+            return false;
+        }
+
+        return true;
     };
 
     return (
@@ -329,7 +352,7 @@ export default function EditForm(props: EditFormProps) {
                         <div className="flex grow gap-5">
                             <input
                                 className="grow"
-                                value={mewPhoneNumber}
+                                value={newPhoneNumber}
                                 onChange={(e) =>
                                     setNewPhoneNumber(e.target.value)
                                 }
@@ -341,20 +364,18 @@ export default function EditForm(props: EditFormProps) {
                                 onClick={(e) => {
                                     e.preventDefault();
 
-                                    if (isValidPhoneNumber(mewPhoneNumber)) {
+                                    if (isValidPhoneNumber(newPhoneNumber)) {
                                         setFormData({
                                             ...formData,
                                             contact: {
                                                 ...formData.contact,
                                                 phone: [
                                                     ...formData.contact.phone,
-                                                    mewPhoneNumber,
+                                                    newPhoneNumber,
                                                 ],
                                             },
                                         });
                                         setNewPhoneNumber("");
-                                    } else {
-                                        alert("Invalid phone number");
                                     }
                                 }}
                             >
@@ -424,8 +445,6 @@ export default function EditForm(props: EditFormProps) {
                                             },
                                         });
                                         setNewEmailAddress("");
-                                    } else {
-                                        alert("Invalid email address");
                                     }
                                 }}
                             >
@@ -657,6 +676,78 @@ export default function EditForm(props: EditFormProps) {
                                     }
                                 ></input>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Sources */}
+                <section className={sectionStyle}>
+                    <div className={sectionHeaderStyles}>
+                        <Link2 />
+                        <h2 className="font-semibold">Sources</h2>
+                    </div>
+
+                    {/* Sources input */}
+                    <div className={inputRowStyle}>
+                        <label>Sources</label>
+                        <div className="flex grow gap-5">
+                            <input
+                                className="grow"
+                                value={newSource}
+                                onChange={(e) => setNewSource(e.target.value)}
+                            ></input>
+                            <Button
+                                name="Add"
+                                variant="secondary"
+                                color="black"
+                                onClick={(e) => {
+                                    e.preventDefault();
+
+                                    if (
+                                        isValidUrl(newSource, formData.sources)
+                                    ) {
+                                        setFormData({
+                                            ...formData,
+                                            sources: [
+                                                ...formData.sources,
+                                                newSource,
+                                            ],
+                                        });
+                                        setNewSource("");
+                                    }
+                                }}
+                            >
+                                Add
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Current list of sources */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <div className="flex flex-col items-start gap-2">
+                            {formData.sources.map((source) => (
+                                <div
+                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    key={source}
+                                >
+                                    <span>{source}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            setFormData({
+                                                ...formData,
+                                                sources:
+                                                    formData.sources.filter(
+                                                        (s) => s !== source,
+                                                    ),
+                                            });
+                                        }}
+                                    >
+                                        <CircleX />
+                                    </button>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </section>
