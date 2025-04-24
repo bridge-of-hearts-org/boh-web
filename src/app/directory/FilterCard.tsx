@@ -21,6 +21,7 @@ export default function FilterCard() {
     const [activeFilters, setActiveFilters] = useState<DirectoryFilterType>({
         name: searchParams.get("name") || "",
         city: searchParams.get("city") || "",
+        managedBy: searchParams.get("managedBy") || "",
         district: (searchParams.get("district") || "") as District | "",
         province: (searchParams.get("province") || "") as Province | "",
     });
@@ -29,6 +30,7 @@ export default function FilterCard() {
         setActiveFilters({
             name: searchParams.get("name") || "",
             city: searchParams.get("city") || "",
+            managedBy: searchParams.get("managedBy") || "",
             district: (searchParams.get("district") || "") as District | "",
             province: (searchParams.get("province") || "") as Province | "",
         });
@@ -38,6 +40,7 @@ export default function FilterCard() {
         const params = new URLSearchParams();
         params.set("name", data.get("name")?.toString() || "");
         params.set("city", data.get("city")?.toString() || "");
+        params.set("managedBy", data.get("managedBy")?.toString() || "");
         params.set("district", data.get("district")?.toString() || "");
         params.set("province", data.get("province")?.toString() || "");
 
@@ -70,6 +73,15 @@ export default function FilterCard() {
                         name="city"
                         type="text"
                         defaultValue={activeFilters.city}
+                    ></input>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="managedBy">Managed By</label>
+                    <input
+                        id="managedBy"
+                        name="managedBy"
+                        type="text"
+                        defaultValue={activeFilters.managedBy}
                     ></input>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -140,6 +152,7 @@ export default function FilterCard() {
                             setActiveFilters({
                                 name: "",
                                 city: "",
+                                managedBy: "",
                                 district: "",
                                 province: "",
                             });

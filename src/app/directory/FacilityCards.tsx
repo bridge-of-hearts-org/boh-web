@@ -22,6 +22,7 @@ const itemsPerPage = 10;
 type FacilityCardProps = {
     name: string;
     city: string;
+    managedBy: string;
     district: District;
     province: Province;
     page: number;
@@ -32,6 +33,7 @@ export async function FacilityCards(props: FacilityCardProps) {
     const activeFilters: DirectoryFilterType = {
         name: props.name,
         city: props.city,
+        managedBy: props.managedBy,
         district: props.district,
         province: props.province,
     };
@@ -99,6 +101,11 @@ export async function FacilityCards(props: FacilityCardProps) {
                                         <div className="text-sm">
                                             {facility.type}
                                         </div>
+                                        {facility.managedBy && (
+                                            <div className="text-sm italic">
+                                                {`${facility.managedBy}`}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Address and contact section */}

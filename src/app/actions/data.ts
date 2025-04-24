@@ -49,6 +49,15 @@ export async function fetchAllFacilities(
             });
         }
 
+        if (filterValues.managedBy) {
+            filters.push({
+                managedBy: {
+                    contains: filterValues.managedBy,
+                    mode: "insensitive",
+                },
+            });
+        }
+
         if (filterValues.district) {
             filters.push({
                 location: {

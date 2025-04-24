@@ -70,6 +70,7 @@ export const ProvinceToDistrict: ProvinceToDistrictType = {
 export type DirectoryFilterType = {
     name: string;
     city: string;
+    managedBy: string;
     district: District | "";
     province: Province | "";
 };

@@ -17,6 +17,7 @@ export default async function DirectoryPage(props: {
     searchParams: Promise<{
         name?: string;
         city?: string;
+        managedBy?: string;
         district?: District | "";
         province?: Province | "";
         sortBy?: string;
@@ -57,6 +58,7 @@ export default async function DirectoryPage(props: {
                     <FacilityCards
                         name={searchParams.name || ""}
                         city={searchParams.city || ""}
+                        managedBy={searchParams.managedBy || ""}
                         district={(searchParams.district as District) || ""}
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
