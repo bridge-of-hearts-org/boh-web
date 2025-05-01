@@ -75,6 +75,14 @@ export type DirectoryFilterType = {
     province: Province | "";
 };
 
+export const emptyFilter: DirectoryFilterType = {
+    name: "",
+    city: "",
+    managedBy: "",
+    district: "",
+    province: "",
+};
+
 export type ChildCareFacilityInput = Omit<
     ChildCareFacility,
     "id" | "createdAt" | "updatedAt"

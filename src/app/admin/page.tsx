@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getServerAuth } from "@/lib/auth";
 import AdminActions from "./AdminActions";
 import { fetchAllFacilities } from "../actions/data";
-import { DirectoryFilterType } from "@/utils/defines";
+import { DirectoryFilterType, emptyFilter } from "@/utils/defines";
 import Link from "next/link";
 
 export default async function AdminDashboard() {
@@ -13,12 +13,7 @@ export default async function AdminDashboard() {
         redirect("/admin/login");
     }
 
-    const activeFilters: DirectoryFilterType = {
-        name: "",
-        city: "",
-        district: "",
-        province: "",
-    };
+    const activeFilters: DirectoryFilterType = emptyFilter;
 
     const [facilities, totalCount] = await fetchAllFacilities(
         activeFilters,
@@ -38,35 +33,39 @@ export default async function AdminDashboard() {
             <AdminActions />
 
             <table className="mt-8 w-full rounded-3xl lg:w-2/3">
-                <tr className="bg-orange-100">
-                    <th className={tableHeadingStyle}>Name</th>
-                    <th className={tableHeadingStyle}>City</th>
-                    <th className={tableHeadingStyle}>District</th>
-                    <th className={tableHeadingStyle}>Province</th>
-                </tr>
-                {facilities.map((facility, idx) => {
-                    return (
-                        <tr
-                            key={facility.id}
-                            className="border hover:bg-orange-50 hover:font-semibold"
-                        >
-                            <td className={tableCellStyle}>
-                                <Link href={`/facility/edit/${facility.slug}`}>
-                                    {facility.name}
-                                </Link>
-                            </td>
-                            <td className={tableCellStyle}>
-                                {facility.location.city}
-                            </td>
-                            <td className={tableCellStyle}>
-                                {facility.location.district}
-                            </td>
-                            <td className={tableCellStyle}>
-                                {facility.location.province}
-                            </td>
-                        </tr>
-                    );
-                })}
+                <tbody>
+                    <tr className="bg-orange-100">
+                        <th className={tableHeadingStyle}>Name</th>
+                        <th className={tableHeadingStyle}>City</th>
+                        <th className={tableHeadingStyle}>District</th>
+                        <th className={tableHeadingStyle}>Province</th>
+                    </tr>
+                    {facilities.map((facility, idx) => {
+                        return (
+                            <tr
+                                key={facility.id}
+                                className="border hover:bg-orange-50 hover:font-semibold"
+                            >
+                                <td className={tableCellStyle}>
+                                    <Link
+                                        href={`/facility/edit/${facility.slug}`}
+                                    >
+                                        {facility.name}
+                                    </Link>
+                                </td>
+                                <td className={tableCellStyle}>
+                                    {facility.location.city}
+                                </td>
+                                <td className={tableCellStyle}>
+                                    {facility.location.district}
+                                </td>
+                                <td className={tableCellStyle}>
+                                    {facility.location.province}
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
             </table>
         </div>
     );

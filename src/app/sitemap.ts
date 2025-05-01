@@ -1,16 +1,11 @@
 import type { MetadataRoute } from "next";
 import { fetchAllFacilities } from "./actions/data";
-import { DirectoryFilterType } from "@/utils/defines";
+import { DirectoryFilterType, emptyFilter } from "@/utils/defines";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = "https://bridgeofhearts.lk";
 
-    const filters: DirectoryFilterType = {
-        name: "",
-        city: "",
-        district: "",
-        province: "",
-    };
+    const filters: DirectoryFilterType = emptyFilter;
 
     const [facilities, totalCount] = await fetchAllFacilities(
         filters,
