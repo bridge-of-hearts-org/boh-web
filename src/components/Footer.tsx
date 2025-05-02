@@ -57,7 +57,7 @@ export default function Footer() {
                 </div>
             </div>
             <div className="my-3 mr-4 flex flex-col items-end justify-between">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col items-center gap-4 md:flex-row">
                     <a
                         href="https://www.instagram.com/bridgeofheartslk/"
                         target="_blank"
