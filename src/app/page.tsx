@@ -14,7 +14,7 @@ import Card from "@/components/Card";
 export const metadata: Metadata = {
     title: "Bridge of Hearts | Find Children's Homes in Sri Lanka",
     description:
-        "Welcome to Bridge of Hearts, an online directory for Child Development Centers (Children's Homes) in Sri Lanka.",
+        "Welcome to Bridge of Hearts, an online directory for Child Development Centres (Children's Homes) in Sri Lanka.",
 };
 
 export default function HomePage() {
@@ -43,7 +43,7 @@ export default function HomePage() {
                             </h1>
                             <h2 className="mb-2 text-center text-xl font-semibold">
                                 An online directory for Child Development
-                                Centers in Sri Lanka.
+                                Centres in Sri Lanka.
                             </h2>
                         </div>
 
@@ -53,7 +53,7 @@ export default function HomePage() {
                                 for a brighter future. Yet, in Sri Lanka, more
                                 than <strong>10,000 children</strong> live in
                                 over{" "}
-                                <strong>370 Child Development Centers</strong>{" "}
+                                <strong>370 Child Development Centres</strong>{" "}
                                 commonly known as children's homes seeking
                                 stability and support.
                             </p>

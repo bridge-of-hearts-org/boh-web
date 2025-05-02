@@ -14,20 +14,20 @@ const encodeSansSc = Encode_Sans_SC({ subsets: ["latin"] });
 export const metadata: Metadata = {
     title: "Bridge of Hearts",
     description:
-        "Find and support Child Development Centers (Children's Homes) in Sri Lanka. " +
+        "Find and support Child Development Centres (Children's Homes) in Sri Lanka. " +
         "Our directory provides up-to-date contact details, locations, and resident information. " +
         "Filter by name, city, district, and province. Continuously updated to ensure accurate data.",
     keywords: [
         "childcare facilities Sri Lanka",
         "children's homes Sri Lanka",
-        "child development centers Sri Lanka",
+        "child development centres Sri Lanka",
         "orphanages Sri Lanka ",
     ],
     metadataBase: new URL("https://www.bridgeofhearts.lk"),
     openGraph: {
-        title: "Bridge of Hearts - A Directory of Child Development Centers in Sri Lanka",
+        title: "Bridge of Hearts - A Directory of Child Development Centres in Sri Lanka",
         description:
-            "Find and support Child Development Centers (Children's Homes) across Sri Lanka.",
+            "Find and support Child Development Centres (Children's Homes) across Sri Lanka.",
         url: "https://www.bridgeofhearts.lk",
         siteName: "Bridge of Hearts",
         images: [
@@ -35,7 +35,7 @@ export const metadata: Metadata = {
                 url: "/images/opengraph-cover.png",
                 width: 1200,
                 height: 630,
-                alt: "Bridge of Hearts - A Directory of Child Development Centers in Sri Lanka",
+                alt: "Bridge of Hearts - A Directory of Child Development Centres in Sri Lanka",
             },
         ],
         type: "website",

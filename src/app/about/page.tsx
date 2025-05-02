@@ -80,7 +80,7 @@ export default function About() {
                 </p>
                 <p className="mt-8 text-center">
                     <Link href="/directory" className="boh-link">
-                        Explore our directory of Child Development Centers
+                        Explore our directory of Child Development Centres
                         (Children's Homes) in Sri Lanka.
                     </Link>
                 </p>
