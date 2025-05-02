@@ -26,24 +26,37 @@ export default function Contact() {
                         feedback, feel free to reach out to us.
                     </p>
                     <div className="flex flex-col">
-                        <div className="flex items-center justify-center gap-1">
-                            <span className="font-semibold">Email: </span>
+                        <div className="grid grid-cols-2 gap-x-5 gap-y-1">
+                            <span className="justify-self-end font-semibold">
+                                Email:
+                            </span>
                             <a
                                 href="mailto:bridgeofheartslk@gmail.com"
-                                className="boh-link text-lg"
+                                className="boh-link justify-self-start"
                             >
                                 bridgeofheartslk@gmail.com
                             </a>
-                        </div>
-                        <div className="flex items-center justify-center gap-1">
-                            <span className="font-semibold">Facebook: </span>
+                            <span className="justify-self-end font-semibold">
+                                Facebook:{" "}
+                            </span>
                             <a
                                 href="https://www.facebook.com/people/The-Bridge-of-Hearts-Project/61573039696750/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="boh-link"
+                                className="boh-link justify-self-start"
                             >
                                 The Bridge of Hearts Project
+                            </a>
+                            <span className="justify-self-end font-semibold">
+                                Instagram:{" "}
+                            </span>
+                            <a
+                                href="https://www.instagram.com/bridgeofheartslk/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="boh-link justify-self-start"
+                            >
+                                bridgeofheartslk
                             </a>
                         </div>
                     </div>
@@ -58,7 +71,7 @@ export default function Contact() {
                 </div>
                 <p className="text-center">
                     <Link href="/directory" className="boh-link">
-                        Explore our directory of Child Development Centers
+                        Explore our directory of Child Development Centres
                         (Children's Homes) in Sri Lanka.
                     </Link>
                 </p>

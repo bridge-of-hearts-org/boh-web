@@ -3,6 +3,7 @@ import ImageComponent from "./ImageComponent";
 
 import BohLogo from "../../public/images/logo-dark-narrow.png";
 import FacebookLogo from "../../public/images/facebook-icon.svg";
+import InstagramIcon from "../../public/images/instagram-icon.jpg";
 
 const footerLinkStyle = "font-normal text-gray-200";
 
@@ -56,20 +57,37 @@ export default function Footer() {
                 </div>
             </div>
             <div className="my-3 mr-4 flex flex-col items-end justify-between">
-                <a
-                    href="https://www.facebook.com/profile.php?id=61573039696750"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="boh-link"
-                >
-                    <ImageComponent
-                        src={FacebookLogo}
-                        width={40}
-                        sizes="40px"
-                        alt="Facebook Logo"
-                        className="invert"
-                    />
-                </a>
+                <div className="flex items-center gap-4">
+                    <a
+                        href="https://www.instagram.com/bridgeofheartslk/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="boh-link"
+                    >
+                        <ImageComponent
+                            src={InstagramIcon}
+                            width={40}
+                            sizes="40px"
+                            alt="Instagram Logo"
+                            className="rounded-none"
+                            title="Instagram icons created by Freepik - Flaticon"
+                        />
+                    </a>
+                    <a
+                        href="https://www.facebook.com/profile.php?id=61573039696750"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="boh-link"
+                    >
+                        <ImageComponent
+                            src={FacebookLogo}
+                            width={35}
+                            sizes="35px"
+                            alt="Facebook Logo"
+                            className="invert"
+                        />
+                    </a>
+                </div>
                 <div className="hidden text-sm text-white lg:block">
                     <a href="mailto:bridgeofheartslk@gmail.com">
                         bridgeofheartslk@gmail.com
