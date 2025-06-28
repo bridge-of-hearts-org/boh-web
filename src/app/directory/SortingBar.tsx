@@ -50,8 +50,8 @@ export default function SortingBar(props: SortingBarProps) {
 
     return (
         <Card>
-            <div className="flex flex-wrap items-center justify-between px-2 text-nowrap">
-                <div>
+            <div className="flex flex-wrap items-center justify-center text-nowrap px-2 md:justify-between">
+                <div className="pb-5 md:pb-0">
                     {numPages > 1 && (
                         <span>
                             {`Showing ${displayStart} - ${displayEnd} of `}
