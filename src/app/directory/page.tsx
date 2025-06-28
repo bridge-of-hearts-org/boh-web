@@ -22,10 +22,12 @@ export default async function DirectoryPage(props: {
         province?: Province | "";
         sortBy?: string;
         page: number;
+        itemsPerPage?: string;
     }>;
 }) {
     const searchParams = await props.searchParams;
     const currentPage = searchParams.page || 1;
+    const itemsPerPage = Number(searchParams.itemsPerPage) || 10;
 
     return (
         <div className="flex flex-col gap-5">
@@ -63,6 +65,7 @@ export default async function DirectoryPage(props: {
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
                         sortBy={searchParams.sortBy || "name"}
+                        itemsPerPage={itemsPerPage}
                     />
                 </Suspense>
             </div>

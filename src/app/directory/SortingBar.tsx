@@ -17,6 +17,9 @@ export default function SortingBar(props: SortingBarProps) {
     const searchParams = useSearchParams();
 
     const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "name");
+    const [itemsPerPage, setItemsPerPage] = useState(
+        Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
+    );
 
     /* Calculate start and end item indices in the page */
     const displayStart = (props.page - 1) * props.itemsPerPage + 1;
@@ -34,17 +37,21 @@ export default function SortingBar(props: SortingBarProps) {
 
         params.set("sortBy", sortBy);
         params.set("page", newPage);
+        params.set("itemsPerPage", String(itemsPerPage));
         router.push(`/directory/?${params.toString()}`);
-    }, [sortBy]);
+    }, [sortBy, itemsPerPage]);
 
     useEffect(() => {
         setSortBy(searchParams.get("sortBy") || "name");
+        setItemsPerPage(
+            Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
+        );
     }, [searchParams]);
 
     return (
         <Card>
-            <div className="flex items-center justify-between px-2">
-                <div>
+            <div className="flex flex-wrap items-center justify-center text-nowrap px-2 md:justify-between">
+                <div className="pb-5 md:pb-0">
                     {numPages > 1 && (
                         <span>
                             {`Showing ${displayStart} - ${displayEnd} of `}
@@ -66,6 +73,21 @@ export default function SortingBar(props: SortingBarProps) {
                             >
                                 <option value="name">Name</option>
                                 <option value="city">City</option>
+                            </select>
+                            <label htmlFor="itemsPerPage">Items Per Page</label>
+                            <select
+                                name="itemsPerPage"
+                                value={itemsPerPage}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setItemsPerPage(val);
+                                }}
+                            >
+                                {[5, 10, 20, 50].map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
                             </select>
                         </div>
                     </Form>

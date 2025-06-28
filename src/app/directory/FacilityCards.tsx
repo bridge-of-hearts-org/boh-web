@@ -17,8 +17,6 @@ import {
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 
-const itemsPerPage = 10;
-
 type FacilityCardProps = {
     name: string;
     city: string;
@@ -27,6 +25,7 @@ type FacilityCardProps = {
     province: Province;
     page: number;
     sortBy: string;
+    itemsPerPage: number;
 };
 
 export async function FacilityCards(props: FacilityCardProps) {
@@ -42,7 +41,7 @@ export async function FacilityCards(props: FacilityCardProps) {
         activeFilters,
         props.sortBy,
         props.page,
-        itemsPerPage,
+        props.itemsPerPage,
     );
 
     return (
@@ -50,7 +49,7 @@ export async function FacilityCards(props: FacilityCardProps) {
             <div className="flex w-full flex-col gap-5">
                 <SortingBar
                     page={props.page}
-                    itemsPerPage={itemsPerPage}
+                    itemsPerPage={props.itemsPerPage}
                     totalCount={totalCount}
                 />
 
@@ -168,7 +167,7 @@ export async function FacilityCards(props: FacilityCardProps) {
 
                 <div className="mt-10 flex justify-center">
                     <NavigationBar
-                        totalPages={Math.ceil(totalCount / itemsPerPage)}
+                        totalPages={Math.ceil(totalCount / props.itemsPerPage)}
                     />
                 </div>
             </div>
