@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "@/components/Card";
 import { useEffect, useState } from "react";
+import { defaultSortBy } from "@/utils/defines";
 
 type SortingBarProps = {
     page: number;
@@ -16,7 +17,10 @@ export default function SortingBar(props: SortingBarProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "name");
+    const [sortBy, setSortBy] = useState(
+        searchParams.get("sortBy") || defaultSortBy,
+    );
+
     const [itemsPerPage, setItemsPerPage] = useState(
         Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
     );
@@ -32,7 +36,7 @@ export default function SortingBar(props: SortingBarProps) {
     useEffect(() => {
         const params = new URLSearchParams(searchParams);
         const currentPage = searchParams.get("page") || "1";
-        const currentSortBy = searchParams.get("sortBy") || "name";
+        const currentSortBy = searchParams.get("sortBy") || defaultSortBy;
         const newPage = currentSortBy === sortBy ? currentPage : "1";
 
         params.set("sortBy", sortBy);
@@ -42,7 +46,7 @@ export default function SortingBar(props: SortingBarProps) {
     }, [sortBy, itemsPerPage]);
 
     useEffect(() => {
-        setSortBy(searchParams.get("sortBy") || "name");
+        setSortBy(searchParams.get("sortBy") || defaultSortBy);
         setItemsPerPage(
             Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
         );

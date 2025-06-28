@@ -1,11 +1,14 @@
 import FilterCard from "./FilterCard";
-import { District, Province } from "@/utils/defines";
+import {
+    District,
+    Province,
+    defaultSortBy,
+    defaultItemsPerPage,
+} from "@/utils/defines";
 import { Metadata } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
 import { Suspense } from "react";
-
-const itemsPerPage = 10;
 
 export const metadata: Metadata = {
     title: "Directory | Bridge of Hearts",
@@ -27,7 +30,6 @@ export default async function DirectoryPage(props: {
 }) {
     const searchParams = await props.searchParams;
     const currentPage = searchParams.page || 1;
-    const itemsPerPage = Number(searchParams.itemsPerPage) || 10;
 
     return (
         <div className="flex flex-col gap-5">
@@ -64,8 +66,11 @@ export default async function DirectoryPage(props: {
                         district={(searchParams.district as District) || ""}
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
-                        sortBy={searchParams.sortBy || "name"}
-                        itemsPerPage={itemsPerPage}
+                        sortBy={searchParams.sortBy || defaultSortBy}
+                        itemsPerPage={
+                            Number(searchParams.itemsPerPage) ||
+                            defaultItemsPerPage
+                        }
                     />
                 </Suspense>
             </div>
