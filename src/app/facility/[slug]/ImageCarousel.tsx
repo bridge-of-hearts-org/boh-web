@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PhotoEntry } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import ImageComponent from "@/components/ImageComponent";
@@ -21,6 +21,18 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
             source: "",
         },
     });
+
+    const closeEnlargedImage = () => {
+        setEnlargedImage({ open: false, photo: { fileName: "", source: "" } });
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") closeEnlargedImage();
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, []);
 
     return (
         <>
@@ -52,16 +64,15 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
             {enlargedImage.open && (
                 <div
                     className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-                    onClick={() => {
-                        setEnlargedImage({
-                            open: false,
-                            photo: {
-                                fileName: "",
-                                source: "",
-                            },
-                        });
-                    }}
+                    onClick={closeEnlargedImage}
                 >
+                    <button
+                        className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40"
+                        onClick={closeEnlargedImage}
+                        aria-label="Close"
+                    >
+                        ✕
+                    </button>
                     <div className="relative">
                         <ImageComponent
                             src={`${vercelStorageUrl}/${slug}/${enlargedImage.photo.fileName}`}
