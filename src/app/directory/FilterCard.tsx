@@ -106,7 +106,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         onBlur={() => setShowCitySuggestions(false)}
                     />
                     {showCitySuggestions && citySuggestions.length > 0 && (
-                        <ul className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md">
+                        <ul id="city-suggestions" className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md">
                             {citySuggestions.map((city) => (
                                 <li
                                     key={city}
