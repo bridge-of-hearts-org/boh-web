@@ -3,6 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 const baseURL =
     process.env.PLAYWRIGHT_TEST_BASE_URL ?? "http://localhost:3000";
 
+const bypassToken = process.env.VERCEL_BYPASS_TOKEN;
+
 export default defineConfig({
     testDir: "./tests/e2e",
     fullyParallel: true,
@@ -11,6 +13,9 @@ export default defineConfig({
         baseURL,
         trace: "on-first-retry",
         screenshot: "only-on-failure",
+        extraHTTPHeaders: bypassToken
+            ? { "x-vercel-protection-bypass": bypassToken }
+            : undefined,
     },
     projects: [
         {
