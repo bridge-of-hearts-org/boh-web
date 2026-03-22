@@ -9,6 +9,7 @@ import { Metadata } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
 import { Suspense } from "react";
+import { fetchDistinctCities } from "@/app/actions/data";
 
 export const metadata: Metadata = {
     title: "Directory | Bridge of Hearts",
@@ -30,6 +31,7 @@ export default async function DirectoryPage(props: {
 }) {
     const searchParams = await props.searchParams;
     const currentPage = searchParams.page || 1;
+    const cities = await fetchDistinctCities();
 
     return (
         <div className="flex flex-col gap-5">
@@ -57,7 +59,7 @@ export default async function DirectoryPage(props: {
             </div>
             <div className="flex flex-col items-center gap-5 xl:grid xl:grid-cols-[400px,1fr] xl:items-start">
                 {/* Filter Card */}
-                <FilterCard />
+                <FilterCard cities={cities} />
                 <Suspense fallback={<FacilityCardsSkeleton />}>
                     <FacilityCards
                         name={searchParams.name || ""}
