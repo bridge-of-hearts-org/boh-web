@@ -7,6 +7,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import {
+    defaultItemsPerPage,
+    defaultSortBy,
     DirectoryFilterType,
     District,
     Province,
@@ -17,6 +19,11 @@ import {
 export default function FilterCard() {
     const router = useRouter();
     const searchParams = useSearchParams();
+
+    const [sortOptions, setSortOptions] = useState({
+        sortBy: searchParams.get("sortBy") || defaultSortBy,
+        itemsPerPage: searchParams.get("itemsPerPage") || defaultItemsPerPage,
+    });
 
     const [activeFilters, setActiveFilters] = useState<DirectoryFilterType>({
         name: searchParams.get("name") || "",
@@ -34,6 +41,11 @@ export default function FilterCard() {
             district: (searchParams.get("district") || "") as District | "",
             province: (searchParams.get("province") || "") as Province | "",
         });
+
+        setSortOptions({
+            sortBy: searchParams.get("sortBy") || "",
+            itemsPerPage: searchParams.get("itemsPerPage") || "",
+        });
     }, [searchParams]);
 
     function handleFilterSubmit(data: FormData) {
@@ -43,6 +55,8 @@ export default function FilterCard() {
         params.set("managedBy", data.get("managedBy")?.toString() || "");
         params.set("district", data.get("district")?.toString() || "");
         params.set("province", data.get("province")?.toString() || "");
+        params.set("sortBy", sortOptions.sortBy);
+        params.set("itemsPerPage", sortOptions.itemsPerPage.toString());
 
         router.push(`/directory/?${params.toString()}`);
     }

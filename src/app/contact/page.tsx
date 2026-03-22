@@ -26,7 +26,7 @@ export default function Contact() {
                         feedback, feel free to reach out to us.
                     </p>
                     <div className="flex flex-col">
-                        <div className="grid grid-cols-2 gap-x-5 gap-y-1">
+                        <div className="grid grid-cols-[1fr,2fr] gap-x-5 gap-y-1">
                             <span className="justify-self-end font-semibold">
                                 Email:
                             </span>

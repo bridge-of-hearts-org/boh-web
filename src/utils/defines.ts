@@ -120,3 +120,7 @@ export const emptyChildCareFacilityDbObject: ChildCareFacility = {
     sources: [],
     photos: [],
 };
+
+/* ----------- Default Values ----------- */
+export const defaultItemsPerPage = 10;
+export const defaultSortBy = "name";

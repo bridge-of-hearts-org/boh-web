@@ -1,11 +1,14 @@
 import FilterCard from "./FilterCard";
-import { District, Province } from "@/utils/defines";
+import {
+    District,
+    Province,
+    defaultSortBy,
+    defaultItemsPerPage,
+} from "@/utils/defines";
 import { Metadata } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
 import { Suspense } from "react";
-
-const itemsPerPage = 10;
 
 export const metadata: Metadata = {
     title: "Directory | Bridge of Hearts",
@@ -22,6 +25,7 @@ export default async function DirectoryPage(props: {
         province?: Province | "";
         sortBy?: string;
         page: number;
+        itemsPerPage?: string;
     }>;
 }) {
     const searchParams = await props.searchParams;
@@ -62,7 +66,11 @@ export default async function DirectoryPage(props: {
                         district={(searchParams.district as District) || ""}
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
-                        sortBy={searchParams.sortBy || "name"}
+                        sortBy={searchParams.sortBy || defaultSortBy}
+                        itemsPerPage={
+                            Number(searchParams.itemsPerPage) ||
+                            defaultItemsPerPage
+                        }
                     />
                 </Suspense>
             </div>
