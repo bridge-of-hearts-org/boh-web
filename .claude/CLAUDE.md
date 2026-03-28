@@ -22,7 +22,10 @@
 
 - 4-space indentation
 - New components go in `src/components/` if reusable, or co-located in the route folder if page-specific
+- Use curly brackets even for single line blocks, and always add the block contents in a new line.
 
 # Data Context
 
 - There are currently only around 370 children's homes in Sri Lanka. So the max number of facilities in the database will be around that.
+- I collect children's home information on a Google Sheet: https://docs.google.com/spreadsheets/d/1JQdRIicCh6qPrdpfmJpKRxEiv_-qjTcURbqniMucSbo/edit?gid=305897832#gid=305897832
+    - Call this sheet the Database sheet.
