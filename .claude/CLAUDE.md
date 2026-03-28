@@ -22,3 +22,7 @@
 
 - 4-space indentation
 - New components go in `src/components/` if reusable, or co-located in the route folder if page-specific
+
+# Data Context
+
+- There are currently only around 370 children's homes in Sri Lanka. So the max number of facilities in the database will be around that.
