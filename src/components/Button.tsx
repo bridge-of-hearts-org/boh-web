@@ -1,5 +1,6 @@
 import React, { ComponentProps } from "react";
 import { twMerge } from "tailwind-merge";
+import { Loader } from "lucide-react";
 
 type ButtonVariant = "primary" | "secondary";
 type ButtonColor = "green" | "red" | "beige" | "black" | "transparent";
@@ -47,6 +48,8 @@ type ButtonProps = ComponentProps<"button"> & {
     name: string;
     variant?: ButtonVariant;
     color?: ButtonColor;
+    loading?: boolean;
+    loadingText?: string;
 };
 
 export default function Button({
@@ -54,18 +57,31 @@ export default function Button({
     variant = "primary",
     color = "green",
     className,
+    loading = false,
+    loadingText,
+    children,
     ...props
 }: ButtonProps) {
-    const styleClasses = getButtonStyles(color, variant, props.disabled);
+    const styleClasses = getButtonStyles(color, variant, props.disabled || loading);
 
     return (
         <button
             name={name}
             {...props}
+            disabled={props.disabled || loading}
             className={twMerge(
                 `rounded-full px-4 py-2 font-encode-sans-sc font-semibold transition-all duration-100 ${styleClasses}`,
                 className,
             )}
-        />
+        >
+            {loading ? (
+                <div className="flex items-center gap-2">
+                    <Loader className="h-4 w-4 animate-spin" />
+                    {loadingText || "Loading"}
+                </div>
+            ) : (
+                children
+            )}
+        </button>
     );
 }
