@@ -35,7 +35,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
 
     const [cityInput, setCityInput] = useState(searchParams.get("city") || "");
     const [showCitySuggestions, setShowCitySuggestions] = useState(false);
-by    const [isApplying, setIsApplying] = useState(false);
+    const [isApplying, setIsApplying] = useState(false);
 
     const citySuggestions = cityInput
         ? cities
