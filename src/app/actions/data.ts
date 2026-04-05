@@ -128,6 +128,17 @@ export async function fetchAllFacilities(
     }
 }
 
+export async function fetchDistinctCities(): Promise<string[]> {
+    try {
+        const rows = await prisma.childCareFacility.findMany({
+            select: { location: { select: { city: true } } },
+        });
+        return [...new Set(rows.map((r) => r.location.city))].sort();
+    } catch {
+        return [];
+    }
+}
+
 export async function fetchFacilityBySlug(slug: string) {
     let data = null;
 

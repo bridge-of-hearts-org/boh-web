@@ -16,7 +16,7 @@ import {
     ProvinceToDistrict,
 } from "@/utils/defines";
 
-export default function FilterCard() {
+export default function FilterCard({ cities }: { cities: string[] }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -33,14 +33,27 @@ export default function FilterCard() {
         province: (searchParams.get("province") || "") as Province | "",
     });
 
+    const [cityInput, setCityInput] = useState(searchParams.get("city") || "");
+    const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+
+    const citySuggestions = cityInput
+        ? cities
+              .filter((c) =>
+                  c.toLowerCase().includes(cityInput.toLowerCase()),
+              )
+              .slice(0, 8)
+        : [];
+
     useEffect(() => {
+        const city = searchParams.get("city") || "";
         setActiveFilters({
             name: searchParams.get("name") || "",
-            city: searchParams.get("city") || "",
+            city,
             managedBy: searchParams.get("managedBy") || "",
             district: (searchParams.get("district") || "") as District | "",
             province: (searchParams.get("province") || "") as Province | "",
         });
+        setCityInput(city);
 
         setSortOptions({
             sortBy: searchParams.get("sortBy") || "",
@@ -80,14 +93,35 @@ export default function FilterCard() {
                         defaultValue={activeFilters.name}
                     ></input>
                 </div>
-                <div className="flex flex-col gap-2">
+                <div className="relative flex flex-col gap-2">
                     <label htmlFor="city">City</label>
                     <input
                         id="city"
                         name="city"
                         type="text"
-                        defaultValue={activeFilters.city}
-                    ></input>
+                        autoComplete="off"
+                        value={cityInput}
+                        onChange={(e) => setCityInput(e.target.value)}
+                        onFocus={() => setShowCitySuggestions(true)}
+                        onBlur={() => setShowCitySuggestions(false)}
+                    />
+                    {showCitySuggestions && citySuggestions.length > 0 && (
+                        <ul id="city-suggestions" className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md">
+                            {citySuggestions.map((city) => (
+                                <li
+                                    key={city}
+                                    className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
+                                    onMouseDown={(e) => {
+                                        e.preventDefault();
+                                        setCityInput(city);
+                                        setShowCitySuggestions(false);
+                                    }}
+                                >
+                                    {city}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
                 <div className="flex flex-col gap-2">
                     <label htmlFor="managedBy">Managed By</label>
@@ -170,6 +204,7 @@ export default function FilterCard() {
                                 district: "",
                                 province: "",
                             });
+                            setCityInput("");
                         }}
                     >
                         Reset
