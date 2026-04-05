@@ -35,6 +35,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
 
     const [cityInput, setCityInput] = useState(searchParams.get("city") || "");
     const [showCitySuggestions, setShowCitySuggestions] = useState(false);
+by    const [isApplying, setIsApplying] = useState(false);
 
     const citySuggestions = cityInput
         ? cities
@@ -59,6 +60,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
             sortBy: searchParams.get("sortBy") || "",
             itemsPerPage: searchParams.get("itemsPerPage") || "",
         });
+        setIsApplying(false);
     }, [searchParams]);
 
     function handleFilterSubmit(data: FormData) {
@@ -82,6 +84,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                 onReset={() => {
                     router.push("/directory");
                 }}
+                onSubmit={() => setIsApplying(true)}
                 className="flex flex-col gap-5 py-3"
             >
                 <div className="flex flex-col gap-2">
@@ -213,6 +216,8 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         name="Apply Filters"
                         variant="primary"
                         type="submit"
+                        loading={isApplying}
+                        loadingText="Applying"
                     >
                         Apply
                     </Button>
