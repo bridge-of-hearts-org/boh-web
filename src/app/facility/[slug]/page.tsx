@@ -256,6 +256,27 @@ export default async function FacilityProfilePage({
                                             )}
                                         </div>
                                     </div>
+                                    {/* Map */}
+                                    {data.location.latitude &&
+                                    data.location.longitude ? (
+                                        <div className="overflow-hidden pt-4">
+                                            <iframe
+                                                title="Facility location map"
+                                                width="100%"
+                                                height="300"
+                                                className="rounded-3xl border-0"
+                                                loading="lazy"
+                                                referrerPolicy="no-referrer-when-downgrade"
+                                                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.GOOGLE_MAPS_EMBED_API_KEY}&q=${data.location.latitude},${data.location.longitude}&zoom=16`}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="pt-4">
+                                            <div className="flex h-[200px] w-full items-center justify-center rounded-3xl bg-gray-100 text-sm text-gray-400">
+                                                Map not available
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
