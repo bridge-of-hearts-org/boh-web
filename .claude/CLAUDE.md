@@ -60,6 +60,7 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 
 - Feature branches are cut from `dev`, named `feature/<issue-number>-short-description`
 - PRs merge into `dev`; `master` is updated periodically in bulk
+- Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 
 # Testing
 

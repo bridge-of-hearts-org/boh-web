@@ -1,11 +1,11 @@
 "use client";
 
-import Form from "next/form";
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader } from "lucide-react";
 
 import Card from "@/components/Card";
-import { useEffect, useState } from "react";
-import { defaultSortBy } from "@/utils/defines";
+import { defaultSortBy, defaultItemsPerPage } from "@/utils/defines";
 
 type SortingBarProps = {
     page: number;
@@ -16,14 +16,10 @@ type SortingBarProps = {
 export default function SortingBar(props: SortingBarProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
 
-    const [sortBy, setSortBy] = useState(
-        searchParams.get("sortBy") || defaultSortBy,
-    );
-
-    const [itemsPerPage, setItemsPerPage] = useState(
-        Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
-    );
+    const sortBy = searchParams.get("sortBy") || defaultSortBy;
+    const itemsPerPage = Number(searchParams.get("itemsPerPage")) || props.itemsPerPage;
 
     /* Calculate start and end item indices in the page */
     const displayStart = (props.page - 1) * props.itemsPerPage + 1;
@@ -33,24 +29,19 @@ export default function SortingBar(props: SortingBarProps) {
     );
     const numPages = Math.ceil(props.totalCount / props.itemsPerPage);
 
-    useEffect(() => {
+    function navigate(newSortBy: string, newItemsPerPage: number) {
         const params = new URLSearchParams(searchParams);
-        const currentPage = searchParams.get("page") || "1";
         const currentSortBy = searchParams.get("sortBy") || defaultSortBy;
-        const newPage = currentSortBy === sortBy ? currentPage : "1";
+        const currentPage = searchParams.get("page") || "1";
+        const newPage = currentSortBy === newSortBy ? currentPage : "1";
 
-        params.set("sortBy", sortBy);
+        params.set("sortBy", newSortBy);
         params.set("page", newPage);
-        params.set("itemsPerPage", String(itemsPerPage));
-        router.push(`/directory/?${params.toString()}`);
-    }, [sortBy, itemsPerPage]);
-
-    useEffect(() => {
-        setSortBy(searchParams.get("sortBy") || defaultSortBy);
-        setItemsPerPage(
-            Number(searchParams.get("itemsPerPage")) || props.itemsPerPage,
-        );
-    }, [searchParams]);
+        params.set("itemsPerPage", String(newItemsPerPage));
+        startTransition(() => {
+            router.push(`/directory/?${params.toString()}`);
+        });
+    }
 
     return (
         <Card>
@@ -65,36 +56,34 @@ export default function SortingBar(props: SortingBarProps) {
                     <span>{`${props.totalCount == 1 ? "facility" : "facilities"}`}</span>
                 </div>
                 <div>
-                    <Form action={() => {}}>
-                        <div className="flex items-center gap-5 text-sm">
-                            <label htmlFor="sortBy">Sort By</label>
-                            <select
-                                name="sortBy"
-                                value={sortBy}
-                                onChange={(e) => {
-                                    setSortBy(e.target.value);
-                                }}
-                            >
-                                <option value="name">Name</option>
-                                <option value="city">City</option>
-                            </select>
-                            <label htmlFor="itemsPerPage">Items Per Page</label>
-                            <select
-                                name="itemsPerPage"
-                                value={itemsPerPage}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    setItemsPerPage(val);
-                                }}
-                            >
-                                {[5, 10, 20, 50].map((n) => (
-                                    <option key={n} value={n}>
-                                        {n}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </Form>
+                    <div className="flex items-center gap-5 text-sm">
+                        {isPending && (
+                            <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                        )}
+                        <label htmlFor="sortBy">Sort By</label>
+                        <select
+                            name="sortBy"
+                            value={sortBy}
+                            disabled={isPending}
+                            onChange={(e) => navigate(e.target.value, itemsPerPage)}
+                        >
+                            <option value="name">Name</option>
+                            <option value="city">City</option>
+                        </select>
+                        <label htmlFor="itemsPerPage">Items Per Page</label>
+                        <select
+                            name="itemsPerPage"
+                            value={itemsPerPage}
+                            disabled={isPending}
+                            onChange={(e) => navigate(sortBy, Number(e.target.value))}
+                        >
+                            {[5, 10, 20, 50].map((n) => (
+                                <option key={n} value={n}>
+                                    {n}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
             </div>
         </Card>
