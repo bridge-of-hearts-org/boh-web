@@ -40,9 +40,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
 
     const citySuggestions = cityInput
         ? cities
-              .filter((c) =>
-                  c.toLowerCase().includes(cityInput.toLowerCase()),
-              )
+              .filter((c) => c.toLowerCase().includes(cityInput.toLowerCase()))
               .slice(0, 8)
         : [];
 
@@ -65,6 +63,30 @@ export default function FilterCard({ cities }: { cities: string[] }) {
         setIsResetting(false);
     }, [searchParams]);
 
+    function handleFilterReset() {
+        const hasActiveFilters =
+            activeFilters.name ||
+            activeFilters.city ||
+            activeFilters.managedBy ||
+            activeFilters.district ||
+            activeFilters.province;
+
+        if (hasActiveFilters) {
+            setIsResetting(true);
+        }
+
+        setActiveFilters({
+            name: "",
+            city: "",
+            managedBy: "",
+            district: "",
+            province: "",
+        });
+
+        setCityInput("");
+        router.push("/directory");
+    }
+
     function handleFilterSubmit(data: FormData) {
         const params = new URLSearchParams();
         params.set("name", data.get("name")?.toString() || "");
@@ -83,9 +105,6 @@ export default function FilterCard({ cities }: { cities: string[] }) {
             <h1 className="pb-5 text-xl font-semibold">Filters</h1>
             <Form
                 action={handleFilterSubmit}
-                onReset={() => {
-                    router.push("/directory");
-                }}
                 onSubmit={() => setIsApplying(true)}
                 className="flex flex-col gap-5 py-3"
             >
@@ -95,7 +114,13 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         id="name"
                         name="name"
                         type="text"
-                        defaultValue={activeFilters.name}
+                        value={activeFilters.name}
+                        onChange={(e) =>
+                            setActiveFilters({
+                                ...activeFilters,
+                                name: e.target.value,
+                            })
+                        }
                     ></input>
                 </div>
                 <div className="relative flex flex-col gap-2">
@@ -111,7 +136,10 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         onBlur={() => setShowCitySuggestions(false)}
                     />
                     {showCitySuggestions && citySuggestions.length > 0 && (
-                        <ul id="city-suggestions" className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md">
+                        <ul
+                            id="city-suggestions"
+                            className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md"
+                        >
                             {citySuggestions.map((city) => (
                                 <li
                                     key={city}
@@ -134,7 +162,13 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         id="managedBy"
                         name="managedBy"
                         type="text"
-                        defaultValue={activeFilters.managedBy}
+                        value={activeFilters.managedBy}
+                        onChange={(e) =>
+                            setActiveFilters({
+                                ...activeFilters,
+                                managedBy: e.target.value,
+                            })
+                        }
                     ></input>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -200,20 +234,10 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                     <Button
                         name="Reset Filters"
                         variant="secondary"
-                        type="reset"
+                        type="button"
                         loading={isResetting}
                         loadingText="Resetting"
-                        onClick={() => {
-                            setIsResetting(true);
-                            setActiveFilters({
-                                name: "",
-                                city: "",
-                                managedBy: "",
-                                district: "",
-                                province: "",
-                            });
-                            setCityInput("");
-                        }}
+                        onClick={handleFilterReset}
                     >
                         Reset
                     </Button>
