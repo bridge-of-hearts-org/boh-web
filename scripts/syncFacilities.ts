@@ -104,6 +104,37 @@ async function downloadPhoto(
     }
 }
 
+// --- Coordinate extraction ---
+
+async function extractLatLng(
+    url: string,
+): Promise<{ latitude: number; longitude: number } | null> {
+    let resolvedUrl = url;
+
+    if (url.includes("maps.app.goo.gl")) {
+        try {
+            const resp = await fetch(url, { redirect: "follow" });
+            resolvedUrl = resp.url;
+        } catch {
+            return null;
+        }
+    }
+
+    // Pattern: /@lat,lng,zoom  (e.g. google.com/maps/place/.../@7.2906,80.6337,17z)
+    const atMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (atMatch) {
+        return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]) };
+    }
+
+    // Pattern: ?q=lat,lng  (e.g. maps.google.com/maps?q=7.2906,80.6337)
+    const qMatch = resolvedUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+    if (qMatch) {
+        return { latitude: parseFloat(qMatch[1]), longitude: parseFloat(qMatch[2]) };
+    }
+
+    return null;
+}
+
 // --- Google Sheets ---
 
 async function pullFromSheet(sheetName: string): Promise<Record<string, string>[]> {
@@ -135,7 +166,7 @@ async function pullFromSheet(sheetName: string): Promise<Record<string, string>[
 
 // --- Data transformation ---
 
-function parseRow(row: Record<string, string>) {
+async function parseRow(row: Record<string, string>) {
     if (!row["Slug"]?.trim()) {
         return null;
     }
@@ -163,6 +194,9 @@ function parseRow(row: Record<string, string>) {
         }
     }
 
+    const googleUrl = row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "";
+    const coords = googleUrl ? await extractLatLng(googleUrl) : null;
+
     return {
         name: row["Name"].trim(),
         slug: row["Slug"].trim(),
@@ -175,7 +209,9 @@ function parseRow(row: Record<string, string>) {
             district: row["District"]?.trim() ?? "",
             province: row["Province"]?.trim() ?? "",
             divisionalSecretariat: row["Divisional Secretariat"]?.trim() ?? "",
-            google: row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "",
+            google: googleUrl,
+            latitude: coords?.latitude ?? null,
+            longitude: coords?.longitude ?? null,
         },
         contact: {
             phone: phones,
@@ -232,8 +268,8 @@ async function syncSheet(sheetName: string) {
     console.log(`\nPulling data from sheet: "${sheetName}"`);
     const rows = await pullFromSheet(sheetName);
 
-    const facilities = rows.map(parseRow).filter(Boolean) as NonNullable<
-        ReturnType<typeof parseRow>
+    const facilities = (await Promise.all(rows.map(parseRow))).filter(Boolean) as NonNullable<
+        Awaited<ReturnType<typeof parseRow>>
     >[];
     console.log(`  ${facilities.length} valid facilities found`);
 
