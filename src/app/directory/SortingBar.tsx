@@ -1,6 +1,8 @@
 "use client";
 
+import { useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader } from "lucide-react";
 
 import Card from "@/components/Card";
 import { defaultSortBy, defaultItemsPerPage } from "@/utils/defines";
@@ -14,6 +16,7 @@ type SortingBarProps = {
 export default function SortingBar(props: SortingBarProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
+    const [isPending, startTransition] = useTransition();
 
     const sortBy = searchParams.get("sortBy") || defaultSortBy;
     const itemsPerPage = Number(searchParams.get("itemsPerPage")) || props.itemsPerPage;
@@ -35,7 +38,9 @@ export default function SortingBar(props: SortingBarProps) {
         params.set("sortBy", newSortBy);
         params.set("page", newPage);
         params.set("itemsPerPage", String(newItemsPerPage));
-        router.push(`/directory/?${params.toString()}`);
+        startTransition(() => {
+            router.push(`/directory/?${params.toString()}`);
+        });
     }
 
     return (
@@ -52,10 +57,14 @@ export default function SortingBar(props: SortingBarProps) {
                 </div>
                 <div>
                     <div className="flex items-center gap-5 text-sm">
+                        {isPending && (
+                            <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                        )}
                         <label htmlFor="sortBy">Sort By</label>
                         <select
                             name="sortBy"
                             value={sortBy}
+                            disabled={isPending}
                             onChange={(e) => navigate(e.target.value, itemsPerPage)}
                         >
                             <option value="name">Name</option>
@@ -65,6 +74,7 @@ export default function SortingBar(props: SortingBarProps) {
                         <select
                             name="itemsPerPage"
                             value={itemsPerPage}
+                            disabled={isPending}
                             onChange={(e) => navigate(sortBy, Number(e.target.value))}
                         >
                             {[5, 10, 20, 50].map((n) => (
