@@ -36,6 +36,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
     const [cityInput, setCityInput] = useState(searchParams.get("city") || "");
     const [showCitySuggestions, setShowCitySuggestions] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
+    const [isResetting, setIsResetting] = useState(false);
 
     const citySuggestions = cityInput
         ? cities
@@ -61,6 +62,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
             itemsPerPage: searchParams.get("itemsPerPage") || "",
         });
         setIsApplying(false);
+        setIsResetting(false);
     }, [searchParams]);
 
     function handleFilterSubmit(data: FormData) {
@@ -199,7 +201,10 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                         name="Reset Filters"
                         variant="secondary"
                         type="reset"
+                        loading={isResetting}
+                        loadingText="Resetting"
                         onClick={() => {
+                            setIsResetting(true);
                             setActiveFilters({
                                 name: "",
                                 city: "",
