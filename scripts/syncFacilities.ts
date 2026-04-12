@@ -290,9 +290,23 @@ async function syncSheet(sheetName: string) {
         }
 
         try {
+            // Merge new photos with existing ones — preserves already-uploaded
+            // photos whose source URLs may have become unavailable since last sync.
+            const existing = await prisma.childCareFacility.findUnique({
+                where: { slug: facilityData.slug },
+                select: { photos: true },
+            });
+            const mergedPhotos = new Map(
+                (existing?.photos ?? []).map((p) => [p.fileName, p]),
+            );
+            for (const photo of photos) {
+                mergedPhotos.set(photo.fileName, photo);
+            }
+            const finalPhotos = Array.from(mergedPhotos.values());
+
             const entry = await prisma.childCareFacility.upsert({
                 where: { slug: facilityData.slug },
-                create: { ...facilityData, photos },
+                create: { ...facilityData, photos: finalPhotos },
                 update: {
                     name: facilityData.name,
                     type: facilityData.type,
@@ -303,7 +317,7 @@ async function syncSheet(sheetName: string) {
                     genders: facilityData.genders,
                     occupancy: facilityData.occupancy,
                     ageRanges: facilityData.ageRanges,
-                    photos,
+                    photos: finalPhotos,
                     sources: facilityData.sources,
                 },
             });
@@ -335,6 +349,8 @@ async function syncSheet(sheetName: string) {
         `\nDone: ${upsertedCount} / ${facilities.length} facilities upserted from "${sheetName}"`,
     );
 }
+
+// --- Entry point ---
 
 async function main() {
     const sheetName = process.argv[2];
