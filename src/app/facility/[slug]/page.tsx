@@ -56,6 +56,23 @@ export async function generateMetadata({
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
 
+function buildMapEmbedSrc(googleUrl: string): string | null {
+    const apiKey = process.env.GOOGLE_MAPS_EMBED_API_KEY;
+    if (!apiKey) {
+        return null;
+    }
+
+    const placeMatch = googleUrl.match(/\/maps\/place\/([^/@?]+)/);
+    if (placeMatch) {
+        const placeName = decodeURIComponent(
+            placeMatch[1].replace(/\+/g, " "),
+        );
+        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
+    }
+
+    return null;
+}
+
 export default async function FacilityProfilePage({
     params,
 }: FacilityPageProps) {
@@ -71,6 +88,10 @@ export default async function FacilityProfilePage({
     if (!data) {
         return NotFound();
     }
+
+    const mapEmbedSrc = data.location.google
+        ? buildMapEmbedSrc(data.location.google)
+        : null;
 
     // Construct JSON-LD structured data
     const jsonLdData = {
@@ -237,28 +258,8 @@ export default async function FacilityProfilePage({
                                             {data.location.province}
                                         </div>
                                     </div>
-                                    <div className={infoTableRowStyles}>
-                                        <div className="font-semibold">
-                                            Google Maps
-                                        </div>
-                                        <div className="">
-                                            {data.location.google ? (
-                                                <a
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    href={data.location.google}
-                                                    className="boh-link"
-                                                >
-                                                    {data.location.google}
-                                                </a>
-                                            ) : (
-                                                noInfoElement
-                                            )}
-                                        </div>
-                                    </div>
                                     {/* Map */}
-                                    {data.location.latitude &&
-                                    data.location.longitude ? (
+                                    {mapEmbedSrc ? (
                                         <div className="overflow-hidden pt-4">
                                             <iframe
                                                 title="Facility location map"
@@ -267,13 +268,16 @@ export default async function FacilityProfilePage({
                                                 className="rounded-3xl border-0"
                                                 loading="lazy"
                                                 referrerPolicy="no-referrer-when-downgrade"
-                                                src={`https://www.google.com/maps/embed/v1/place?key=${process.env.GOOGLE_MAPS_EMBED_API_KEY}&q=${data.location.latitude},${data.location.longitude}&zoom=16`}
+                                                src={mapEmbedSrc}
                                             />
                                         </div>
                                     ) : (
-                                        <div className="pt-4">
-                                            <div className="flex h-[200px] w-full items-center justify-center rounded-3xl bg-gray-100 text-sm text-gray-400">
-                                                Map not available
+                                        <div className={infoTableRowStyles}>
+                                            <div className="font-semibold">
+                                                Google Maps
+                                            </div>
+                                            <div className="">
+                                                {noInfoElement}
                                             </div>
                                         </div>
                                     )}

@@ -108,7 +108,7 @@ async function downloadPhoto(
 
 async function extractLatLng(
     url: string,
-): Promise<{ latitude: number; longitude: number } | null> {
+): Promise<{ latitude: number; longitude: number; resolvedUrl: string } | null> {
     let resolvedUrl = url;
 
     if (url.includes("maps.app.goo.gl")) {
@@ -123,13 +123,13 @@ async function extractLatLng(
     // Pattern: /@lat,lng,zoom  (e.g. google.com/maps/place/.../@7.2906,80.6337,17z)
     const atMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (atMatch) {
-        return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]) };
+        return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]), resolvedUrl };
     }
 
     // Pattern: ?q=lat,lng  (e.g. maps.google.com/maps?q=7.2906,80.6337)
     const qMatch = resolvedUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
     if (qMatch) {
-        return { latitude: parseFloat(qMatch[1]), longitude: parseFloat(qMatch[2]) };
+        return { latitude: parseFloat(qMatch[1]), longitude: parseFloat(qMatch[2]), resolvedUrl };
     }
 
     return null;
@@ -209,7 +209,7 @@ async function parseRow(row: Record<string, string>) {
             district: row["District"]?.trim() ?? "",
             province: row["Province"]?.trim() ?? "",
             divisionalSecretariat: row["Divisional Secretariat"]?.trim() ?? "",
-            google: googleUrl,
+            google: coords?.resolvedUrl ?? googleUrl,
             latitude: coords?.latitude ?? null,
             longitude: coords?.longitude ?? null,
         },
