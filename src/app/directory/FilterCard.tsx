@@ -39,10 +39,10 @@ export default function FilterCard({ cities }: { cities: string[] }) {
     const [isResetting, setIsResetting] = useState(false);
 
     const citySuggestions = cityInput
-        ? cities
-              .filter((c) => c.toLowerCase().includes(cityInput.toLowerCase()))
-              .slice(0, 8)
-        : [];
+        ? cities.filter((c) =>
+              c.toLowerCase().includes(cityInput.toLowerCase()),
+          )
+        : cities;
 
     useEffect(() => {
         const city = searchParams.get("city") || "";
@@ -138,7 +138,7 @@ export default function FilterCard({ cities }: { cities: string[] }) {
                     {showCitySuggestions && citySuggestions.length > 0 && (
                         <ul
                             id="city-suggestions"
-                            className="absolute top-full z-10 mt-1 w-full overflow-hidden rounded-lg border border-gray-300 bg-white shadow-md"
+                            className="absolute top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md"
                         >
                             {citySuggestions.map((city) => (
                                 <li
