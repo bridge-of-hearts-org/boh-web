@@ -16,6 +16,7 @@ import {
 } from "@/utils/defines";
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
+import MapWidget, { type Pin } from "./MapWidget";
 
 type FacilityCardProps = {
     name: string;
@@ -44,6 +45,16 @@ export async function FacilityCards(props: FacilityCardProps) {
         props.itemsPerPage,
     );
 
+    const pins: Pin[] = facilities
+        .filter((f) => f.location.latitude && f.location.longitude)
+        .map((f) => ({
+            name: f.name,
+            slug: f.slug,
+            city: f.location.city,
+            lat: f.location.latitude!,
+            lng: f.location.longitude!,
+        }));
+
     return (
         <>
             <div className="flex w-full flex-col gap-5">
@@ -52,6 +63,8 @@ export async function FacilityCards(props: FacilityCardProps) {
                     itemsPerPage={props.itemsPerPage}
                     totalCount={totalCount}
                 />
+
+                <MapWidget pins={pins} />
 
                 {facilities.map((facility, idx) => {
                     return (
