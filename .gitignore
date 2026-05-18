@@ -11,3 +11,4 @@ scripts/python/.venv
 scripts/python/config.json
 scripts/python/google-api-key.json
 scripts/google-api-key.json
+tsconfig.tsbuildinfo
