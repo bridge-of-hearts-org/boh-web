@@ -5,6 +5,13 @@ test.describe("City autocomplete in directory filter", () => {
         await page.goto("/directory");
     });
 
+    test("suggestions appear on focus without typing", async ({ page }) => {
+        const cityInput = page.getByLabel("City");
+        await cityInput.click();
+        const suggestions = page.locator("#city-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+    });
+
     test("suggestions appear when typing in the city field", async ({
         page,
     }) => {
