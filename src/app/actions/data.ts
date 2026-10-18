@@ -260,7 +260,7 @@ export async function resolveLatLng(
         return { error: "Not authorised" };
     }
 
-    if (!isGoogleMapsUrl(url)) {
+    if (typeof url !== "string" || !isGoogleMapsUrl(url)) {
         return { error: "Not a Google Maps URL" };
     }
 

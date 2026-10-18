@@ -4,10 +4,23 @@
 
 export type LatLng = { latitude: number; longitude: number };
 
-const GOOGLE_MAPS_HOSTS = ["maps.app.goo.gl", "goo.gl", "maps.google.com", "google.com", "consent.google.com"];
+/* Shortlink hosts. These are the only hosts that are ever fetched. */
+const SHORTLINK_HOSTS = ["maps.app.goo.gl", "goo.gl"];
+
+/* google.com, google.lk, google.co.uk, google.com.au etc. with an optional www./maps. prefix */
+const GOOGLE_HOST_PATTERN =
+    /^(?:www\.|maps\.)?google\.(?:com|[a-z]{2}|co\.[a-z]{2}|com\.[a-z]{2})$/;
+
+const MAX_REDIRECTS = 5;
+const FETCH_TIMEOUT_MS = 5000;
 
 /* Sri Lanka's rough bounding box, used to warn about coordinates that are likely wrong */
-const SRI_LANKA_BOUNDS = { minLat: 5.9, maxLat: 9.9, minLng: 79.5, maxLng: 81.9 };
+const SRI_LANKA_BOUNDS = {
+    minLat: 5.9,
+    maxLat: 9.9,
+    minLng: 79.5,
+    maxLng: 81.9,
+};
 
 function parseUrl(url: string): URL | null {
     try {
@@ -17,23 +30,38 @@ function parseUrl(url: string): URL | null {
     }
 }
 
+function isMapsPath(pathname: string): boolean {
+    return pathname === "/maps" || pathname.startsWith("/maps/");
+}
+
+function isShortlink(parsed: URL): boolean {
+    const host = parsed.hostname.toLowerCase();
+
+    if (host === "goo.gl") {
+        return isMapsPath(parsed.pathname);
+    }
+
+    return SHORTLINK_HOSTS.includes(host);
+}
+
+/* Accepts Google Maps shortlinks and Google Maps URLs on any Google country domain */
 export function isGoogleMapsUrl(url: string): boolean {
     const parsed = parseUrl(url.trim());
-    if (!parsed || (parsed.protocol !== "https:" && parsed.protocol !== "http:")) {
+    if (!parsed || parsed.protocol !== "https:") {
         return false;
     }
 
-    const host = parsed.hostname.toLowerCase().replace(/^www\./, "");
-    if (!GOOGLE_MAPS_HOSTS.includes(host)) {
+    if (isShortlink(parsed)) {
+        return true;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+    if (!GOOGLE_HOST_PATTERN.test(host)) {
         return false;
     }
 
-    /* google.com and goo.gl host other services, so only accept their maps paths */
-    if (host === "google.com" || host === "goo.gl") {
-        return parsed.pathname.startsWith("/maps");
-    }
-
-    return true;
+    /* google.<tld> hosts other services, so only accept its maps paths */
+    return host.startsWith("maps.") || isMapsPath(parsed.pathname);
 }
 
 /* When the request comes from outside Sri Lanka (e.g. an EU server), Google may redirect
@@ -66,7 +94,9 @@ export function parseLatLngFromUrl(url: string): LatLng | null {
     let decoded = unwrapConsentUrl(url);
     try {
         decoded = decodeURIComponent(decoded);
-    } catch {}
+    } catch {
+        /* Malformed escape sequences: match against the raw URL instead */
+    }
 
     const num = "(-?\\d+(?:\\.\\d+)?)";
 
@@ -89,7 +119,9 @@ export function parseLatLngFromUrl(url: string): LatLng | null {
     }
 
     // Pattern: ?q=lat,lng (e.g. maps.google.com/maps?q=7.2906,80.6337)
-    const qMatch = decoded.match(new RegExp(`[?&](?:q|query|ll)=${num},[\\s+]*${num}`));
+    const qMatch = decoded.match(
+        new RegExp(`[?&](?:q|query|ll)=${num},[\\s+]*${num}`),
+    );
     if (qMatch) {
         const coords = toLatLng(qMatch[1], qMatch[2]);
         if (coords) {
@@ -100,24 +132,54 @@ export function parseLatLngFromUrl(url: string): LatLng | null {
     return null;
 }
 
-/* Resolves shortlinks (following redirects) and extracts coordinates.
+/* Expands a shortlink by following its redirects one hop at a time. Only shortlink hosts are
+    fetched: as soon as a redirect points anywhere else, that URL is returned without fetching it. */
+async function expandShortlink(url: string): Promise<string | null> {
+    let current = url;
+
+    for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
+        const parsed = parseUrl(current);
+        if (
+            !parsed ||
+            !["https:", "http:"].includes(parsed.protocol) ||
+            !isShortlink(parsed)
+        ) {
+            return current;
+        }
+
+        let location: string | null;
+        try {
+            const resp = await fetch(current, {
+                redirect: "manual",
+                signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            });
+            await resp.body?.cancel();
+            location = resp.headers.get("location");
+        } catch {
+            return null;
+        }
+
+        if (!location) {
+            return null;
+        }
+
+        current = new URL(location, current).toString();
+    }
+
+    return null;
+}
+
+/* Resolves shortlinks and extracts coordinates.
     `resolvedUrl` is the full Maps URL after redirects, with any consent page unwrapped. */
 export async function extractLatLng(
     url: string,
 ): Promise<(LatLng & { resolvedUrl: string }) | null> {
-    let resolvedUrl = url;
-
-    const host = parseUrl(url)?.hostname.toLowerCase();
-    if (host === "maps.app.goo.gl" || host === "goo.gl") {
-        try {
-            const resp = await fetch(url, { redirect: "follow" });
-            resolvedUrl = resp.url;
-        } catch {
-            return null;
-        }
+    const expanded = await expandShortlink(url);
+    if (!expanded) {
+        return null;
     }
 
-    resolvedUrl = unwrapConsentUrl(resolvedUrl);
+    const resolvedUrl = unwrapConsentUrl(expanded);
 
     const coords = parseLatLngFromUrl(resolvedUrl);
     if (!coords) {

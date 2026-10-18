@@ -14,11 +14,7 @@ import {
     ProvincesList,
 } from "@/utils/defines";
 import Button from "@/components/Button";
-import {
-    addFacility,
-    resolveLatLng,
-    updateFacility,
-} from "@/app/actions/data";
+import { addFacility, resolveLatLng, updateFacility } from "@/app/actions/data";
 import Link from "next/link";
 import { removeKeys } from "@/utils/utils";
 import {
@@ -44,7 +40,24 @@ const validate = (data: ChildCareFacility) => {
     return "success";
 };
 
-const coordToText = (value: number | null) => (value === null ? "" : String(value));
+/* Facilities created before the lat/lng fields existed were saved with 0, 0, which means "unknown" */
+const coordsToText = (
+    location: ChildCareFacility["location"],
+): [string, string] => {
+    const { latitude, longitude } = location;
+
+    if (
+        latitude === null ||
+        longitude === null ||
+        (latitude === 0 && longitude === 0)
+    ) {
+        return ["", ""];
+    }
+
+    return [String(latitude), String(longitude)];
+};
+
+const COORDINATE_PATTERN = /^-?\d+(\.\d+)?$/;
 
 /* Parses the latitude/longitude inputs. Both empty is valid and means "no coordinates". */
 const parseCoordinates = (
@@ -64,8 +77,8 @@ const parseCoordinates = (
         };
     }
 
-    const latitude = Number(lat);
-    const longitude = Number(lng);
+    const latitude = COORDINATE_PATTERN.test(lat) ? Number(lat) : NaN;
+    const longitude = COORDINATE_PATTERN.test(lng) ? Number(lng) : NaN;
 
     if (!isValidLatitude(latitude)) {
         return { error: "Latitude must be a number between -90 and 90" };
@@ -94,10 +107,10 @@ export default function EditForm(props: EditFormProps) {
     const [newEmailAddress, setNewEmailAddress] = useState("");
     const [newSource, setNewSource] = useState("");
     const [latitudeText, setLatitudeText] = useState(
-        coordToText(data.location.latitude),
+        coordsToText(data.location)[0],
     );
     const [longitudeText, setLongitudeText] = useState(
-        coordToText(data.location.longitude),
+        coordsToText(data.location)[1],
     );
     const [resolvingCoords, setResolvingCoords] = useState(false);
     const [resolveError, setResolveError] = useState("");
@@ -111,8 +124,9 @@ export default function EditForm(props: EditFormProps) {
 
     const resetForm = (values: ChildCareFacility) => {
         setFormData(values);
-        setLatitudeText(coordToText(values.location.latitude));
-        setLongitudeText(coordToText(values.location.longitude));
+        const [latitude, longitude] = coordsToText(values.location);
+        setLatitudeText(latitude);
+        setLongitudeText(longitude);
         setResolveError("");
     };
 
@@ -469,7 +483,10 @@ export default function EditForm(props: EditFormProps) {
                                 </Button>
                             </div>
                             {resolveError && (
-                                <p role="alert" className="text-sm text-red-700">
+                                <p
+                                    role="alert"
+                                    className="text-sm text-red-700"
+                                >
                                     {resolveError}
                                 </p>
                             )}
@@ -483,6 +500,7 @@ export default function EditForm(props: EditFormProps) {
                             className="grow"
                             inputMode="decimal"
                             placeholder="e.g. 7.2906"
+                            disabled={resolvingCoords}
                             value={latitudeText}
                             onChange={(e) => setLatitudeText(e.target.value)}
                         ></input>
@@ -495,6 +513,7 @@ export default function EditForm(props: EditFormProps) {
                             className="grow"
                             inputMode="decimal"
                             placeholder="e.g. 80.6337"
+                            disabled={resolvingCoords}
                             value={longitudeText}
                             onChange={(e) => setLongitudeText(e.target.value)}
                         ></input>
