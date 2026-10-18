@@ -10,6 +10,7 @@ import { config } from "dotenv";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
+import { extractLatLng, isGoogleMapsUrl, LatLng } from "@/utils/maps";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -248,4 +249,27 @@ export async function addFacility(
     }
 
     return "success";
+}
+
+export async function resolveLatLng(
+    url: string,
+): Promise<LatLng | { error: string }> {
+    /* This fetches arbitrary URLs server-side, so restrict it to admins and Google Maps hosts */
+    const session = await getServerAuth();
+    if (!session) {
+        return { error: "Not authorised" };
+    }
+
+    if (!isGoogleMapsUrl(url)) {
+        return { error: "Not a Google Maps URL" };
+    }
+
+    const coords = await extractLatLng(url.trim());
+    if (!coords) {
+        return {
+            error: "Couldn't find coordinates in this URL. Enter them manually.",
+        };
+    }
+
+    return { latitude: coords.latitude, longitude: coords.longitude };
 }

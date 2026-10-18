@@ -110,8 +110,8 @@ export const emptyChildCareFacilityDbObject: ChildCareFacility = {
         district: "",
         province: "",
         google: "",
-        latitude: 0,
-        longitude: 0,
+        latitude: null,
+        longitude: null,
     },
     contact: {
         phone: [],

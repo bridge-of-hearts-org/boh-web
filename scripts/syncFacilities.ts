@@ -16,6 +16,8 @@ import { put, list } from "@vercel/blob";
 import { config } from "dotenv";
 import { Gender, PrismaClient } from "@prisma/client";
 
+import { extractLatLng } from "../src/utils/maps";
+
 const SCRIPTS_DIR = __dirname;
 const PHOTOS_DIR = path.join(SCRIPTS_DIR, "data", "photos");
 const CREDENTIALS_FILE = path.join(SCRIPTS_DIR, "google-api-key.json");
@@ -102,37 +104,6 @@ async function downloadPhoto(
         console.error(`  Error downloading photo: ${facilityName} | ${url}`, e);
         return null;
     }
-}
-
-// --- Coordinate extraction ---
-
-async function extractLatLng(
-    url: string,
-): Promise<{ latitude: number; longitude: number; resolvedUrl: string } | null> {
-    let resolvedUrl = url;
-
-    if (url.includes("maps.app.goo.gl")) {
-        try {
-            const resp = await fetch(url, { redirect: "follow" });
-            resolvedUrl = resp.url;
-        } catch {
-            return null;
-        }
-    }
-
-    // Pattern: /@lat,lng,zoom  (e.g. google.com/maps/place/.../@7.2906,80.6337,17z)
-    const atMatch = resolvedUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (atMatch) {
-        return { latitude: parseFloat(atMatch[1]), longitude: parseFloat(atMatch[2]), resolvedUrl };
-    }
-
-    // Pattern: ?q=lat,lng  (e.g. maps.google.com/maps?q=7.2906,80.6337)
-    const qMatch = resolvedUrl.match(/[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (qMatch) {
-        return { latitude: parseFloat(qMatch[1]), longitude: parseFloat(qMatch[2]), resolvedUrl };
-    }
-
-    return null;
 }
 
 // --- Google Sheets ---
