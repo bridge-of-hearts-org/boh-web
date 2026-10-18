@@ -1,30 +1,55 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow } from "@react-google-maps/api";
+import {
+    GoogleMap,
+    useJsApiLoader,
+    MarkerF,
+    InfoWindowF,
+} from "@react-google-maps/api";
 import Link from "next/link";
 
-export type Pin = {
-    name: string;
-    slug: string;
-    city: string;
-    lat: number;
-    lng: number;
-};
+import { FacilityPin } from "@/utils/defines";
 
 const SRI_LANKA_CENTER = { lat: 7.87, lng: 80.77 };
 const SESSION_KEY = "directoryMapExpanded";
+const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
-export default function MapWidget({ pins }: { pins: Pin[] }) {
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [selectedPin, setSelectedPin] = useState<Pin | null>(null);
+/* sessionStorage can throw when storage is blocked; the map then just starts collapsed */
+function readExpanded(): boolean {
+    try {
+        return sessionStorage.getItem(SESSION_KEY) === "true";
+    } catch {
+        return false;
+    }
+}
+
+function writeExpanded(value: boolean) {
+    try {
+        sessionStorage.setItem(SESSION_KEY, String(value));
+    } catch {
+        // Ignore: persistence is a convenience only
+    }
+}
+
+function MapMessage({ text, pulse }: { text: string; pulse?: boolean }) {
+    return (
+        <div
+            className={`flex h-full w-full items-center justify-center rounded-xl bg-gray-100 px-4 text-center text-sm text-gray-500 ${pulse ? "animate-pulse" : ""}`}
+        >
+            {text}
+        </div>
+    );
+}
+
+/* Only mounted while the map is expanded, so the Maps script loads on demand */
+function FacilityMap({ pins }: { pins: FacilityPin[] }) {
+    const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
     const mapRef = useRef<google.maps.Map | null>(null);
 
-    useEffect(() => {
-        if (sessionStorage.getItem(SESSION_KEY) === "true") {
-            setIsExpanded(true);
-        }
-    }, []);
+    const { isLoaded, loadError } = useJsApiLoader({
+        googleMapsApiKey: API_KEY,
+    });
 
     const fitBounds = useCallback(
         (map: google.maps.Map) => {
@@ -50,23 +75,91 @@ export default function MapWidget({ pins }: { pins: Pin[] }) {
         [fitBounds],
     );
 
+    const onMapUnmount = useCallback(() => {
+        mapRef.current = null;
+    }, []);
+
     useEffect(() => {
         if (mapRef.current) {
             fitBounds(mapRef.current);
         }
     }, [fitBounds]);
 
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
-    });
+    if (loadError) {
+        return (
+            <MapMessage text="The map could not be loaded. Please try again later." />
+        );
+    }
+
+    if (!isLoaded) {
+        return <MapMessage text="Loading map…" pulse />;
+    }
+
+    return (
+        <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={SRI_LANKA_CENTER}
+            zoom={8}
+            onLoad={onMapLoad}
+            onUnmount={onMapUnmount}
+        >
+            {pins.map((pin) => (
+                <MarkerF
+                    key={pin.slug}
+                    position={{ lat: pin.lat, lng: pin.lng }}
+                    title={pin.name}
+                    onClick={() => {
+                        setSelectedPin(pin);
+                    }}
+                />
+            ))}
+
+            {selectedPin && (
+                <InfoWindowF
+                    position={{
+                        lat: selectedPin.lat,
+                        lng: selectedPin.lng,
+                    }}
+                    onCloseClick={() => {
+                        setSelectedPin(null);
+                    }}
+                >
+                    <div
+                        data-testid="map-infowindow"
+                        className="flex flex-col gap-1 py-1"
+                    >
+                        <p className="font-semibold">{selectedPin.name}</p>
+                        <p className="text-sm text-gray-600">
+                            {selectedPin.city}
+                        </p>
+                        <Link
+                            href={`/facility/${selectedPin.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-orange-600 hover:underline"
+                        >
+                            More Info →
+                        </Link>
+                    </div>
+                </InfoWindowF>
+            )}
+        </GoogleMap>
+    );
+}
+
+export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    useEffect(() => {
+        if (readExpanded()) {
+            setIsExpanded(true);
+        }
+    }, []);
 
     const toggle = () => {
         const next = !isExpanded;
         setIsExpanded(next);
-        sessionStorage.setItem(SESSION_KEY, String(next));
-        if (!next) {
-            setSelectedPin(null);
-        }
+        writeExpanded(next);
     };
 
     return (
@@ -83,69 +176,13 @@ export default function MapWidget({ pins }: { pins: Pin[] }) {
                     data-testid="directory-map"
                     className="h-96 w-full overflow-hidden rounded-xl border border-gray-200"
                 >
-                    {isLoaded ? (
-                        <GoogleMap
-                            mapContainerStyle={{ width: "100%", height: "100%" }}
-                            center={SRI_LANKA_CENTER}
-                            zoom={8}
-                            onLoad={onMapLoad}
-                        >
-                            {pins.map((pin) => (
-                                <Marker
-                                    key={pin.slug}
-                                    position={{ lat: pin.lat, lng: pin.lng }}
-                                    onClick={() => {
-                                        setSelectedPin(pin);
-                                    }}
-                                />
-                            ))}
-
-                            {selectedPin && (
-                                <InfoWindow
-                                    position={{
-                                        lat: selectedPin.lat,
-                                        lng: selectedPin.lng,
-                                    }}
-                                    onCloseClick={() => {
-                                        setSelectedPin(null);
-                                    }}
-                                >
-                                    <div
-                                        data-testid="map-infowindow"
-                                        className="flex flex-col gap-1 py-1"
-                                    >
-                                        <p className="font-semibold">
-                                            {selectedPin.name}
-                                        </p>
-                                        <p className="text-sm text-gray-600">
-                                            {selectedPin.city}
-                                        </p>
-                                        <Link
-                                            href={`/facility/${selectedPin.slug}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-orange-600 hover:underline"
-                                        >
-                                            More Info →
-                                        </Link>
-                                    </div>
-                                </InfoWindow>
-                            )}
-                        </GoogleMap>
+                    {API_KEY ? (
+                        <FacilityMap pins={pins} />
                     ) : (
-                        <div className="flex h-full w-full animate-pulse items-center justify-center rounded-xl bg-gray-100 text-sm text-gray-400">
-                            Loading map…
-                        </div>
+                        <MapMessage text="The map is currently unavailable." />
                     )}
                 </div>
             )}
-
-            {/* Visually hidden pin list for Playwright test introspection */}
-            <ul data-testid="map-pins-list" className="sr-only">
-                {pins.map((pin) => (
-                    <li key={pin.slug}>{pin.name}</li>
-                ))}
-            </ul>
         </div>
     );
 }

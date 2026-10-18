@@ -1,4 +1,12 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+// Google Maps renders each clickable marker as a div[role="button"] labelled
+// with the marker's title; map controls are plain <button> elements, so they don't match
+function mapMarkers(page: Page) {
+    return page
+        .getByTestId("directory-map")
+        .locator('div[role="button"][aria-label]');
+}
 
 test.describe("Directory map widget", () => {
     test.beforeEach(async ({ page }) => {
@@ -21,25 +29,22 @@ test.describe("Directory map widget", () => {
         });
     });
 
-    test("map has pins for current results", async ({ page }) => {
+    test("map renders a marker for matching facilities", async ({ page }) => {
         await page.getByRole("button", { name: /show map/i }).click();
-        await expect(page.getByTestId("directory-map")).toBeVisible({
-            timeout: 10000,
+        await expect(mapMarkers(page).first()).toBeVisible({
+            timeout: 15000,
         });
-        await expect(
-            page.getByTestId("map-pins-list").locator("li"),
-        ).not.toHaveCount(0, { timeout: 10000 });
     });
 
     test("clicking a marker shows InfoWindow with a facility link", async ({
         page,
     }) => {
         await page.getByRole("button", { name: /show map/i }).click();
-        await page.waitForSelector('[data-testid="directory-map"]');
-        const firstMarker = page
-            .locator('img[src*="marker-icon"]')
-            .first();
-        await firstMarker.click();
+        const firstMarker = mapMarkers(page).first();
+        await expect(firstMarker).toBeVisible({ timeout: 15000 });
+        // Markers can overlap at country zoom; force the click so an overlapping
+        // marker on top doesn't block it (either marker opens an InfoWindow)
+        await firstMarker.click({ force: true });
         await expect(page.getByTestId("map-infowindow")).toBeVisible({
             timeout: 5000,
         });
