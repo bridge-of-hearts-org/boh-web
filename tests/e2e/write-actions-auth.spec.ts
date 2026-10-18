@@ -1,24 +1,42 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect, APIRequestContext, Page } from "@playwright/test";
 
 /* Server action IDs change on every build and only ship in the JS of the
    admin-only edit pages, so the test logs in to capture real action requests
-   and then replays them without a session. */
+   and then replays them with and without a session. */
 const adminUsername = process.env.ADMIN_USERNAME;
 const adminPassword = process.env.ADMIN_PASSWORD;
+const hasCredentials = !!adminUsername && !!adminPassword;
 
 type CapturedAction = {
     headers: Record<string, string>;
     args: any[];
 };
 
-async function login(page: Page, callbackUrl: string) {
-    await page.goto(
-        `/admin/login?callbackUrl=${encodeURIComponent(callbackUrl)}`,
+/* Log in through the NextAuth API rather than the form, so the password is
+   never typed into a field and recorded in the test report */
+async function login(page: Page, path: string) {
+    const csrfResponse = await page.request.get("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json();
+
+    const loginResponse = await page.request.post(
+        "/api/auth/callback/credentials",
+        {
+            form: {
+                csrfToken: csrfToken,
+                username: adminUsername!,
+                password: adminPassword!,
+                json: "true",
+            },
+            maxRedirects: 0,
+        },
     );
-    await page.locator("#username").fill(adminUsername!);
-    await page.locator("#password").fill(adminPassword!);
-    await page.getByRole("button", { name: "Login" }).click();
-    await page.waitForURL((url) => url.pathname === callbackUrl);
+    expect(loginResponse.ok()).toBe(true);
+
+    const session = await (await page.request.get("/api/auth/session")).json();
+    expect(session?.user?.role).toBe("admin");
+
+    await page.goto(path);
+    await expect(page).toHaveURL((url) => url.pathname === path);
 }
 
 /* Click Submit on the edit form and capture the server action request
@@ -55,6 +73,25 @@ async function captureSubmit(page: Page): Promise<CapturedAction> {
     return action;
 }
 
+/* Replay a captured action with new arguments and return the action's
+   response body after checking it is a real server action response */
+async function replayAction(
+    context: APIRequestContext,
+    path: string,
+    action: CapturedAction,
+    args: any[],
+): Promise<string> {
+    const response = await context.post(path, {
+        headers: action.headers,
+        data: JSON.stringify(args),
+    });
+
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("text/x-component");
+
+    return response.text();
+}
+
 async function getExistingSlug(page: Page): Promise<string> {
     await page.goto("/directory");
     const link = page.locator('a[href^="/facility/"]').first();
@@ -64,10 +101,19 @@ async function getExistingSlug(page: Page): Promise<string> {
 }
 
 test.describe("Write server actions require an admin session", () => {
+    /* Locally the test is optional, but in CI missing credentials must fail
+       rather than skip, or the check would silently never run */
     test.skip(
-        !adminUsername || !adminPassword,
+        !hasCredentials && !process.env.CI,
         "ADMIN_USERNAME and ADMIN_PASSWORD are needed to capture action IDs",
     );
+
+    test.beforeEach(() => {
+        expect(
+            hasCredentials,
+            "ADMIN_USERNAME and ADMIN_PASSWORD must be set in CI",
+        ).toBe(true);
+    });
 
     test("addFacility rejects unauthenticated calls", async ({
         page,
@@ -84,19 +130,16 @@ test.describe("Write server actions require an admin session", () => {
 
         /* Reuse an existing slug: even if the guard were missing, the unique
            constraint would stop the record from being created */
-        action.args[0].slug = existingSlug;
+        const args = structuredClone(action.args);
+        args[0].slug = existingSlug;
 
-        const response = await request.post("/facility/new", {
-            headers: action.headers,
-            data: JSON.stringify(action.args),
-        });
-        const body = await response.text();
+        const body = await replayAction(request, "/facility/new", action, args);
 
         expect(body).toContain("Unauthorized");
         expect(body).not.toContain("Unique constraint");
     });
 
-    test("updateFacility rejects unauthenticated calls but accepts admin calls", async ({
+    test("updateFacility rejects unauthenticated calls but lets admins through", async ({
         page,
         request,
     }) => {
@@ -106,28 +149,26 @@ test.describe("Write server actions require an admin session", () => {
         await login(page, editPath);
         const action = await captureSubmit(page);
 
-        /* Point at a slug that doesn't exist: even if the guard were missing,
-           no existing record would be overwritten */
-        const unauthArgs = structuredClone(action.args);
-        unauthArgs[0].slug = `e2e-nonexistent-${Date.now()}`;
+        /* Point both replays at a slug that doesn't exist, so no record is
+           ever written, whether or not the guard works */
+        const args = structuredClone(action.args);
+        args[0].slug = `e2e-nonexistent-${Date.now()}`;
 
-        const unauthResponse = await request.post(editPath, {
-            headers: action.headers,
-            data: JSON.stringify(unauthArgs),
-        });
-        const unauthBody = await unauthResponse.text();
+        const unauthBody = await replayAction(request, editPath, action, args);
 
         expect(unauthBody).toContain("Unauthorized");
         expect(unauthBody).not.toContain("not found");
 
-        /* The admin's own unchanged submission still goes through */
-        const adminResponse = await page.request.post(editPath, {
-            headers: action.headers,
-            data: JSON.stringify(action.args),
-        });
-        const adminBody = await adminResponse.text();
+        /* With the admin session, the call passes the guard and reaches the
+           database, which reports the missing record */
+        const adminBody = await replayAction(
+            page.request,
+            editPath,
+            action,
+            args,
+        );
 
-        expect(adminBody).toContain("success");
         expect(adminBody).not.toContain("Unauthorized");
+        expect(adminBody).toContain("not found");
     });
 });
