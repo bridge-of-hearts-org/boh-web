@@ -114,6 +114,7 @@ export default function EditForm(props: EditFormProps) {
     );
     const [resolvingCoords, setResolvingCoords] = useState(false);
     const [resolveError, setResolveError] = useState("");
+    const [resolveNote, setResolveNote] = useState("");
 
     /* Common styles */
     const inputRowStyle =
@@ -128,6 +129,7 @@ export default function EditForm(props: EditFormProps) {
         setLatitudeText(latitude);
         setLongitudeText(longitude);
         setResolveError("");
+        setResolveNote("");
     };
 
     const handleClear = () => {
@@ -136,6 +138,7 @@ export default function EditForm(props: EditFormProps) {
 
     const handleResolveCoordinates = async () => {
         setResolveError("");
+        setResolveNote("");
         setResolvingCoords(true);
 
         let result: Awaited<ReturnType<typeof resolveLatLng>>;
@@ -163,6 +166,18 @@ export default function EditForm(props: EditFormProps) {
 
         setLatitudeText(String(result.latitude));
         setLongitudeText(String(result.longitude));
+
+        /* Store the full URL instead of a shortlink: the profile page needs the
+            place name in it to show the embedded map */
+        if (result.resolvedUrl !== formData.location.google.trim()) {
+            setFormData({
+                ...formData,
+                location: { ...formData.location, google: result.resolvedUrl },
+            });
+            setResolveNote(
+                "Replaced the shortlink with the full Google Maps URL",
+            );
+        }
     };
 
     const handleSubmit = async () => {
@@ -459,6 +474,7 @@ export default function EditForm(props: EditFormProps) {
                                     value={formData.location.google}
                                     onChange={(e) => {
                                         setResolveError("");
+                                        setResolveNote("");
                                         setFormData({
                                             ...formData,
                                             location: {
@@ -482,6 +498,11 @@ export default function EditForm(props: EditFormProps) {
                                     Resolve Latitude and Longitude
                                 </Button>
                             </div>
+                            {resolveNote && (
+                                <p className="text-sm text-green-800">
+                                    {resolveNote}
+                                </p>
+                            )}
                             {resolveError && (
                                 <p
                                     role="alert"

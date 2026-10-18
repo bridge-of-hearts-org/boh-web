@@ -11,7 +11,7 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
-import { Gender } from "@prisma/client";
+import { ChildCareFacility, Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
@@ -56,18 +56,29 @@ export async function generateMetadata({
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
 
-function buildMapEmbedSrc(googleUrl: string): string | null {
+function buildMapEmbedSrc(
+    location: ChildCareFacility["location"],
+): string | null {
     const apiKey = process.env.GOOGLE_MAPS_EMBED_API_KEY;
     if (!apiKey) {
         return null;
     }
 
-    const placeMatch = googleUrl.match(/\/maps\/place\/([^/@?]+)/);
+    /* Prefer the named place, which shows a labelled pin */
+    const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
     if (placeMatch) {
-        const placeName = decodeURIComponent(
-            placeMatch[1].replace(/\+/g, " "),
-        );
+        const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
+    }
+
+    /* Otherwise fall back to the coordinates (0, 0 is a legacy "unknown" value) */
+    const { latitude, longitude } = location;
+    if (
+        latitude !== null &&
+        longitude !== null &&
+        !(latitude === 0 && longitude === 0)
+    ) {
+        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${latitude},${longitude}&zoom=16`;
     }
 
     return null;
@@ -89,9 +100,7 @@ export default async function FacilityProfilePage({
         return NotFound();
     }
 
-    const mapEmbedSrc = data.location.google
-        ? buildMapEmbedSrc(data.location.google)
-        : null;
+    const mapEmbedSrc = buildMapEmbedSrc(data.location);
 
     // Construct JSON-LD structured data
     const jsonLdData = {
