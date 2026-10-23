@@ -1,11 +1,22 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// Google Maps renders each clickable marker as a div[role="button"] labelled
-// with the marker's title; map controls are plain <button> elements, so they don't match
-function mapMarkers(page: Page) {
+function escapeRegExp(text: string) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// Markers are found by their accessible name (each marker is titled with its
+// facility's name), matched against the facility names listed on the page
+async function facilityMarkers(page: Page) {
+    const names = await page
+        .getByRole("heading", { level: 2 })
+        .allTextContents();
+    expect(names.length).toBeGreaterThan(0);
+    const pattern = new RegExp(
+        `^(${names.map((n) => escapeRegExp(n.trim())).join("|")})$`,
+    );
     return page
         .getByTestId("directory-map")
-        .locator('div[role="button"][aria-label]');
+        .getByRole("button", { name: pattern });
 }
 
 test.describe("Directory map widget", () => {
@@ -16,31 +27,37 @@ test.describe("Directory map widget", () => {
     test("toggle button is visible and map is hidden by default", async ({
         page,
     }) => {
-        await expect(
-            page.getByRole("button", { name: /show map/i }),
-        ).toBeVisible();
+        const toggle = page.getByRole("button", { name: /show map/i });
+        await expect(toggle).toBeVisible();
+        await expect(toggle).toHaveAttribute("aria-expanded", "false");
         await expect(page.getByTestId("directory-map")).not.toBeVisible();
     });
 
-    test("clicking toggle shows the map", async ({ page }) => {
+    test("clicking toggle shows and hides the map", async ({ page }) => {
         await page.getByRole("button", { name: /show map/i }).click();
         await expect(page.getByTestId("directory-map")).toBeVisible({
             timeout: 10000,
         });
+        const hide = page.getByRole("button", { name: /hide map/i });
+        await expect(hide).toHaveAttribute("aria-expanded", "true");
+        await hide.click();
+        await expect(page.getByTestId("directory-map")).not.toBeVisible();
     });
 
-    test("map renders a marker for matching facilities", async ({ page }) => {
+    test("map renders markers for listed facilities", async ({ page }) => {
+        // A larger page makes it near-certain a listed facility has coordinates
+        await page.goto("/directory?itemsPerPage=50");
         await page.getByRole("button", { name: /show map/i }).click();
-        await expect(mapMarkers(page).first()).toBeVisible({
-            timeout: 15000,
-        });
+        const markers = await facilityMarkers(page);
+        await expect(markers.first()).toBeVisible({ timeout: 15000 });
     });
 
     test("clicking a marker shows InfoWindow with a facility link", async ({
         page,
     }) => {
+        await page.goto("/directory?itemsPerPage=50");
         await page.getByRole("button", { name: /show map/i }).click();
-        const firstMarker = mapMarkers(page).first();
+        const firstMarker = (await facilityMarkers(page)).first();
         await expect(firstMarker).toBeVisible({ timeout: 15000 });
         // Markers can overlap at country zoom; force the click so an overlapping
         // marker on top doesn't block it (either marker opens an InfoWindow)

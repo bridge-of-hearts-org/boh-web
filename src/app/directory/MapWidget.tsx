@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
     GoogleMap,
     useJsApiLoader,
@@ -14,6 +14,16 @@ import { FacilityPin } from "@/utils/defines";
 const SRI_LANKA_CENTER = { lat: 7.87, lng: 80.77 };
 const SESSION_KEY = "directoryMapExpanded";
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+/* Stops fitting a single pin or a tight cluster from zooming to street level */
+const MAX_FIT_ZOOM = 14;
+const LOAD_ERROR_TEXT = "The map could not be loaded. Please try again later.";
+
+declare global {
+    interface Window {
+        /* Called by Google Maps when the API key is rejected */
+        gm_authFailure?: () => void;
+    }
+}
 
 /* sessionStorage can throw when storage is blocked; the map then just starts collapsed */
 function readExpanded(): boolean {
@@ -32,6 +42,24 @@ function writeExpanded(value: boolean) {
     }
 }
 
+function fitToPins(map: google.maps.Map, pins: FacilityPin[]) {
+    if (pins.length === 0) {
+        map.setCenter(SRI_LANKA_CENTER);
+        map.setZoom(8);
+        return;
+    }
+    const bounds = new google.maps.LatLngBounds();
+    pins.forEach((p) => {
+        bounds.extend({ lat: p.lat, lng: p.lng });
+    });
+    map.fitBounds(bounds, 40);
+    google.maps.event.addListenerOnce(map, "idle", () => {
+        if ((map.getZoom() ?? 0) > MAX_FIT_ZOOM) {
+            map.setZoom(MAX_FIT_ZOOM);
+        }
+    });
+}
+
 function MapMessage({ text, pulse }: { text: string; pulse?: boolean }) {
     return (
         <div
@@ -42,53 +70,58 @@ function MapMessage({ text, pulse }: { text: string; pulse?: boolean }) {
     );
 }
 
-/* Only mounted while the map is expanded, so the Maps script loads on demand */
-function FacilityMap({ pins }: { pins: FacilityPin[] }) {
+/* Mounted on first expand and then kept (hidden while collapsed), so the Maps
+   script loads on demand and re-opening the map isn't a new billable map load */
+function FacilityMap({
+    pins,
+    isVisible,
+}: {
+    pins: FacilityPin[];
+    isVisible: boolean;
+}) {
+    const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
-    const mapRef = useRef<google.maps.Map | null>(null);
+    const [authFailed, setAuthFailed] = useState(false);
+    const fittedPinsKey = useRef<string | null>(null);
 
     const { isLoaded, loadError } = useJsApiLoader({
         googleMapsApiKey: API_KEY,
     });
 
-    const fitBounds = useCallback(
-        (map: google.maps.Map) => {
-            if (pins.length === 0) {
-                map.setCenter(SRI_LANKA_CENTER);
-                map.setZoom(8);
-                return;
-            }
-            const bounds = new google.maps.LatLngBounds();
-            pins.forEach((p) => {
-                bounds.extend({ lat: p.lat, lng: p.lng });
-            });
-            map.fitBounds(bounds, 40);
-        },
-        [pins],
-    );
-
-    const onMapLoad = useCallback(
-        (map: google.maps.Map) => {
-            mapRef.current = map;
-            fitBounds(map);
-        },
-        [fitBounds],
-    );
-
-    const onMapUnmount = useCallback(() => {
-        mapRef.current = null;
-    }, []);
+    /* The server sends a new pins array on every navigation; only the set of
+       facilities matters, so paging or sorting keeps the user's pan and zoom */
+    const pinsKey = useMemo(() => pins.map((p) => p.slug).join(","), [pins]);
 
     useEffect(() => {
-        if (mapRef.current) {
-            fitBounds(mapRef.current);
-        }
-    }, [fitBounds]);
+        window.gm_authFailure = () => {
+            setAuthFailed(true);
+        };
+        return () => {
+            delete window.gm_authFailure;
+        };
+    }, []);
 
-    if (loadError) {
-        return (
-            <MapMessage text="The map could not be loaded. Please try again later." />
-        );
+    /* Fitting while hidden would use a zero-size container, so wait until visible */
+    useEffect(() => {
+        if (!map || !isVisible || fittedPinsKey.current === pinsKey) {
+            return;
+        }
+        fittedPinsKey.current = pinsKey;
+        fitToPins(map, pins);
+    }, [map, isVisible, pinsKey, pins]);
+
+    const onMapUnmount = useCallback(() => {
+        setMap(null);
+    }, []);
+
+    /* Hide the popup if a filter change removed its facility */
+    const shownPin =
+        selectedPin && pins.some((p) => p.slug === selectedPin.slug)
+            ? selectedPin
+            : null;
+
+    if (loadError || authFailed) {
+        return <MapMessage text={LOAD_ERROR_TEXT} />;
     }
 
     if (!isLoaded) {
@@ -100,7 +133,7 @@ function FacilityMap({ pins }: { pins: FacilityPin[] }) {
             mapContainerStyle={{ width: "100%", height: "100%" }}
             center={SRI_LANKA_CENTER}
             zoom={8}
-            onLoad={onMapLoad}
+            onLoad={setMap}
             onUnmount={onMapUnmount}
         >
             {pins.map((pin) => (
@@ -114,11 +147,11 @@ function FacilityMap({ pins }: { pins: FacilityPin[] }) {
                 />
             ))}
 
-            {selectedPin && (
+            {shownPin && (
                 <InfoWindowF
                     position={{
-                        lat: selectedPin.lat,
-                        lng: selectedPin.lng,
+                        lat: shownPin.lat,
+                        lng: shownPin.lng,
                     }}
                     onCloseClick={() => {
                         setSelectedPin(null);
@@ -128,12 +161,10 @@ function FacilityMap({ pins }: { pins: FacilityPin[] }) {
                         data-testid="map-infowindow"
                         className="flex flex-col gap-1 py-1"
                     >
-                        <p className="font-semibold">{selectedPin.name}</p>
-                        <p className="text-sm text-gray-600">
-                            {selectedPin.city}
-                        </p>
+                        <p className="font-semibold">{shownPin.name}</p>
+                        <p className="text-sm text-gray-600">{shownPin.city}</p>
                         <Link
-                            href={`/facility/${selectedPin.slug}`}
+                            href={`/facility/${shownPin.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-orange-600 hover:underline"
@@ -149,16 +180,21 @@ function FacilityMap({ pins }: { pins: FacilityPin[] }) {
 
 export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [hasOpened, setHasOpened] = useState(false);
 
     useEffect(() => {
         if (readExpanded()) {
             setIsExpanded(true);
+            setHasOpened(true);
         }
     }, []);
 
     const toggle = () => {
         const next = !isExpanded;
         setIsExpanded(next);
+        if (next) {
+            setHasOpened(true);
+        }
         writeExpanded(next);
     };
 
@@ -166,18 +202,21 @@ export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
         <div className="flex flex-col gap-2">
             <button
                 onClick={toggle}
+                aria-expanded={isExpanded}
+                aria-controls="directory-map"
                 className="flex w-fit items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50"
             >
                 {isExpanded ? "Hide Map ▴" : "Show Map ▾"}
             </button>
 
-            {isExpanded && (
+            {hasOpened && (
                 <div
+                    id="directory-map"
                     data-testid="directory-map"
-                    className="h-96 w-full overflow-hidden rounded-xl border border-gray-200"
+                    className={`h-96 w-full overflow-hidden rounded-xl border border-gray-200 ${isExpanded ? "" : "hidden"}`}
                 >
                     {API_KEY ? (
-                        <FacilityMap pins={pins} />
+                        <FacilityMap pins={pins} isVisible={isExpanded} />
                     ) : (
                         <MapMessage text="The map is currently unavailable." />
                     )}
