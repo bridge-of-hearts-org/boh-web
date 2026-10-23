@@ -100,6 +100,10 @@ async function getExistingSlug(page: Page): Promise<string> {
     return href!.replace("/facility/", "");
 }
 
+/* Traces record request bodies and cookies, which here include the admin
+   password and session, and would end up in the uploaded report */
+test.use({ trace: "off" });
+
 test.describe("Write server actions require an admin session", () => {
     /* Locally the test is optional, but in CI missing credentials must fail
        rather than skip, or the check would silently never run */

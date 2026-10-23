@@ -3,7 +3,8 @@
         "i-have-adhd": {
             "source": {
                 "source": "github",
-                "repo": "ayghri/i-have-adhd"
+                "repo": "ayghri/i-have-adhd",
+                "ref": "v0.4.1"
             }
         }
     },
