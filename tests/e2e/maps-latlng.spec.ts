@@ -91,13 +91,13 @@ test.describe("isGoogleMapsUrl", () => {
 });
 
 // Admin form tests: need admin credentials. Nothing is submitted, so no data is changed.
-const adminUsername = process.env.E2E_ADMIN_USERNAME;
-const adminPassword = process.env.E2E_ADMIN_PASSWORD;
+const adminUsername = process.env.ADMIN_USERNAME;
+const adminPassword = process.env.ADMIN_PASSWORD;
 
 test.describe("Latitude/longitude fields in the admin facility form", () => {
     test.skip(
         !adminUsername || !adminPassword,
-        "Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD to run admin form tests",
+        "Set ADMIN_USERNAME and ADMIN_PASSWORD to run admin form tests",
     );
 
     // A ?q= URL needs no redirect, so these tests don't depend on Google
