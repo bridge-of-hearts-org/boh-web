@@ -15,6 +15,7 @@
     "description": "",
     "dependencies": {
         "@prisma/client": "^6.4.1",
+        "@react-google-maps/api": "^2.20.8",
         "@vercel/analytics": "^1.4.1",
         "dotenv": "^16.4.7",
         "lucide-react": "^0.471.0",

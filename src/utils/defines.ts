@@ -75,6 +75,14 @@ export type DirectoryFilterType = {
     province: Province | "";
 };
 
+export type FacilityPin = {
+    name: string;
+    slug: string;
+    city: string;
+    lat: number;
+    lng: number;
+};
+
 export const emptyFilter: DirectoryFilterType = {
     name: "",
     city: "",
