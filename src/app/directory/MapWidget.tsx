@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+    useState,
+    useEffect,
+    useCallback,
+    useMemo,
+    useRef,
+    useSyncExternalStore,
+} from "react";
 import {
     GoogleMap,
     useJsApiLoader,
@@ -25,6 +32,27 @@ declare global {
     }
 }
 
+/* Google reports a rejected key only once per script load, so remember it at
+   module level for maps mounted later (e.g. after navigating back) */
+let mapsAuthFailed = false;
+const authFailureListeners = new Set<() => void>();
+
+if (typeof window !== "undefined") {
+    window.gm_authFailure = () => {
+        mapsAuthFailed = true;
+        authFailureListeners.forEach((listener) => {
+            listener();
+        });
+    };
+}
+
+function subscribeAuthFailure(listener: () => void) {
+    authFailureListeners.add(listener);
+    return () => {
+        authFailureListeners.delete(listener);
+    };
+}
+
 /* sessionStorage can throw when storage is blocked; the map then just starts collapsed */
 function readExpanded(): boolean {
     try {
@@ -42,18 +70,23 @@ function writeExpanded(value: boolean) {
     }
 }
 
-function fitToPins(map: google.maps.Map, pins: FacilityPin[]) {
+/* Returns the zoom-cap listener so the caller can drop it if fitBounds didn't
+   move the camera (no "idle" fires then, and it would clamp a later user zoom) */
+function fitToPins(
+    map: google.maps.Map,
+    pins: FacilityPin[],
+): google.maps.MapsEventListener | null {
     if (pins.length === 0) {
         map.setCenter(SRI_LANKA_CENTER);
         map.setZoom(8);
-        return;
+        return null;
     }
     const bounds = new google.maps.LatLngBounds();
     pins.forEach((p) => {
         bounds.extend({ lat: p.lat, lng: p.lng });
     });
     map.fitBounds(bounds, 40);
-    google.maps.event.addListenerOnce(map, "idle", () => {
+    return google.maps.event.addListenerOnce(map, "idle", () => {
         if ((map.getZoom() ?? 0) > MAX_FIT_ZOOM) {
             map.setZoom(MAX_FIT_ZOOM);
         }
@@ -81,8 +114,13 @@ function FacilityMap({
 }) {
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
-    const [authFailed, setAuthFailed] = useState(false);
     const fittedPinsKey = useRef<string | null>(null);
+    const zoomCapListener = useRef<google.maps.MapsEventListener | null>(null);
+    const authFailed = useSyncExternalStore(
+        subscribeAuthFailure,
+        () => mapsAuthFailed,
+        () => false,
+    );
 
     const { isLoaded, loadError } = useJsApiLoader({
         googleMapsApiKey: API_KEY,
@@ -92,22 +130,14 @@ function FacilityMap({
        facilities matters, so paging or sorting keeps the user's pan and zoom */
     const pinsKey = useMemo(() => pins.map((p) => p.slug).join(","), [pins]);
 
-    useEffect(() => {
-        window.gm_authFailure = () => {
-            setAuthFailed(true);
-        };
-        return () => {
-            delete window.gm_authFailure;
-        };
-    }, []);
-
     /* Fitting while hidden would use a zero-size container, so wait until visible */
     useEffect(() => {
         if (!map || !isVisible || fittedPinsKey.current === pinsKey) {
             return;
         }
         fittedPinsKey.current = pinsKey;
-        fitToPins(map, pins);
+        zoomCapListener.current?.remove();
+        zoomCapListener.current = fitToPins(map, pins);
     }, [map, isVisible, pinsKey, pins]);
 
     const onMapUnmount = useCallback(() => {

@@ -73,11 +73,18 @@ test.describe("Directory map widget", () => {
     test("map stays open when navigating to a different page of results", async ({
         page,
     }) => {
+        await page.goto("/directory?itemsPerPage=50");
         await page.getByRole("button", { name: /show map/i }).click();
-        await expect(page.getByTestId("directory-map")).toBeVisible({
-            timeout: 10000,
-        });
-        await page.goto("/directory?page=2");
+        const markers = await facilityMarkers(page);
+        await expect(markers.first()).toBeVisible({ timeout: 15000 });
+
+        // Client-side paging keeps the same map, still showing markers
+        await page.locator('button[name="Go to next page"]').first().click();
+        await expect(page).toHaveURL(/page=2/);
+        await expect(markers.first()).toBeVisible({ timeout: 15000 });
+
+        // A full reload restores the open map from sessionStorage
+        await page.reload();
         await expect(page.getByTestId("directory-map")).toBeVisible({
             timeout: 10000,
         });
