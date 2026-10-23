@@ -22,8 +22,9 @@ test.describe("Name autocomplete in directory filter", () => {
         await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
         const allCount = await suggestions.count();
 
-        // Take a substring from the middle of a name and flip its case
-        const firstName = await suggestions.first().innerText();
+        // Take a substring from the middle of a name and flip its case.
+        // textContent keeps repeated spaces that innerText would collapse.
+        const firstName = (await suggestions.first().textContent()) ?? "";
         const start = Math.floor(firstName.length / 3);
         const fragment = firstName.slice(start, start + 4);
         const query =
@@ -36,7 +37,7 @@ test.describe("Name autocomplete in directory filter", () => {
             suggestions.filter({ hasText: firstName }).first(),
         ).toBeVisible();
 
-        const filtered = await suggestions.allInnerTexts();
+        const filtered = await suggestions.allTextContents();
         expect(filtered.length).toBeLessThanOrEqual(allCount);
         for (const name of filtered) {
             expect(name.toLowerCase()).toContain(query.toLowerCase());
@@ -50,7 +51,7 @@ test.describe("Name autocomplete in directory filter", () => {
         await nameInput.click();
         const suggestions = page.locator("#name-suggestions li");
         await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
-        const suggestionText = await suggestions.first().innerText();
+        const suggestionText = (await suggestions.first().textContent()) ?? "";
         await suggestions.first().click();
         await expect(nameInput).toHaveValue(suggestionText);
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
@@ -62,7 +63,10 @@ test.describe("Name autocomplete in directory filter", () => {
         await page.getByLabel("Name").click();
         const suggestions = page.locator("#name-suggestions li");
         await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
-        await page.getByLabel("Managed By").click();
+        // The open dropdown covers the fields below, so click the heading
+        await page
+            .getByRole("heading", { name: "Filters", exact: true })
+            .click();
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
     });
 });
