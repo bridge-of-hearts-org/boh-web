@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 import { isGoogleMapsUrl, parseLatLngFromUrl } from "../../src/utils/maps";
 
@@ -93,10 +93,37 @@ test.describe("isGoogleMapsUrl", () => {
 // Admin form tests: need admin credentials. Nothing is submitted, so no data is changed.
 const adminUsername = process.env.ADMIN_USERNAME;
 const adminPassword = process.env.ADMIN_PASSWORD;
+const hasCredentials = !!adminUsername && !!adminPassword;
+
+/* Log in through the NextAuth API rather than the form, so the password is
+   never typed into a field and recorded in the test report */
+async function login(page: Page, path: string) {
+    const csrfResponse = await page.request.get("/api/auth/csrf");
+    const { csrfToken } = await csrfResponse.json();
+
+    const loginResponse = await page.request.post(
+        "/api/auth/callback/credentials",
+        {
+            form: {
+                csrfToken: csrfToken,
+                username: adminUsername!,
+                password: adminPassword!,
+                json: "true",
+            },
+            maxRedirects: 0,
+        },
+    );
+    expect(loginResponse.ok()).toBe(true);
+
+    await page.goto(path);
+    await expect(page).toHaveURL((url) => url.pathname === path);
+}
 
 test.describe("Latitude/longitude fields in the admin facility form", () => {
+    /* Locally the tests are optional, but in CI missing credentials must fail
+       rather than skip, or they would silently never run */
     test.skip(
-        !adminUsername || !adminPassword,
+        !hasCredentials && !process.env.CI,
         "Set ADMIN_USERNAME and ADMIN_PASSWORD to run admin form tests",
     );
 
@@ -104,13 +131,11 @@ test.describe("Latitude/longitude fields in the admin facility form", () => {
     const mapsUrl = "https://maps.google.com/maps?q=7.2906,80.6337";
 
     test.beforeEach(async ({ page }) => {
-        await page.goto(
-            `/admin/login?callbackUrl=${encodeURIComponent("/facility/new")}`,
-        );
-        await page.locator("#username").fill(adminUsername!);
-        await page.locator("#password").fill(adminPassword!);
-        await page.getByRole("button", { name: "Login" }).click();
-        await expect(page).toHaveURL(/\/facility\/new/, { timeout: 15000 });
+        expect(
+            hasCredentials,
+            "ADMIN_USERNAME and ADMIN_PASSWORD must be set in CI",
+        ).toBe(true);
+        await login(page, "/facility/new");
     });
 
     test("resolve button is disabled until a URL is entered", async ({
