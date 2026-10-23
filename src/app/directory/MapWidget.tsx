@@ -70,27 +70,48 @@ function writeExpanded(value: boolean) {
     }
 }
 
-/* Returns the zoom-cap listener so the caller can drop it if fitBounds didn't
-   move the camera (no "idle" fires then, and it would clamp a later user zoom) */
-function fitToPins(
+const FIT_PADDING = 40;
+
+/* Whether the bounds fit in the map's container at the given zoom, using the
+   Web Mercator projection Google Maps uses (256px world at zoom 0) */
+function fitsAtZoom(
     map: google.maps.Map,
-    pins: FacilityPin[],
-): google.maps.MapsEventListener | null {
+    bounds: google.maps.LatLngBounds,
+    zoom: number,
+): boolean {
+    const scale = 256 * 2 ** zoom;
+    const toX = (lng: number) => ((lng + 180) / 360) * scale;
+    const toY = (lat: number) => {
+        const sin = Math.sin((lat * Math.PI) / 180);
+        return (0.5 - Math.log((1 + sin) / (1 - sin)) / (4 * Math.PI)) * scale;
+    };
+    const ne = bounds.getNorthEast();
+    const sw = bounds.getSouthWest();
+    const div = map.getDiv();
+    return (
+        toX(ne.lng()) - toX(sw.lng()) <= div.clientWidth - 2 * FIT_PADDING &&
+        toY(sw.lat()) - toY(ne.lat()) <= div.clientHeight - 2 * FIT_PADDING
+    );
+}
+
+function fitToPins(map: google.maps.Map, pins: FacilityPin[]) {
     if (pins.length === 0) {
         map.setCenter(SRI_LANKA_CENTER);
         map.setZoom(8);
-        return null;
+        return;
     }
     const bounds = new google.maps.LatLngBounds();
     pins.forEach((p) => {
         bounds.extend({ lat: p.lat, lng: p.lng });
     });
-    map.fitBounds(bounds, 40);
-    return google.maps.event.addListenerOnce(map, "idle", () => {
-        if ((map.getZoom() ?? 0) > MAX_FIT_ZOOM) {
-            map.setZoom(MAX_FIT_ZOOM);
-        }
-    });
+    /* fitBounds would zoom a single pin or tight cluster to street level, so
+       centre at the zoom cap instead when everything already fits there */
+    if (fitsAtZoom(map, bounds, MAX_FIT_ZOOM)) {
+        map.setCenter(bounds.getCenter());
+        map.setZoom(MAX_FIT_ZOOM);
+    } else {
+        map.fitBounds(bounds, FIT_PADDING);
+    }
 }
 
 function MapMessage({ text, pulse }: { text: string; pulse?: boolean }) {
@@ -115,7 +136,6 @@ function FacilityMap({
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
     const fittedPinsKey = useRef<string | null>(null);
-    const zoomCapListener = useRef<google.maps.MapsEventListener | null>(null);
     const authFailed = useSyncExternalStore(
         subscribeAuthFailure,
         () => mapsAuthFailed,
@@ -136,8 +156,7 @@ function FacilityMap({
             return;
         }
         fittedPinsKey.current = pinsKey;
-        zoomCapListener.current?.remove();
-        zoomCapListener.current = fitToPins(map, pins);
+        fitToPins(map, pins);
     }, [map, isVisible, pinsKey, pins]);
 
     const onMapUnmount = useCallback(() => {
