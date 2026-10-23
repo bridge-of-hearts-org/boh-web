@@ -7,7 +7,7 @@ jobs:
   test:
     # Only run when Vercel marks a deployment as successful
     if: github.event.deployment_status.state == 'success'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
