@@ -58,7 +58,7 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 
 # Branching & PRs
 
-- Feature branches are cut from `dev`, named `feature/<issue-number>-short-description`
+- Feature branches are cut from `dev`. Always name them `feature/<issue-number>-<hyphenated-issue-summary>`, where the summary is at most 5 lowercase words, e.g. `feature/36-directory-map-widget`
 - PRs merge into `dev`; `master` is updated periodically in bulk
 - Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 

@@ -1,5 +1,14 @@
 import NextAuth, { getServerSession, NextAuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { createHash, timingSafeEqual } from "node:crypto";
+
+/* Constant-time string comparison. Hashing first gives equal-length buffers,
+   which timingSafeEqual requires, without leaking the secret's length */
+function safeEqual(a: string, b: string): boolean {
+    const hashA = createHash("sha256").update(a).digest();
+    const hashB = createHash("sha256").update(b).digest();
+    return timingSafeEqual(hashA, hashB);
+}
 
 declare module "next-auth" {
     interface Session {
@@ -31,14 +40,23 @@ export const authOptions: NextAuthOptions = {
                 password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
-                const adminUser = {
-                    username: process.env.ADMIN_USERNAME,
-                    password: process.env.ADMIN_PASSWORD,
-                };
+                const adminUsername = process.env.ADMIN_USERNAME;
+                const adminPassword = process.env.ADMIN_PASSWORD;
+
+                /* Without this, a deployment missing the env vars would accept
+                   a login with no username or password (undefined === undefined) */
+                if (
+                    !adminUsername ||
+                    !adminPassword ||
+                    !credentials?.username ||
+                    !credentials?.password
+                ) {
+                    return null;
+                }
 
                 if (
-                    credentials?.username === adminUser.username &&
-                    credentials?.password === adminUser.password
+                    safeEqual(credentials.username, adminUsername) &&
+                    safeEqual(credentials.password, adminPassword)
                 ) {
                     return {
                         id: "admin",

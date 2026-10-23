@@ -9,6 +9,11 @@ import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 
 import { prisma } from "@/utils/db";
+import { getServerAuth } from "@/lib/auth";
+
+/* Server actions are public POST endpoints, so every write action must check
+   for an admin session itself instead of relying on the page being gated */
+const UNAUTHORIZED = "Unauthorized: admin login required";
 
 type FilteredFacilityResponse = Promise<
     [data: ChildCareFacility[], totalCount: number]
@@ -195,6 +200,10 @@ export async function fetchFacilityBySlug(slug: string) {
 export async function updateFacility(
     data: ChildCareFacilityInput,
 ): Promise<string> {
+    if (!(await getServerAuth())) {
+        return UNAUTHORIZED;
+    }
+
     try {
         await prisma.childCareFacility.update({
             where: {
@@ -219,6 +228,10 @@ export async function updateFacility(
 export async function addFacility(
     data: ChildCareFacilityInput,
 ): Promise<string> {
+    if (!(await getServerAuth())) {
+        return UNAUTHORIZED;
+    }
+
     try {
         await prisma.childCareFacility.create({
             data: data,

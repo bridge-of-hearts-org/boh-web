@@ -7,6 +7,7 @@ jobs:
   test:
     # Only run when Vercel marks a deployment as successful
     if: github.event.deployment_status.state == 'success'
+    # Playwright 1.58 cannot install browsers on ubuntu-latest (26.04)
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +28,8 @@ jobs:
         env:
           PLAYWRIGHT_TEST_BASE_URL: ${{ github.event.deployment_status.target_url }}
           VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_BYPASS_TOKEN }}
+          ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
 
       - name: Upload test report
         uses: actions/upload-artifact@v4
