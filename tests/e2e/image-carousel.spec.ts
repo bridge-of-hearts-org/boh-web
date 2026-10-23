@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // A facility we know exists with photos
-const FACILITY_SLUG = "ami-tsunami-childrens-home-dunagaha";
+const FACILITY_SLUG = "children-of-joy-childrens-home-wattala";
 
 test.describe("ImageCarousel enlarged photo", () => {
     test.beforeEach(async ({ page }) => {
