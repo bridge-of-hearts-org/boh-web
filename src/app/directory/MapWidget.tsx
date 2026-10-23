@@ -72,6 +72,10 @@ function writeExpanded(value: boolean) {
 
 const FIT_PADDING = 40;
 
+function directionsUrl(pin: FacilityPin): string {
+    return `https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lng}`;
+}
+
 /* Whether the bounds fit in the map's container at the given zoom, using the
    Web Mercator projection Google Maps uses (256px world at zoom 0) */
 function fitsAtZoom(
@@ -220,6 +224,15 @@ function FacilityMap({
                         >
                             More Info →
                         </Link>
+                        {/* Opens the Google Maps app on phones, ready to navigate */}
+                        <a
+                            href={directionsUrl(shownPin)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-orange-600 hover:underline"
+                        >
+                            Get directions ↗
+                        </a>
                     </div>
                 </InfoWindowF>
             )}

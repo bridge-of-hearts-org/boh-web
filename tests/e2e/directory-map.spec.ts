@@ -52,7 +52,7 @@ test.describe("Directory map widget", () => {
         await expect(markers.first()).toBeVisible({ timeout: 15000 });
     });
 
-    test("clicking a marker shows InfoWindow with a facility link", async ({
+    test("clicking a marker shows InfoWindow with facility and directions links", async ({
         page,
     }) => {
         await page.goto("/directory?itemsPerPage=50");
@@ -65,9 +65,16 @@ test.describe("Directory map widget", () => {
         await expect(page.getByTestId("map-infowindow")).toBeVisible({
             timeout: 5000,
         });
+        const infoWindow = page.getByTestId("map-infowindow");
         await expect(
-            page.getByTestId("map-infowindow").locator("a"),
+            infoWindow.getByRole("link", { name: /more info/i }),
         ).toHaveAttribute("href", /\/facility\//);
+        await expect(
+            infoWindow.getByRole("link", { name: /get directions/i }),
+        ).toHaveAttribute(
+            "href",
+            /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=-?[\d.]+,-?[\d.]+$/,
+        );
     });
 
     test("map stays open when navigating to a different page of results", async ({
