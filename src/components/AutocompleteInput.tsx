@@ -54,13 +54,16 @@ export default function AutocompleteInput({
                 <ul
                     id={`${id}-suggestions`}
                     className="absolute top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md"
+                    // Keep focus on the input when clicking the list or its scrollbar
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                    }}
                 >
                     {suggestions.map((option) => (
                         <li
                             key={option}
                             className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
-                            onMouseDown={(e) => {
-                                e.preventDefault();
+                            onMouseDown={() => {
                                 onChange(option);
                                 setShowSuggestions(false);
                             }}

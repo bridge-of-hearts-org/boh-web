@@ -190,8 +190,11 @@ export async function fetchFacilityNames(): Promise<string[]> {
         const rows = await prisma.childCareFacility.findMany({
             select: { name: true },
         });
-        return [...new Set(rows.map((r) => r.name))].sort();
-    } catch {
+        return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+        if (error instanceof Error) {
+            console.log("Error: ", error.stack);
+        }
         return [];
     }
 }

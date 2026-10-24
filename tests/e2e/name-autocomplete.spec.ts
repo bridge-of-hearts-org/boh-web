@@ -11,6 +11,7 @@ test.describe("Name autocomplete in directory filter", () => {
         await page.getByLabel("Name").click();
         const suggestions = page.locator("#name-suggestions li");
         await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        expect(await suggestions.count()).toBeGreaterThan(1);
     });
 
     test("typing filters names case-insensitively, matching anywhere", async ({
@@ -20,28 +21,32 @@ test.describe("Name autocomplete in directory filter", () => {
         await nameInput.click();
         const suggestions = page.locator("#name-suggestions li");
         await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
-        const allCount = await suggestions.count();
 
-        // Take a substring from the middle of a name and flip its case.
-        // textContent keeps repeated spaces that innerText would collapse.
-        const firstName = (await suggestions.first().textContent()) ?? "";
-        const start = Math.floor(firstName.length / 3);
-        const fragment = firstName.slice(start, start + 4);
-        const query =
-            fragment.toUpperCase() === fragment
-                ? fragment.toLowerCase()
-                : fragment.toUpperCase();
+        // textContent keeps repeated spaces that innerText would collapse
+        const allNames = await suggestions.allTextContents();
 
-        await nameInput.fill(query);
-        await expect(
-            suggestions.filter({ hasText: firstName }).first(),
-        ).toBeVisible();
-
-        const filtered = await suggestions.allTextContents();
-        expect(filtered.length).toBeLessThanOrEqual(allCount);
-        for (const name of filtered) {
-            expect(name.toLowerCase()).toContain(query.toLowerCase());
+        // Find a lowercase fragment from the middle of a name that narrows the list
+        let fragment = "";
+        let expected: string[] = [];
+        for (const name of allNames) {
+            const start = Math.floor(name.length / 3);
+            const candidate = name.slice(start, start + 4).toLowerCase();
+            if (!/^[a-z]{4}$/.test(candidate)) {
+                continue;
+            }
+            const matches = allNames.filter((n) =>
+                n.toLowerCase().includes(candidate),
+            );
+            if (matches.length < allNames.length) {
+                fragment = candidate;
+                expected = matches;
+                break;
+            }
         }
+        expect(fragment).not.toBe("");
+
+        await nameInput.fill(fragment.toUpperCase());
+        await expect(suggestions).toHaveText(expected);
     });
 
     test("clicking a suggestion populates the input and closes the dropdown", async ({
@@ -68,5 +73,15 @@ test.describe("Name autocomplete in directory filter", () => {
             .getByRole("heading", { name: "Filters", exact: true })
             .click();
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
+    });
+
+    test("dropdown closes when Escape is pressed", async ({ page }) => {
+        const nameInput = page.getByLabel("Name");
+        await nameInput.click();
+        const suggestions = page.locator("#name-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        await nameInput.press("Escape");
+        await expect(page.locator("#name-suggestions")).not.toBeVisible();
+        await expect(nameInput).toBeFocused();
     });
 });
