@@ -33,6 +33,28 @@ test.describe("Directory map widget", () => {
         await expect(page.getByTestId("directory-map")).not.toBeVisible();
     });
 
+    test("toggle button is prominent with a map icon", async ({ page }) => {
+        const toggle = page.getByRole("button", { name: /show map/i });
+        await expect(toggle).toBeVisible();
+        await expect(toggle.locator("svg").first()).toBeVisible();
+
+        // A filled button rather than the page background
+        const background = await toggle.evaluate(
+            (el) => getComputedStyle(el).backgroundColor,
+        );
+        expect(background).not.toMatch(/^rgba?\(255, 255, 255(, 1)?\)$/);
+        expect(background).not.toBe("rgba(0, 0, 0, 0)");
+    });
+
+    test("toggle button spans the width on mobile", async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 800 });
+        const toggle = page.getByRole("button", { name: /show map/i });
+        await expect(toggle).toBeVisible();
+        const toggleBox = await toggle.boundingBox();
+        const parentBox = await toggle.locator("..").boundingBox();
+        expect(toggleBox?.width).toBeCloseTo(parentBox?.width ?? 0, 0);
+    });
+
     test("clicking toggle shows and hides the map", async ({ page }) => {
         await page.getByRole("button", { name: /show map/i }).click();
         await expect(page.getByTestId("directory-map")).toBeVisible({
@@ -52,7 +74,7 @@ test.describe("Directory map widget", () => {
         await expect(markers.first()).toBeVisible({ timeout: 15000 });
     });
 
-    test("clicking a marker shows InfoWindow with facility and directions links", async ({
+    test("clicking a marker shows InfoWindow with facility and Google Maps links", async ({
         page,
     }) => {
         await page.goto("/directory?itemsPerPage=50");
@@ -69,12 +91,19 @@ test.describe("Directory map widget", () => {
         await expect(
             infoWindow.getByRole("link", { name: /more info/i }),
         ).toHaveAttribute("href", /\/facility\//);
+        // The named place (or a coordinate search), not coordinate directions,
+        // which snap to the nearest business Google knows
+        const placeLink = infoWindow.getByRole("link", {
+            name: /open in google maps/i,
+        });
+        await expect(placeLink).toHaveAttribute("target", "_blank");
+        const placeHref = new URL((await placeLink.getAttribute("href")) ?? "");
+        expect(placeHref.protocol).toBe("https:");
+        expect(placeHref.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
+        expect(placeHref.pathname).not.toMatch(/^\/maps\/dir\//);
         await expect(
             infoWindow.getByRole("link", { name: /get directions/i }),
-        ).toHaveAttribute(
-            "href",
-            /^https:\/\/www\.google\.com\/maps\/dir\/\?api=1&destination=-?[\d.]+,-?[\d.]+$/,
-        );
+        ).toHaveCount(0);
     });
 
     test("map stays open when navigating to a different page of results", async ({

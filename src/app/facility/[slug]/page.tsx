@@ -16,7 +16,7 @@ import { ChildCareFacility, Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import { hasCoordinates, isGoogleMapsUrl } from "@/utils/maps";
+import { buildOpenInMapsUrl, hasCoordinates } from "@/utils/maps";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -77,22 +77,6 @@ function buildMapEmbedSrc(
     if (placeMatch) {
         const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
-    }
-
-    return null;
-}
-
-/* Link for opening the facility in Google Maps. Prefer the stored Maps URL, which
-    opens the named place; a search for the coordinates only opens a bare point. */
-function buildOpenInMapsUrl(
-    location: ChildCareFacility["location"],
-): string | null {
-    if (isGoogleMapsUrl(location.google)) {
-        return location.google.trim();
-    }
-
-    if (hasCoordinates(location)) {
-        return `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`;
     }
 
     return null;

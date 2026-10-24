@@ -6,11 +6,6 @@ export const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 export const MAP_LOAD_ERROR_TEXT =
     "The map could not be loaded. Please try again later.";
 
-/* Opens the Google Maps app on phones, ready to navigate */
-export function directionsUrl(latitude: number, longitude: number): string {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-}
-
 declare global {
     interface Window {
         /* Called by Google Maps when the API key is rejected */

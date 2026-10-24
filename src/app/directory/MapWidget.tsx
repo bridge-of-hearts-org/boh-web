@@ -8,13 +8,14 @@ import {
     InfoWindowF,
 } from "@react-google-maps/api";
 import Link from "next/link";
+import { ChevronDown, ChevronUp, Map as MapIcon } from "lucide-react";
 
+import Button from "@/components/Button";
 import MapMessage from "@/components/MapMessage";
 import { FacilityPin } from "@/utils/defines";
 import {
     MAPS_API_KEY,
     MAP_LOAD_ERROR_TEXT,
-    directionsUrl,
     useMapsAuthFailed,
 } from "@/utils/googleMaps";
 
@@ -176,14 +177,16 @@ function FacilityMap({
                         >
                             More Info →
                         </Link>
-                        {/* Opens the Google Maps app on phones, ready to navigate */}
+                        {/* The named place rather than directions to the bare
+                            coordinates, which snap to the nearest business Google
+                            knows; the place's own Directions button routes correctly */}
                         <a
-                            href={directionsUrl(shownPin.lat, shownPin.lng)}
+                            href={shownPin.mapsUrl}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-orange-600 hover:underline"
                         >
-                            Get directions ↗
+                            Open in Google Maps ↗
                         </a>
                     </div>
                 </InfoWindowF>
@@ -214,14 +217,21 @@ export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
 
     return (
         <div className="flex flex-col gap-2">
-            <button
+            <Button
+                name="Toggle map"
                 onClick={toggle}
                 aria-expanded={isExpanded}
                 aria-controls="directory-map"
-                className="flex w-fit items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-gray-50"
+                className="flex w-full items-center justify-center gap-2 shadow-md md:w-fit"
             >
-                {isExpanded ? "Hide Map ▴" : "Show Map ▾"}
-            </button>
+                <MapIcon className="h-5 w-5" aria-hidden="true" />
+                {isExpanded ? "Hide Map" : "Show Map"}
+                {isExpanded ? (
+                    <ChevronUp className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                    <ChevronDown className="h-5 w-5" aria-hidden="true" />
+                )}
+            </Button>
 
             {hasOpened && (
                 <div
