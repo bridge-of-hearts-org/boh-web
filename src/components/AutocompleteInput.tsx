@@ -85,7 +85,11 @@ export default function AutocompleteInput({
                         <li
                             key={option}
                             className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
-                            onMouseDown={() => {
+                            onMouseDown={(e) => {
+                                // Only select on a primary (left) click or tap
+                                if (e.button !== 0) {
+                                    return;
+                                }
                                 onChange(option);
                                 setShowSuggestions(false);
                             }}

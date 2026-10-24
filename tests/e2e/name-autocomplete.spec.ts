@@ -88,6 +88,16 @@ test.describe("Name autocomplete in directory filter", () => {
         await expect(suggestions.first()).toBeVisible();
     });
 
+    test("right-clicking a suggestion does not select it", async ({ page }) => {
+        const nameInput = page.getByLabel("Name");
+        await nameInput.click();
+        const suggestions = page.locator("#name-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        await suggestions.first().click({ button: "right" });
+        await expect(nameInput).toHaveValue("");
+        await expect(suggestions.first()).toBeVisible();
+    });
+
     test("dropdown closes when Escape is pressed", async ({ page }) => {
         const nameInput = page.getByLabel("Name");
         await nameInput.click();
