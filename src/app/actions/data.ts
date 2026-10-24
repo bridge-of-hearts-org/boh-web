@@ -195,6 +195,20 @@ export async function fetchDistinctCities(): Promise<string[]> {
     }
 }
 
+export async function fetchFacilityNames(): Promise<string[]> {
+    try {
+        const rows = await prisma.childCareFacility.findMany({
+            select: { name: true },
+        });
+        return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+        if (error instanceof Error) {
+            console.log("Error: ", error.stack);
+        }
+        return [];
+    }
+}
+
 export async function fetchFacilityBySlug(slug: string) {
     let data = null;
 
