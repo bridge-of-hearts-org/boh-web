@@ -55,6 +55,18 @@ test.describe("Directory map widget", () => {
         expect(toggleBox?.width).toBeCloseTo(parentBox?.width ?? 0, 0);
     });
 
+    test("toggle button is centred on wide screens", async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        const toggle = page.getByRole("button", { name: /show map/i });
+        await expect(toggle).toBeVisible();
+        const toggleBox = await toggle.boundingBox();
+        const parentBox = await toggle.locator("..").boundingBox();
+        expect(toggleBox!.width).toBeLessThan(parentBox!.width);
+        const toggleCentre = toggleBox!.x + toggleBox!.width / 2;
+        const parentCentre = parentBox!.x + parentBox!.width / 2;
+        expect(Math.abs(toggleCentre - parentCentre)).toBeLessThanOrEqual(1);
+    });
+
     test("clicking toggle shows and hides the map", async ({ page }) => {
         await page.getByRole("button", { name: /show map/i }).click();
         await expect(page.getByTestId("directory-map")).toBeVisible({

@@ -64,6 +64,8 @@ test.describe("Facility location map", () => {
         await expect(placeLink).toHaveAttribute("target", "_blank");
         const placeHref = new URL((await placeLink.getAttribute("href")) ?? "");
         expect(placeHref.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
+        // The stored Maps URL, not the coordinate search fallback
+        expect(placeHref.pathname).not.toBe("/maps/search/");
 
         // Coordinate directions snap to the wrong place; the place page has its own
         await expect(
@@ -88,20 +90,16 @@ test.describe("Facility location map", () => {
         });
     });
 
-    test("links to the facility's Google Maps page below the map", async ({
+    test("has no separate Open in Google Maps button below the map", async ({
         page,
     }) => {
-        await page.goto(`/facility/${FACILITY_WITH_MAP}`);
-        const openInMaps = page.getByRole("link", {
-            name: "Open in Google Maps",
+        await page.goto(`/facility/${FACILITY_WITH_COORDINATES}`);
+        await expect(page.getByTestId("facility-location-map")).toBeAttached({
+            timeout: 10000,
         });
-        await expect(openInMaps).toBeVisible({ timeout: 10000 });
-        await expect(openInMaps).toHaveAttribute("target", "_blank");
-
-        const href = new URL((await openInMaps.getAttribute("href")) ?? "");
-        expect(href.protocol).toBe("https:");
-        expect(href.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
-        /* The stored Maps URL, not the coordinate search fallback */
-        expect(href.pathname).not.toBe("/maps/search/");
+        // The map's pin links to the place instead
+        await expect(
+            page.getByRole("link", { name: "Open in Google Maps" }),
+        ).toHaveCount(0);
     });
 });

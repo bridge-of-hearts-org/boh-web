@@ -222,7 +222,7 @@ export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
                 onClick={toggle}
                 aria-expanded={isExpanded}
                 aria-controls="directory-map"
-                className="flex w-full items-center justify-center gap-2 shadow-md md:w-fit"
+                className="flex w-full items-center justify-center gap-2 shadow-md md:w-fit md:self-center"
             >
                 <MapIcon className="h-5 w-5" aria-hidden="true" />
                 {isExpanded ? "Hide Map" : "Show Map"}

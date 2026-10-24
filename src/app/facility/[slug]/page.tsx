@@ -166,6 +166,7 @@ export default async function FacilityProfilePage({
     /* Constants */
     const noInfoElement = <span>-</span>;
 
+    /* Only shown when there's no map; with a map, its pin links to the place */
     const openInMapsLink = openInMapsUrl ? (
         <a
             href={openInMapsUrl}
@@ -322,11 +323,6 @@ export default async function FacilityProfilePage({
                                                         mapEmbedSrc ?? undefined
                                                     }
                                                 />
-                                            )}
-                                            {openInMapsLink && (
-                                                <div className="flex justify-center pt-3 md:justify-end">
-                                                    {openInMapsLink}
-                                                </div>
                                             )}
                                         </div>
                                     ) : (
