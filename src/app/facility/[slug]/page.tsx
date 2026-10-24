@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
-import { Link2, MapPin, PhoneCall, Users } from "lucide-react";
+import { ExternalLink, Link2, MapPin, PhoneCall, Users } from "lucide-react";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
@@ -15,7 +15,7 @@ import { ChildCareFacility, Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import { hasCoordinates } from "@/utils/maps";
+import { hasCoordinates, isGoogleMapsUrl } from "@/utils/maps";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -81,6 +81,22 @@ function buildMapEmbedSrc(
     return null;
 }
 
+/* Link for opening the facility in Google Maps. The embed's own link only carries
+    the coordinates, so prefer the stored Maps URL, which opens the named place. */
+function buildOpenInMapsUrl(
+    location: ChildCareFacility["location"],
+): string | null {
+    if (isGoogleMapsUrl(location.google)) {
+        return location.google.trim();
+    }
+
+    if (hasCoordinates(location)) {
+        return `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`;
+    }
+
+    return null;
+}
+
 export default async function FacilityProfilePage({
     params,
 }: FacilityPageProps) {
@@ -98,6 +114,7 @@ export default async function FacilityProfilePage({
     }
 
     const mapEmbedSrc = buildMapEmbedSrc(data.location);
+    const openInMapsUrl = buildOpenInMapsUrl(data.location);
 
     // Construct JSON-LD structured data
     const jsonLdData = {
@@ -276,6 +293,19 @@ export default async function FacilityProfilePage({
                                                 referrerPolicy="no-referrer-when-downgrade"
                                                 src={mapEmbedSrc}
                                             />
+                                            {openInMapsUrl && (
+                                                <div className="flex justify-center pt-3 md:justify-end">
+                                                    <a
+                                                        href={openInMapsUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="flex items-center gap-2 rounded-full bg-secondary-green px-4 py-2 font-encode-sans-sc font-semibold text-green-950 transition-all duration-100 hover:bg-secondary-green-hover"
+                                                    >
+                                                        <ExternalLink className="h-4 w-4" />
+                                                        Open in Google Maps
+                                                    </a>
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className={infoTableRowStyles}>

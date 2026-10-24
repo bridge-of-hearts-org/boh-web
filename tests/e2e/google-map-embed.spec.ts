@@ -40,4 +40,19 @@ test.describe("Google Maps embed on facility profile page", () => {
         const src = new URL((await mapIframe.getAttribute("src")) ?? "");
         expect(src.searchParams.get("q")).toBe("7.1654797,80.5736322");
     });
+
+    test("links to the facility's Google Maps page below the map", async ({
+        page,
+    }) => {
+        await page.goto(`/facility/${FACILITY_WITH_MAP}`);
+        const openInMaps = page.getByRole("link", {
+            name: "Open in Google Maps",
+        });
+        await expect(openInMaps).toBeVisible({ timeout: 10000 });
+        await expect(openInMaps).toHaveAttribute("target", "_blank");
+
+        const href = new URL((await openInMaps.getAttribute("href")) ?? "");
+        expect(href.protocol).toBe("https:");
+        expect(href.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
+    });
 });
