@@ -6,9 +6,9 @@ const FACILITY_WITH_MAP = "memon-charitable-foundation-childrens-home-kaleliya";
 // A facility known to have no Google Maps link
 const FACILITY_WITHOUT_MAP = "mawupiya-sewana-childrens-home-gonapola";
 
-// A facility whose name also matches an unrelated place abroad, with stored coordinates
-const FACILITY_WITH_AMBIGUOUS_NAME = "st-leonards-childrens-home-gampola";
-const AMBIGUOUS_NAME_COORDINATES = "7.1654797,80.5736322";
+// A facility with stored coordinates in the database the previews read
+const FACILITY_WITH_COORDINATES = "al-arkam-childrens-home-atulugama";
+const FACILITY_COORDINATES = "6.6889615,79.9840452";
 
 // The Maps JavaScript API script tag that @react-google-maps/api adds
 const MAPS_SCRIPT = "script#script-loader";
@@ -41,7 +41,7 @@ test.describe("Facility location map", () => {
     test("pins the stored coordinates and links the place name from the pin", async ({
         page,
     }) => {
-        await page.goto(`/facility/${FACILITY_WITH_AMBIGUOUS_NAME}`);
+        await page.goto(`/facility/${FACILITY_WITH_COORDINATES}`);
         const name = (
             await page.getByRole("heading", { level: 1 }).first().textContent()
         )?.trim();
@@ -50,7 +50,7 @@ test.describe("Facility location map", () => {
         const map = page.getByTestId("facility-location-map");
         await expect(map).toHaveAttribute(
             "data-position",
-            AMBIGUOUS_NAME_COORDINATES,
+            FACILITY_COORDINATES,
         );
         await map.scrollIntoViewIfNeeded();
         const marker = map.getByRole("button", { name, exact: true });
@@ -73,7 +73,7 @@ test.describe("Facility location map", () => {
 
     test("loads the map only once it scrolls into view", async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 400 });
-        await page.goto(`/facility/${FACILITY_WITH_AMBIGUOUS_NAME}`);
+        await page.goto(`/facility/${FACILITY_WITH_COORDINATES}`);
 
         const map = page.getByTestId("facility-location-map");
         await expect(map).toBeAttached({ timeout: 10000 });
