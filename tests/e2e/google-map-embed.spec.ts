@@ -54,5 +54,7 @@ test.describe("Google Maps embed on facility profile page", () => {
         const href = new URL((await openInMaps.getAttribute("href")) ?? "");
         expect(href.protocol).toBe("https:");
         expect(href.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
+        /* The stored Maps URL, not the coordinate search fallback */
+        expect(href.pathname).not.toBe("/maps/search/");
     });
 });

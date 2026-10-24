@@ -168,6 +168,18 @@ export default async function FacilityProfilePage({
     /* Constants */
     const noInfoElement = <span>-</span>;
 
+    const openInMapsLink = openInMapsUrl ? (
+        <a
+            href={openInMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-secondary-green px-4 py-2 font-encode-sans-sc font-semibold text-green-950 transition-all duration-100 hover:bg-secondary-green-hover"
+        >
+            <ExternalLink className="h-4 w-4" />
+            Open in Google Maps
+        </a>
+    ) : null;
+
     /* Styles */
     const infoSectionStyles =
         "flex w-full xl:w-2/3 flex-col gap-2 divide-y divide";
@@ -293,17 +305,9 @@ export default async function FacilityProfilePage({
                                                 referrerPolicy="no-referrer-when-downgrade"
                                                 src={mapEmbedSrc}
                                             />
-                                            {openInMapsUrl && (
+                                            {openInMapsLink && (
                                                 <div className="flex justify-center pt-3 md:justify-end">
-                                                    <a
-                                                        href={openInMapsUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center gap-2 rounded-full bg-secondary-green px-4 py-2 font-encode-sans-sc font-semibold text-green-950 transition-all duration-100 hover:bg-secondary-green-hover"
-                                                    >
-                                                        <ExternalLink className="h-4 w-4" />
-                                                        Open in Google Maps
-                                                    </a>
+                                                    {openInMapsLink}
                                                 </div>
                                             )}
                                         </div>
@@ -313,7 +317,8 @@ export default async function FacilityProfilePage({
                                                 Google Maps
                                             </div>
                                             <div className="">
-                                                {noInfoElement}
+                                                {openInMapsLink ??
+                                                    noInfoElement}
                                             </div>
                                         </div>
                                     )}
