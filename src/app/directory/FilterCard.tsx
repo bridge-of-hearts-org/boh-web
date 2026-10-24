@@ -20,9 +20,11 @@ import {
 export default function FilterCard({
     names,
     cities,
+    managedByOptions,
 }: {
     names: string[];
     cities: string[];
+    managedByOptions: string[];
 }) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -135,18 +137,18 @@ export default function FilterCard({
                 </div>
                 <div className="flex flex-col gap-2">
                     <label htmlFor="managedBy">Managed By</label>
-                    <input
+                    <AutocompleteInput
                         id="managedBy"
                         name="managedBy"
-                        type="text"
                         value={activeFilters.managedBy}
-                        onChange={(e) =>
+                        options={managedByOptions}
+                        onChange={(managedBy) =>
                             setActiveFilters({
                                 ...activeFilters,
-                                managedBy: e.target.value,
+                                managedBy,
                             })
                         }
-                    ></input>
+                    />
                 </div>
                 <div className="flex flex-col gap-2">
                     <label htmlFor="province">Province</label>

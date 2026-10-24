@@ -9,7 +9,11 @@ import { Metadata } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
 import { Suspense } from "react";
-import { fetchDistinctCities, fetchFacilityNames } from "@/app/actions/data";
+import {
+    fetchDistinctCities,
+    fetchDistinctManagedBy,
+    fetchFacilityNames,
+} from "@/app/actions/data";
 
 export const metadata: Metadata = {
     title: "Directory | Bridge of Hearts",
@@ -31,9 +35,10 @@ export default async function DirectoryPage(props: {
 }) {
     const searchParams = await props.searchParams;
     const currentPage = searchParams.page || 1;
-    const [names, cities] = await Promise.all([
+    const [names, cities, managedByOptions] = await Promise.all([
         fetchFacilityNames(),
         fetchDistinctCities(),
+        fetchDistinctManagedBy(),
     ]);
 
     return (
@@ -62,7 +67,11 @@ export default async function DirectoryPage(props: {
             </div>
             <div className="flex flex-col items-center gap-5 xl:grid xl:grid-cols-[400px,1fr] xl:items-start">
                 {/* Filter Card */}
-                <FilterCard names={names} cities={cities} />
+                <FilterCard
+                    names={names}
+                    cities={cities}
+                    managedByOptions={managedByOptions}
+                />
                 <Suspense fallback={<FacilityCardsSkeleton />}>
                     <FacilityCards
                         name={searchParams.name || ""}
