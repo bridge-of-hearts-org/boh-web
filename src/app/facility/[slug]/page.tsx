@@ -65,16 +65,17 @@ function buildMapEmbedSrc(
         return null;
     }
 
-    /* Prefer the named place, which shows a labelled pin */
+    /* Prefer the stored coordinates: a name search can match an unrelated
+        place with the same name (e.g. in another country) */
+    if (hasCoordinates(location)) {
+        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
+    }
+
+    /* Otherwise fall back to the place name in the Maps URL */
     const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
     if (placeMatch) {
         const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
-    }
-
-    /* Otherwise fall back to the coordinates */
-    if (hasCoordinates(location)) {
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
     }
 
     return null;
