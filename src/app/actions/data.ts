@@ -214,7 +214,9 @@ export async function fetchDistinctManagedBy(): Promise<string[]> {
         const rows = await prisma.childCareFacility.findMany({
             select: { managedBy: true },
         });
-        const values = rows.map((r) => r.managedBy).filter((m) => m.trim());
+        const values = rows
+            .map((r) => r.managedBy.trim())
+            .filter((m) => m !== "");
         return [...new Set(values)].sort((a, b) => a.localeCompare(b));
     } catch (error) {
         if (error instanceof Error) {
