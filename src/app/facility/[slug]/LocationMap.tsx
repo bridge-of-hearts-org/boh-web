@@ -9,10 +9,13 @@ import {
 } from "@react-google-maps/api";
 
 import MapMessage from "@/components/MapMessage";
-import { useMapsAuthFailed } from "@/utils/googleMapsAuth";
+import {
+    MAPS_API_KEY,
+    MAP_LOAD_ERROR_TEXT,
+    directionsUrl,
+    useMapsAuthFailed,
+} from "@/utils/googleMaps";
 
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-const LOAD_ERROR_TEXT = "The map could not be loaded. Please try again later.";
 /* Start loading a little before the map scrolls into view */
 const LOAD_MARGIN = "200px";
 
@@ -22,13 +25,17 @@ type LocationMapProps = {
     longitude: number;
     /* Opens the facility as a named place in Google Maps */
     mapsUrl: string;
+    /* Shown instead if the Maps JavaScript API fails, e.g. its key is rejected */
+    fallbackEmbedSrc: string | null;
 };
 
-function directionsUrl(latitude: number, longitude: number): string {
-    return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`;
-}
-
-function LoadedMap({ name, latitude, longitude, mapsUrl }: LocationMapProps) {
+function LoadedMap({
+    name,
+    latitude,
+    longitude,
+    mapsUrl,
+    fallbackEmbedSrc,
+}: LocationMapProps) {
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const authFailed = useMapsAuthFailed();
     /* A stable object, since GoogleMap re-centres whenever `center` changes */
@@ -38,11 +45,25 @@ function LoadedMap({ name, latitude, longitude, mapsUrl }: LocationMapProps) {
     );
 
     const { isLoaded, loadError } = useJsApiLoader({
-        googleMapsApiKey: API_KEY,
+        googleMapsApiKey: MAPS_API_KEY,
     });
 
     if (loadError || authFailed) {
-        return <MapMessage text={LOAD_ERROR_TEXT} />;
+        if (fallbackEmbedSrc) {
+            return (
+                <iframe
+                    title="Facility location map"
+                    width="100%"
+                    height="100%"
+                    className="border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={fallbackEmbedSrc}
+                />
+            );
+        }
+
+        return <MapMessage text={MAP_LOAD_ERROR_TEXT} />;
     }
 
     if (!isLoaded) {
@@ -83,7 +104,6 @@ function LoadedMap({ name, latitude, longitude, mapsUrl }: LocationMapProps) {
                         >
                             {name} ↗
                         </a>
-                        {/* Opens the Google Maps app on phones, ready to navigate */}
                         <a
                             href={directionsUrl(latitude, longitude)}
                             target="_blank"

@@ -10,9 +10,10 @@ const FACILITY_WITHOUT_MAP = "mawupiya-sewana-childrens-home-gonapola";
 const FACILITY_WITH_AMBIGUOUS_NAME = "st-leonards-childrens-home-gampola";
 const AMBIGUOUS_NAME_COORDINATES = "7.1654797,80.5736322";
 
-const MAPS_SCRIPT = 'script[src*="maps.googleapis.com/maps/api/js"]';
+// The Maps JavaScript API script tag that @react-google-maps/api adds
+const MAPS_SCRIPT = "script#script-loader";
 
-test.describe("Google Maps embed on facility profile page", () => {
+test.describe("Facility location map", () => {
     test("shows a map when a Google Maps link is available", async ({
         page,
     }) => {
@@ -74,11 +75,13 @@ test.describe("Google Maps embed on facility profile page", () => {
 
         const map = page.getByTestId("facility-location-map");
         await expect(map).toBeAttached({ timeout: 10000 });
+        // Let the page hydrate first, so an eager load would have started by now
+        await page.waitForLoadState("networkidle");
         await expect(map).not.toBeInViewport();
         await expect(page.locator(MAPS_SCRIPT)).toHaveCount(0);
 
         await map.scrollIntoViewIfNeeded();
-        await expect(page.locator(MAPS_SCRIPT)).toHaveCount(1, {
+        await expect(page.locator(MAPS_SCRIPT)).toBeAttached({
             timeout: 10000,
         });
     });

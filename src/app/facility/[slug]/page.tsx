@@ -82,8 +82,8 @@ function buildMapEmbedSrc(
     return null;
 }
 
-/* Link for opening the facility in Google Maps. The embed's own link only carries
-    the coordinates, so prefer the stored Maps URL, which opens the named place. */
+/* Link for opening the facility in Google Maps. Prefer the stored Maps URL, which
+    opens the named place; a search for the coordinates only opens a bare point. */
 function buildOpenInMapsUrl(
     location: ChildCareFacility["location"],
 ): string | null {
@@ -321,6 +321,9 @@ export default async function FacilityProfilePage({
                                                     }
                                                     mapsUrl={
                                                         interactiveMapLocation.mapsUrl
+                                                    }
+                                                    fallbackEmbedSrc={
+                                                        mapEmbedSrc
                                                     }
                                                 />
                                             ) : (

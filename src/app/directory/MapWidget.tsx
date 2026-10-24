@@ -11,14 +11,17 @@ import Link from "next/link";
 
 import MapMessage from "@/components/MapMessage";
 import { FacilityPin } from "@/utils/defines";
-import { useMapsAuthFailed } from "@/utils/googleMapsAuth";
+import {
+    MAPS_API_KEY,
+    MAP_LOAD_ERROR_TEXT,
+    directionsUrl,
+    useMapsAuthFailed,
+} from "@/utils/googleMaps";
 
 const SRI_LANKA_CENTER = { lat: 7.87, lng: 80.77 };
 const SESSION_KEY = "directoryMapExpanded";
-const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 /* Stops fitting a single pin or a tight cluster from zooming to street level */
 const MAX_FIT_ZOOM = 14;
-const LOAD_ERROR_TEXT = "The map could not be loaded. Please try again later.";
 
 /* sessionStorage can throw when storage is blocked; the map then just starts collapsed */
 function readExpanded(): boolean {
@@ -38,10 +41,6 @@ function writeExpanded(value: boolean) {
 }
 
 const FIT_PADDING = 40;
-
-function directionsUrl(pin: FacilityPin): string {
-    return `https://www.google.com/maps/dir/?api=1&destination=${pin.lat},${pin.lng}`;
-}
 
 /* Whether the bounds fit in the map's container at the given zoom, using the
    Web Mercator projection Google Maps uses (256px world at zoom 0) */
@@ -100,7 +99,7 @@ function FacilityMap({
     const authFailed = useMapsAuthFailed();
 
     const { isLoaded, loadError } = useJsApiLoader({
-        googleMapsApiKey: API_KEY,
+        googleMapsApiKey: MAPS_API_KEY,
     });
 
     /* The server sends a new pins array on every navigation; only the set of
@@ -127,7 +126,7 @@ function FacilityMap({
             : null;
 
     if (loadError || authFailed) {
-        return <MapMessage text={LOAD_ERROR_TEXT} />;
+        return <MapMessage text={MAP_LOAD_ERROR_TEXT} />;
     }
 
     if (!isLoaded) {
@@ -179,7 +178,7 @@ function FacilityMap({
                         </Link>
                         {/* Opens the Google Maps app on phones, ready to navigate */}
                         <a
-                            href={directionsUrl(shownPin)}
+                            href={directionsUrl(shownPin.lat, shownPin.lng)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-sm text-orange-600 hover:underline"
@@ -230,7 +229,7 @@ export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
                     data-testid="directory-map"
                     className={`h-96 w-full overflow-hidden rounded-xl border border-gray-200 ${isExpanded ? "" : "hidden"}`}
                 >
-                    {API_KEY ? (
+                    {MAPS_API_KEY ? (
                         <FacilityMap pins={pins} isVisible={isExpanded} />
                     ) : (
                         <MapMessage text="The map is currently unavailable." />
