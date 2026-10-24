@@ -12,6 +12,7 @@ import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
 import {
     extractLatLng,
+    buildOpenInMapsUrl,
     hasCoordinates,
     isGoogleMapsUrl,
     LatLng,
@@ -158,24 +159,33 @@ export async function fetchFacilityPins(
                 name: true,
                 slug: true,
                 location: {
-                    select: { city: true, latitude: true, longitude: true },
+                    select: {
+                        city: true,
+                        google: true,
+                        latitude: true,
+                        longitude: true,
+                    },
                 },
             },
         });
 
-        return facilities.flatMap((f) =>
-            hasCoordinates(f.location)
-                ? [
-                      {
-                          name: f.name,
-                          slug: f.slug,
-                          city: f.location.city,
-                          lat: f.location.latitude,
-                          lng: f.location.longitude,
-                      },
-                  ]
-                : [],
-        );
+        return facilities.flatMap((f) => {
+            const mapsUrl = buildOpenInMapsUrl(f.location);
+            if (!hasCoordinates(f.location) || !mapsUrl) {
+                return [];
+            }
+
+            return [
+                {
+                    name: f.name,
+                    slug: f.slug,
+                    city: f.location.city,
+                    lat: f.location.latitude,
+                    lng: f.location.longitude,
+                    mapsUrl,
+                },
+            ];
+        });
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);

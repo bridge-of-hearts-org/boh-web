@@ -228,6 +228,25 @@ export function hasCoordinates(location: {
     );
 }
 
+/* Link for opening a facility in Google Maps. Prefer the stored Maps URL, which
+    opens the named place; a search for the coordinates only opens a bare point
+    (and directions to one snap to the nearest business Google knows). */
+export function buildOpenInMapsUrl(location: {
+    google: string;
+    latitude: number | null;
+    longitude: number | null;
+}): string | null {
+    if (isGoogleMapsUrl(location.google)) {
+        return location.google.trim();
+    }
+
+    if (hasCoordinates(location)) {
+        return `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`;
+    }
+
+    return null;
+}
+
 export function isInSriLanka({ latitude, longitude }: LatLng): boolean {
     return (
         latitude >= SRI_LANKA_BOUNDS.minLat &&
