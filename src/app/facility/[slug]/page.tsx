@@ -6,6 +6,7 @@ import { ExternalLink, Link2, MapPin, PhoneCall, Users } from "lucide-react";
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
+import LocationMap from "./LocationMap";
 import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
@@ -115,6 +116,19 @@ export default async function FacilityProfilePage({
 
     const mapEmbedSrc = buildMapEmbedSrc(data.location);
     const openInMapsUrl = buildOpenInMapsUrl(data.location);
+
+    /* Our own map, whose pin popup can link to the named place. Without
+        coordinates or its key, fall back to the embed. */
+    const interactiveMapLocation =
+        process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY &&
+        hasCoordinates(data.location) &&
+        openInMapsUrl
+            ? {
+                  latitude: data.location.latitude,
+                  longitude: data.location.longitude,
+                  mapsUrl: openInMapsUrl,
+              }
+            : null;
 
     // Construct JSON-LD structured data
     const jsonLdData = {
@@ -294,17 +308,34 @@ export default async function FacilityProfilePage({
                                         </div>
                                     </div>
                                     {/* Map */}
-                                    {mapEmbedSrc ? (
+                                    {interactiveMapLocation || mapEmbedSrc ? (
                                         <div className="overflow-hidden pt-4">
-                                            <iframe
-                                                title="Facility location map"
-                                                width="100%"
-                                                height="300"
-                                                className="rounded-3xl border-0"
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                                src={mapEmbedSrc}
-                                            />
+                                            {interactiveMapLocation ? (
+                                                <LocationMap
+                                                    name={data.name}
+                                                    latitude={
+                                                        interactiveMapLocation.latitude
+                                                    }
+                                                    longitude={
+                                                        interactiveMapLocation.longitude
+                                                    }
+                                                    mapsUrl={
+                                                        interactiveMapLocation.mapsUrl
+                                                    }
+                                                />
+                                            ) : (
+                                                <iframe
+                                                    title="Facility location map"
+                                                    width="100%"
+                                                    height="300"
+                                                    className="rounded-3xl border-0"
+                                                    loading="lazy"
+                                                    referrerPolicy="no-referrer-when-downgrade"
+                                                    src={
+                                                        mapEmbedSrc ?? undefined
+                                                    }
+                                                />
+                                            )}
                                             {openInMapsLink && (
                                                 <div className="flex justify-center pt-3 md:justify-end">
                                                     {openInMapsLink}

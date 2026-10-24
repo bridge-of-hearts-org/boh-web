@@ -1,13 +1,6 @@
 "use client";
 
-import {
-    useState,
-    useEffect,
-    useCallback,
-    useMemo,
-    useRef,
-    useSyncExternalStore,
-} from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
     GoogleMap,
     useJsApiLoader,
@@ -16,7 +9,9 @@ import {
 } from "@react-google-maps/api";
 import Link from "next/link";
 
+import MapMessage from "@/components/MapMessage";
 import { FacilityPin } from "@/utils/defines";
+import { useMapsAuthFailed } from "@/utils/googleMapsAuth";
 
 const SRI_LANKA_CENTER = { lat: 7.87, lng: 80.77 };
 const SESSION_KEY = "directoryMapExpanded";
@@ -24,34 +19,6 @@ const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 /* Stops fitting a single pin or a tight cluster from zooming to street level */
 const MAX_FIT_ZOOM = 14;
 const LOAD_ERROR_TEXT = "The map could not be loaded. Please try again later.";
-
-declare global {
-    interface Window {
-        /* Called by Google Maps when the API key is rejected */
-        gm_authFailure?: () => void;
-    }
-}
-
-/* Google reports a rejected key only once per script load, so remember it at
-   module level for maps mounted later (e.g. after navigating back) */
-let mapsAuthFailed = false;
-const authFailureListeners = new Set<() => void>();
-
-if (typeof window !== "undefined") {
-    window.gm_authFailure = () => {
-        mapsAuthFailed = true;
-        authFailureListeners.forEach((listener) => {
-            listener();
-        });
-    };
-}
-
-function subscribeAuthFailure(listener: () => void) {
-    authFailureListeners.add(listener);
-    return () => {
-        authFailureListeners.delete(listener);
-    };
-}
 
 /* sessionStorage can throw when storage is blocked; the map then just starts collapsed */
 function readExpanded(): boolean {
@@ -118,16 +85,6 @@ function fitToPins(map: google.maps.Map, pins: FacilityPin[]) {
     }
 }
 
-function MapMessage({ text, pulse }: { text: string; pulse?: boolean }) {
-    return (
-        <div
-            className={`flex h-full w-full items-center justify-center rounded-xl bg-gray-100 px-4 text-center text-sm text-gray-500 ${pulse ? "animate-pulse" : ""}`}
-        >
-            {text}
-        </div>
-    );
-}
-
 /* Mounted on first expand and then kept (hidden while collapsed), so the Maps
    script loads on demand and re-opening the map isn't a new billable map load */
 function FacilityMap({
@@ -140,11 +97,7 @@ function FacilityMap({
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
     const fittedPinsKey = useRef<string | null>(null);
-    const authFailed = useSyncExternalStore(
-        subscribeAuthFailure,
-        () => mapsAuthFailed,
-        () => false,
-    );
+    const authFailed = useMapsAuthFailed();
 
     const { isLoaded, loadError } = useJsApiLoader({
         googleMapsApiKey: API_KEY,

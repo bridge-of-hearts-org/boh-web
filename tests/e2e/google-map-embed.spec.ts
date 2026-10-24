@@ -8,14 +8,20 @@ const FACILITY_WITHOUT_MAP = "mawupiya-sewana-childrens-home-gonapola";
 
 // A facility whose name also matches an unrelated place abroad, with stored coordinates
 const FACILITY_WITH_AMBIGUOUS_NAME = "st-leonards-childrens-home-gampola";
+const AMBIGUOUS_NAME_COORDINATES = "7.1654797,80.5736322";
+
+const MAPS_SCRIPT = 'script[src*="maps.googleapis.com/maps/api/js"]';
 
 test.describe("Google Maps embed on facility profile page", () => {
-    test("shows the map iframe when a Google Maps link is available", async ({
+    test("shows a map when a Google Maps link is available", async ({
         page,
     }) => {
         await page.goto(`/facility/${FACILITY_WITH_MAP}`);
-        const mapIframe = page.locator('iframe[title="Facility location map"]');
-        await expect(mapIframe).toBeVisible({ timeout: 10000 });
+        // Our own map when the facility has coordinates, otherwise the embed
+        const map = page
+            .getByTestId("facility-location-map")
+            .or(page.locator('iframe[title="Facility location map"]'));
+        await expect(map).toBeVisible({ timeout: 10000 });
     });
 
     test("shows a Google Maps hyphen row when no Maps link is available", async ({
@@ -25,20 +31,56 @@ test.describe("Google Maps embed on facility profile page", () => {
         await expect(
             page.locator('iframe[title="Facility location map"]'),
         ).not.toBeVisible();
+        await expect(page.getByTestId("facility-location-map")).toHaveCount(0);
         await expect(
             page.getByText("Google Maps").locator("..").getByText("-"),
         ).toBeVisible({ timeout: 10000 });
     });
 
-    test("centres the map on the stored coordinates rather than a name search", async ({
+    test("pins the stored coordinates and links the place name from the pin", async ({
         page,
     }) => {
         await page.goto(`/facility/${FACILITY_WITH_AMBIGUOUS_NAME}`);
-        const mapIframe = page.locator('iframe[title="Facility location map"]');
-        await expect(mapIframe).toBeVisible({ timeout: 10000 });
+        const name = (
+            await page.getByRole("heading", { level: 1 }).first().textContent()
+        )?.trim();
+        expect(name).toBeTruthy();
 
-        const src = new URL((await mapIframe.getAttribute("src")) ?? "");
-        expect(src.searchParams.get("q")).toBe("7.1654797,80.5736322");
+        const map = page.getByTestId("facility-location-map");
+        await map.scrollIntoViewIfNeeded();
+        const marker = map.getByRole("button", { name, exact: true });
+        await expect(marker).toBeVisible({ timeout: 15000 });
+        await marker.click();
+
+        const infoWindow = page.getByTestId("facility-map-infowindow");
+        await expect(infoWindow).toBeVisible({ timeout: 5000 });
+
+        const placeLink = infoWindow.getByRole("link", { name });
+        await expect(placeLink).toHaveAttribute("target", "_blank");
+        const placeHref = new URL((await placeLink.getAttribute("href")) ?? "");
+        expect(placeHref.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
+
+        await expect(
+            infoWindow.getByRole("link", { name: /get directions/i }),
+        ).toHaveAttribute(
+            "href",
+            `https://www.google.com/maps/dir/?api=1&destination=${AMBIGUOUS_NAME_COORDINATES}`,
+        );
+    });
+
+    test("loads the map only once it scrolls into view", async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 400 });
+        await page.goto(`/facility/${FACILITY_WITH_AMBIGUOUS_NAME}`);
+
+        const map = page.getByTestId("facility-location-map");
+        await expect(map).toBeAttached({ timeout: 10000 });
+        await expect(map).not.toBeInViewport();
+        await expect(page.locator(MAPS_SCRIPT)).toHaveCount(0);
+
+        await map.scrollIntoViewIfNeeded();
+        await expect(page.locator(MAPS_SCRIPT)).toHaveCount(1, {
+            timeout: 10000,
+        });
     });
 
     test("links to the facility's Google Maps page below the map", async ({
