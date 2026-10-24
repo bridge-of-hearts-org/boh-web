@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, devices } from "@playwright/test";
 
 test.describe("Name autocomplete in directory filter", () => {
     test.beforeEach(async ({ page }) => {
@@ -83,5 +83,36 @@ test.describe("Name autocomplete in directory filter", () => {
         await nameInput.press("Escape");
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
         await expect(nameInput).toBeFocused();
+    });
+});
+
+test.describe("Name autocomplete on a touch device", () => {
+    const { viewport, userAgent, deviceScaleFactor, isMobile, hasTouch } =
+        devices["Pixel 5"];
+    test.use({ viewport, userAgent, deviceScaleFactor, isMobile, hasTouch });
+
+    test.beforeEach(async ({ page }) => {
+        await page.goto("/directory");
+    });
+
+    test("tapping outside closes the dropdown", async ({ page }) => {
+        await page.getByLabel("Name").tap();
+        const suggestions = page.locator("#name-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        await page.getByRole("heading", { name: "Filters", exact: true }).tap();
+        await expect(page.locator("#name-suggestions")).not.toBeVisible();
+    });
+
+    test("tapping a name selects it and closes the dropdown", async ({
+        page,
+    }) => {
+        const nameInput = page.getByLabel("Name");
+        await nameInput.tap();
+        const suggestions = page.locator("#name-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        const suggestionText = (await suggestions.first().textContent()) ?? "";
+        await suggestions.first().tap();
+        await expect(nameInput).toHaveValue(suggestionText);
+        await expect(page.locator("#name-suggestions")).not.toBeVisible();
     });
 });
