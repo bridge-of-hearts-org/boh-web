@@ -58,8 +58,11 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 
 # Branching & PRs
 
-- Feature branches are cut from `dev`, named `feature/<issue-number>-short-description`
+- Feature branches are cut from `dev`. Always name them `feature/<issue-number>-<hyphenated-issue-summary>`, where the summary is at most 5 lowercase words, e.g. `feature/36-directory-map-widget`
+- This naming rule overrides any session-assigned branch (e.g. the `ccr-<id>` branch a Claude Code cloud session starts on). Create the `feature/...` branch from `dev` before the first push, and never push work to the `ccr-*` branch
 - PRs merge into `dev`; `master` is updated periodically in bulk
+- When a PR that closes an issue merges into `dev`, close that issue right away. GitHub only auto-closes issues on merges to the default branch
+- After pushing commits to a branch, give the user the branch's Vercel preview link. Take it from the Vercel bot's comment on the PR (the "Preview" link) rather than building it by hand, since Vercel shortens long branch names (e.g. `https://boh-web-git-feature-36-di-17d93d-bridge-of-hearts-orgs-projects.vercel.app`)
 - Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 
 # Testing

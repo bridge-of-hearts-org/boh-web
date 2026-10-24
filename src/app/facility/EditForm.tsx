@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Form from "next/form";
 import { twMerge } from "tailwind-merge";
 import { CircleX, Link2, MapPin, PhoneCall, Users } from "lucide-react";
@@ -14,9 +14,16 @@ import {
     ProvincesList,
 } from "@/utils/defines";
 import Button from "@/components/Button";
-import { addFacility, updateFacility } from "@/app/actions/data";
+import { addFacility, resolveLatLng, updateFacility } from "@/app/actions/data";
 import Link from "next/link";
 import { removeKeys } from "@/utils/utils";
+import {
+    hasCoordinates,
+    isInSriLanka,
+    isValidLatitude,
+    isValidLongitude,
+    LatLng,
+} from "@/utils/maps";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
@@ -34,6 +41,50 @@ const validate = (data: ChildCareFacility) => {
     return "success";
 };
 
+const coordsToText = (
+    location: ChildCareFacility["location"],
+): [string, string] => {
+    if (!hasCoordinates(location)) {
+        return ["", ""];
+    }
+
+    return [String(location.latitude), String(location.longitude)];
+};
+
+const COORDINATE_PATTERN = /^-?\d+(\.\d+)?$/;
+
+/* Parses the latitude/longitude inputs. Both empty is valid and means "no coordinates". */
+const parseCoordinates = (
+    latitudeText: string,
+    longitudeText: string,
+): { coords: LatLng | null } | { error: string } => {
+    const lat = latitudeText.trim();
+    const lng = longitudeText.trim();
+
+    if (!lat && !lng) {
+        return { coords: null };
+    }
+
+    if (!lat || !lng) {
+        return {
+            error: "Enter both latitude and longitude, or leave both empty",
+        };
+    }
+
+    const latitude = COORDINATE_PATTERN.test(lat) ? Number(lat) : NaN;
+    const longitude = COORDINATE_PATTERN.test(lng) ? Number(lng) : NaN;
+
+    if (!isValidLatitude(latitude)) {
+        return { error: "Latitude must be a number between -90 and 90" };
+    }
+
+    if (!isValidLongitude(longitude)) {
+        return { error: "Longitude must be a number between -180 and 180" };
+    }
+
+    return { coords: { latitude, longitude } };
+};
+
 export default function EditForm(props: EditFormProps) {
     if (!props.newFacility && !props.data) {
         return (
@@ -49,6 +100,20 @@ export default function EditForm(props: EditFormProps) {
     const [newPhoneNumber, setNewPhoneNumber] = useState("");
     const [newEmailAddress, setNewEmailAddress] = useState("");
     const [newSource, setNewSource] = useState("");
+    const [latitudeText, setLatitudeText] = useState(
+        coordsToText(data.location)[0],
+    );
+    const [longitudeText, setLongitudeText] = useState(
+        coordsToText(data.location)[1],
+    );
+    const [resolvingCoords, setResolvingCoords] = useState(false);
+    const [resolveError, setResolveError] = useState("");
+    const [resolveNote, setResolveNote] = useState("");
+
+    /* The latest Maps URL, read after a lookup finishes to discard results
+        for a URL that has since been edited or cleared */
+    const googleUrlRef = useRef(data.location.google);
+    googleUrlRef.current = formData.location.google;
 
     /* Common styles */
     const inputRowStyle =
@@ -57,8 +122,72 @@ export default function EditForm(props: EditFormProps) {
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
 
+    const resetForm = (values: ChildCareFacility) => {
+        setFormData(values);
+        const [latitude, longitude] = coordsToText(values.location);
+        setLatitudeText(latitude);
+        setLongitudeText(longitude);
+        setResolveError("");
+        setResolveNote("");
+    };
+
     const handleClear = () => {
-        setFormData(emptyChildCareFacilityDbObject);
+        resetForm(emptyChildCareFacilityDbObject);
+    };
+
+    const handleResolveCoordinates = async () => {
+        setResolveError("");
+        setResolveNote("");
+        setResolvingCoords(true);
+
+        const requestedUrl = formData.location.google;
+        let result: Awaited<ReturnType<typeof resolveLatLng>>;
+        try {
+            result = await resolveLatLng(requestedUrl);
+        } catch {
+            result = { error: "Something went wrong while resolving the URL" };
+        } finally {
+            setResolvingCoords(false);
+        }
+
+        if (googleUrlRef.current !== requestedUrl) {
+            return;
+        }
+
+        if ("error" in result) {
+            setResolveError(result.error);
+            return;
+        }
+
+        const unchanged =
+            Number(latitudeText) === result.latitude &&
+            Number(longitudeText) === result.longitude;
+
+        if ((latitudeText.trim() || longitudeText.trim()) && !unchanged) {
+            const current = `${latitudeText.trim() || "-"}, ${longitudeText.trim() || "-"}`;
+            const resolved = `${result.latitude}, ${result.longitude}`;
+
+            if (!confirm(`Replace ${current} with ${resolved}?`)) {
+                return;
+            }
+        }
+
+        setLatitudeText(String(result.latitude));
+        setLongitudeText(String(result.longitude));
+
+        /* Store the full URL instead of a shortlink: the profile page needs the
+            place name in it to show the embedded map */
+        if (result.resolvedUrl !== requestedUrl.trim()) {
+            /* Use the latest form state: the lookup can take several seconds,
+                and other fields may have been edited meanwhile */
+            setFormData((prev) => ({
+                ...prev,
+                location: { ...prev.location, google: result.resolvedUrl },
+            }));
+            setResolveNote(
+                "Replaced the shortlink with the full Google Maps URL",
+            );
+        }
     };
 
     const handleSubmit = async () => {
@@ -69,17 +198,41 @@ export default function EditForm(props: EditFormProps) {
             return;
         }
 
+        const parsed = parseCoordinates(latitudeText, longitudeText);
+        if ("error" in parsed) {
+            alert(parsed.error);
+            return;
+        }
+
+        if (
+            parsed.coords &&
+            !isInSriLanka(parsed.coords) &&
+            !confirm(
+                "These coordinates are outside Sri Lanka. Save them anyway?",
+            )
+        ) {
+            return;
+        }
+
+        const payload = removeKeys(
+            {
+                ...formData,
+                location: {
+                    ...formData.location,
+                    latitude: parsed.coords?.latitude ?? null,
+                    longitude: parsed.coords?.longitude ?? null,
+                },
+            },
+            ["id", "createdAt", "updatedAt"],
+        );
+
         if (props.newFacility) {
-            const status = await addFacility(
-                removeKeys(formData, ["id", "createdAt", "updatedAt"]),
-            );
+            const status = await addFacility(payload);
             alert(status);
             redirect("/admin");
         } else {
             /* The fact that we are in the edit page means that the database entry exists */
-            const status = await updateFacility(
-                removeKeys(formData, ["id", "createdAt", "updatedAt"]),
-            );
+            const status = await updateFacility(payload);
             alert(status);
         }
     };
@@ -322,19 +475,78 @@ export default function EditForm(props: EditFormProps) {
                     </div>
 
                     <div className={inputRowStyle}>
-                        <label>Google Maps</label>
+                        <label htmlFor="google-maps-url">Google Maps</label>
+                        <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                                <input
+                                    id="google-maps-url"
+                                    className="grow"
+                                    value={formData.location.google}
+                                    onChange={(e) => {
+                                        setResolveError("");
+                                        setResolveNote("");
+                                        setFormData({
+                                            ...formData,
+                                            location: {
+                                                ...formData.location,
+                                                google: e.target.value,
+                                            },
+                                        });
+                                    }}
+                                ></input>
+                                <Button
+                                    name="Resolve Coordinates"
+                                    type="button"
+                                    variant="secondary"
+                                    color="green"
+                                    className="shrink-0 text-sm"
+                                    disabled={!formData.location.google.trim()}
+                                    loading={resolvingCoords}
+                                    loadingText="Resolving"
+                                    onClick={handleResolveCoordinates}
+                                >
+                                    Resolve Latitude and Longitude
+                                </Button>
+                            </div>
+                            {resolveNote && (
+                                <p className="text-sm text-green-800">
+                                    {resolveNote}
+                                </p>
+                            )}
+                            {resolveError && (
+                                <p
+                                    role="alert"
+                                    className="text-sm text-red-700"
+                                >
+                                    {resolveError}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className={inputRowStyle}>
+                        <label htmlFor="latitude">Latitude</label>
                         <input
+                            id="latitude"
                             className="grow"
-                            value={formData.location.google}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    location: {
-                                        ...formData.location,
-                                        google: e.target.value,
-                                    },
-                                })
-                            }
+                            inputMode="decimal"
+                            placeholder="e.g. 7.2906"
+                            disabled={resolvingCoords}
+                            value={latitudeText}
+                            onChange={(e) => setLatitudeText(e.target.value)}
+                        ></input>
+                    </div>
+
+                    <div className={inputRowStyle}>
+                        <label htmlFor="longitude">Longitude</label>
+                        <input
+                            id="longitude"
+                            className="grow"
+                            inputMode="decimal"
+                            placeholder="e.g. 80.6337"
+                            disabled={resolvingCoords}
+                            value={longitudeText}
+                            onChange={(e) => setLongitudeText(e.target.value)}
                         ></input>
                     </div>
                 </section>
@@ -763,7 +975,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="black"
-                        onClick={() => setFormData(data)}
+                        onClick={() => resetForm(data)}
                     >
                         Reset
                     </Button>
@@ -780,6 +992,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
+                        disabled={resolvingCoords}
                         onClick={handleSubmit}
                     >
                         Submit

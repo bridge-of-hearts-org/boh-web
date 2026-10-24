@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
+import AutocompleteInput from "@/components/AutocompleteInput";
 import {
     defaultItemsPerPage,
     defaultSortBy,
@@ -16,7 +17,13 @@ import {
     ProvinceToDistrict,
 } from "@/utils/defines";
 
-export default function FilterCard({ cities }: { cities: string[] }) {
+export default function FilterCard({
+    names,
+    cities,
+}: {
+    names: string[];
+    cities: string[];
+}) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -34,15 +41,8 @@ export default function FilterCard({ cities }: { cities: string[] }) {
     });
 
     const [cityInput, setCityInput] = useState(searchParams.get("city") || "");
-    const [showCitySuggestions, setShowCitySuggestions] = useState(false);
     const [isApplying, setIsApplying] = useState(false);
     const [isResetting, setIsResetting] = useState(false);
-
-    const citySuggestions = cityInput
-        ? cities.filter((c) =>
-              c.toLowerCase().includes(cityInput.toLowerCase()),
-          )
-        : cities;
 
     useEffect(() => {
         const city = searchParams.get("city") || "";
@@ -110,51 +110,28 @@ export default function FilterCard({ cities }: { cities: string[] }) {
             >
                 <div className="flex flex-col gap-2">
                     <label htmlFor="name">Name</label>
-                    <input
+                    <AutocompleteInput
                         id="name"
                         name="name"
-                        type="text"
                         value={activeFilters.name}
-                        onChange={(e) =>
+                        options={names}
+                        onChange={(name) =>
                             setActiveFilters({
                                 ...activeFilters,
-                                name: e.target.value,
+                                name,
                             })
                         }
-                    ></input>
+                    />
                 </div>
-                <div className="relative flex flex-col gap-2">
+                <div className="flex flex-col gap-2">
                     <label htmlFor="city">City</label>
-                    <input
+                    <AutocompleteInput
                         id="city"
                         name="city"
-                        type="text"
-                        autoComplete="off"
                         value={cityInput}
-                        onChange={(e) => setCityInput(e.target.value)}
-                        onFocus={() => setShowCitySuggestions(true)}
-                        onBlur={() => setShowCitySuggestions(false)}
+                        options={cities}
+                        onChange={setCityInput}
                     />
-                    {showCitySuggestions && citySuggestions.length > 0 && (
-                        <ul
-                            id="city-suggestions"
-                            className="absolute top-full z-10 mt-1 max-h-48 w-full overflow-y-auto rounded-lg border border-gray-300 bg-white shadow-md"
-                        >
-                            {citySuggestions.map((city) => (
-                                <li
-                                    key={city}
-                                    className="cursor-pointer px-3 py-2 text-sm hover:bg-gray-100"
-                                    onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        setCityInput(city);
-                                        setShowCitySuggestions(false);
-                                    }}
-                                >
-                                    {city}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
                 </div>
                 <div className="flex flex-col gap-2">
                     <label htmlFor="managedBy">Managed By</label>

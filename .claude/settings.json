@@ -1,0 +1,14 @@
+{
+    "extraKnownMarketplaces": {
+        "i-have-adhd": {
+            "source": {
+                "source": "github",
+                "repo": "ayghri/i-have-adhd",
+                "ref": "v0.4.1"
+            }
+        }
+    },
+    "enabledPlugins": {
+        "i-have-adhd@i-have-adhd": true
+    }
+}

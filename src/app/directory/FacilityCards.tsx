@@ -7,7 +7,7 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import Button from "@/components/Button";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
-import { fetchAllFacilities } from "../actions/data";
+import { fetchAllFacilities, fetchFacilityPins } from "../actions/data";
 import {
     DirectoryFilterType,
     District,
@@ -16,6 +16,7 @@ import {
 } from "@/utils/defines";
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
+import MapWidget from "./MapWidget";
 
 type FacilityCardProps = {
     name: string;
@@ -37,12 +38,15 @@ export async function FacilityCards(props: FacilityCardProps) {
         province: props.province,
     };
 
-    const [facilities, totalCount] = await fetchAllFacilities(
-        activeFilters,
-        props.sortBy,
-        props.page,
-        props.itemsPerPage,
-    );
+    const [[facilities, totalCount], pins] = await Promise.all([
+        fetchAllFacilities(
+            activeFilters,
+            props.sortBy,
+            props.page,
+            props.itemsPerPage,
+        ),
+        fetchFacilityPins(activeFilters),
+    ]);
 
     return (
         <>
@@ -52,6 +56,8 @@ export async function FacilityCards(props: FacilityCardProps) {
                     itemsPerPage={props.itemsPerPage}
                     totalCount={totalCount}
                 />
+
+                <MapWidget pins={pins} />
 
                 {facilities.map((facility, idx) => {
                     return (
