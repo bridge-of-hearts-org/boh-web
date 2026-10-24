@@ -45,8 +45,10 @@ export const validatePhotoFile = (file: {
     return null;
 };
 
-/* Names a photo after a hash of its contents, like the sync script does, so
-   uploading the same photo twice can't create a duplicate */
+/* Names a photo after a hash of its contents, so uploading the same photo
+   twice can't create a duplicate. The sync script names photos the same way
+   but with MD5, which browsers can't compute, so a photo added both here and
+   in the sheet gets two different names. */
 export const photoFileName = async (file: File): Promise<string> => {
     const digest = await crypto.subtle.digest(
         "SHA-256",

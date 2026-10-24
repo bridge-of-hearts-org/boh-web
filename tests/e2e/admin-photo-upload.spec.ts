@@ -70,8 +70,11 @@ function pngFile(name: string) {
 }
 
 /* Answer the browser's upload to Vercel Blob without storing anything, and
-   record the paths it uploaded to */
-async function mockBlobStorage(page: Page): Promise<string[]> {
+   record the paths it uploaded to. Uploads finish once `release` resolves. */
+async function mockBlobStorage(
+    page: Page,
+    release: Promise<void> = Promise.resolve(),
+): Promise<string[]> {
     const uploadedPaths: string[] = [];
     const corsHeaders = {
         "access-control-allow-origin": "*",
@@ -87,6 +90,7 @@ async function mockBlobStorage(page: Page): Promise<string[]> {
 
         const pathname = new URL(route.request().url()).pathname.slice(1);
         uploadedPaths.push(pathname);
+        await release;
         await route.fulfill({
             status: 200,
             headers: corsHeaders,
@@ -107,6 +111,11 @@ async function mockBlobStorage(page: Page): Promise<string[]> {
 /* Traces record request bodies and cookies, which here include the admin
    password and session, and would end up in the uploaded report */
 test.use({ trace: "off" });
+
+/* Upload tokens are created for real (the upload itself is mocked), so the
+   server needs a Blob token. Locally the server shares this environment. */
+const hasBlobToken =
+    !!process.env.BLOB_READ_WRITE_TOKEN || !!process.env.VERCEL_TOKEN;
 
 // Admin form tests: need admin credentials. Nothing is saved and Blob uploads are mocked.
 test.describe("Photo upload in the admin facility form", () => {
@@ -159,18 +168,21 @@ test.describe("Photo upload in the admin facility form", () => {
         });
 
         await expect(
-            page
-                .getByRole("alert")
-                .filter({
-                    hasText:
-                        "notes.txt: only JPEG, PNG and WebP images can be uploaded",
-                }),
+            page.getByRole("alert").filter({
+                hasText:
+                    "notes.txt: only JPEG, PNG and WebP images can be uploaded",
+            }),
         ).toBeVisible();
         await expect(photoItems(page)).toHaveCount(0);
         expect(uploadedPaths).toEqual([]);
     });
 
     test("uploads, reorders and removes photos", async ({ page }) => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
         const uploadedPaths = await mockBlobStorage(page);
         await slugInput(page).fill(slug);
 
@@ -216,10 +228,50 @@ test.describe("Photo upload in the admin facility form", () => {
         await expect(slugInput(page)).not.toHaveAttribute("readonly");
     });
 
+    test("locks the slug, Reset and Clear while a photo uploads", async ({
+        page,
+    }) => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
+        let finishUpload = () => {};
+        const uploadDone = new Promise<void>((resolve) => {
+            finishUpload = resolve;
+        });
+        const uploadedPaths = await mockBlobStorage(page, uploadDone);
+        await slugInput(page).fill(slug);
+
+        await page.locator("#photo-upload").setInputFiles(pngFile("slow.png"));
+        await expect.poll(() => uploadedPaths.length).toBe(1);
+
+        await expect(slugInput(page)).toHaveAttribute("readonly", "");
+        await expect(page.locator("#photo-upload")).toBeDisabled();
+        await expect(
+            page.getByRole("button", { name: "Reset" }),
+        ).toBeDisabled();
+        await expect(
+            page.getByRole("button", { name: "Clear" }),
+        ).toBeDisabled();
+        await expect(
+            page.getByRole("button", { name: "Submit" }),
+        ).toBeDisabled();
+
+        finishUpload();
+        await expect(photoItems(page)).toHaveCount(1);
+        await expect(page.getByRole("button", { name: "Clear" })).toBeEnabled();
+    });
+
     test("createPhotoUploadToken rejects unauthenticated calls but lets admins through", async ({
         page,
         request,
     }) => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
         await slugInput(page).fill(slug);
         const action = await captureAction(page, () =>
             page.locator("#photo-upload").setInputFiles(pngFile("token.png")),

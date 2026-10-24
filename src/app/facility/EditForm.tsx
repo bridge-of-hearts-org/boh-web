@@ -137,8 +137,8 @@ export default function EditForm(props: EditFormProps) {
     const photoInputRef = useRef<HTMLInputElement>(null);
 
     /* Photos are stored under the slug, so it can't change while the
-        facility has any, or they would no longer be found */
-    const slugLocked = formData.photos.length > 0;
+        facility has any or one is uploading, or they would no longer be found */
+    const slugLocked = formData.photos.length > 0 || uploadingPhotos;
 
     /* The latest Maps URL, read after a lookup finishes to discard results
         for a URL that has since been edited or cleared */
@@ -222,6 +222,10 @@ export default function EditForm(props: EditFormProps) {
     };
 
     const handlePhotoUpload = async (files: File[]) => {
+        if (uploadingPhotos) {
+            return;
+        }
+
         const slug = formData.slug;
         const errors: string[] = [];
         const knownFileNames = new Set(formData.photos.map((p) => p.fileName));
@@ -1005,6 +1009,10 @@ export default function EditForm(props: EditFormProps) {
                                 id="photo-upload"
                                 ref={photoInputRef}
                                 type="file"
+                                disabled={
+                                    !isValidSlug(formData.slug) ||
+                                    uploadingPhotos
+                                }
                                 accept={Object.keys(PhotoContentTypes).join(
                                     ",",
                                 )}
@@ -1204,6 +1212,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="black"
+                        disabled={uploadingPhotos}
                         onClick={() => resetForm(data)}
                     >
                         Reset
@@ -1212,6 +1221,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="red"
+                        disabled={uploadingPhotos}
                         onClick={handleClear}
                     >
                         Clear
