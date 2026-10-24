@@ -48,6 +48,10 @@ test.describe("Facility location map", () => {
         expect(name).toBeTruthy();
 
         const map = page.getByTestId("facility-location-map");
+        await expect(map).toHaveAttribute(
+            "data-position",
+            AMBIGUOUS_NAME_COORDINATES,
+        );
         await map.scrollIntoViewIfNeeded();
         const marker = map.getByRole("button", { name, exact: true });
         await expect(marker).toBeVisible({ timeout: 15000 });
@@ -61,12 +65,10 @@ test.describe("Facility location map", () => {
         const placeHref = new URL((await placeLink.getAttribute("href")) ?? "");
         expect(placeHref.hostname).toMatch(/(^|\.)(google\.[a-z.]+|goo\.gl)$/);
 
+        // Coordinate directions snap to the wrong place; the place page has its own
         await expect(
             infoWindow.getByRole("link", { name: /get directions/i }),
-        ).toHaveAttribute(
-            "href",
-            `https://www.google.com/maps/dir/?api=1&destination=${AMBIGUOUS_NAME_COORDINATES}`,
-        );
+        ).toHaveCount(0);
     });
 
     test("loads the map only once it scrolls into view", async ({ page }) => {

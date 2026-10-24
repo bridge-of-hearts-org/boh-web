@@ -12,7 +12,6 @@ import MapMessage from "@/components/MapMessage";
 import {
     MAPS_API_KEY,
     MAP_LOAD_ERROR_TEXT,
-    directionsUrl,
     useMapsAuthFailed,
 } from "@/utils/googleMaps";
 
@@ -95,7 +94,9 @@ function LoadedMap({
                         data-testid="facility-map-infowindow"
                         className="flex flex-col gap-1 py-1"
                     >
-                        {/* The named place, which the stored coordinates alone don't give */}
+                        {/* The named place, which the stored coordinates alone don't give.
+                            No coordinate directions link: Google snaps a bare point to the
+                            nearest business it knows, so the place's own Directions is used. */}
                         <a
                             href={mapsUrl}
                             target="_blank"
@@ -103,14 +104,6 @@ function LoadedMap({
                             className="font-semibold text-orange-600 hover:underline"
                         >
                             {name} ↗
-                        </a>
-                        <a
-                            href={directionsUrl(latitude, longitude)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-orange-600 hover:underline"
-                        >
-                            Get directions ↗
                         </a>
                     </div>
                 </InfoWindowF>
@@ -150,6 +143,7 @@ export default function LocationMap(props: LocationMapProps) {
         <div
             ref={containerRef}
             data-testid="facility-location-map"
+            data-position={`${props.latitude},${props.longitude}`}
             className="h-[300px] w-full overflow-hidden rounded-3xl"
         >
             {isNearView ? (
