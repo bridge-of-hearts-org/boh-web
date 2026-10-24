@@ -10,6 +10,12 @@ import { config } from "dotenv";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
+import {
+    extractLatLng,
+    hasCoordinates,
+    isGoogleMapsUrl,
+    LatLng,
+} from "@/utils/maps";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -157,15 +163,19 @@ export async function fetchFacilityPins(
             },
         });
 
-        return facilities
-            .filter((f) => f.location.latitude && f.location.longitude)
-            .map((f) => ({
-                name: f.name,
-                slug: f.slug,
-                city: f.location.city,
-                lat: f.location.latitude!,
-                lng: f.location.longitude!,
-            }));
+        return facilities.flatMap((f) =>
+            hasCoordinates(f.location)
+                ? [
+                      {
+                          name: f.name,
+                          slug: f.slug,
+                          city: f.location.city,
+                          lat: f.location.latitude,
+                          lng: f.location.longitude,
+                      },
+                  ]
+                : [],
+        );
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
@@ -248,4 +258,26 @@ export async function addFacility(
     }
 
     return "success";
+}
+
+export async function resolveLatLng(
+    url: string,
+): Promise<(LatLng & { resolvedUrl: string }) | { error: string }> {
+    /* This fetches arbitrary URLs server-side, so restrict it to admins and Google Maps hosts */
+    if (!(await getServerAuth())) {
+        return { error: UNAUTHORIZED };
+    }
+
+    if (typeof url !== "string" || !isGoogleMapsUrl(url)) {
+        return { error: "Not a Google Maps URL" };
+    }
+
+    const coords = await extractLatLng(url.trim());
+    if (!coords) {
+        return {
+            error: "Couldn't find coordinates in this URL. Enter them manually.",
+        };
+    }
+
+    return coords;
 }

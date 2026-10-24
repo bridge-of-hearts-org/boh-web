@@ -1,95 +1,19 @@
-import { test, expect, APIRequestContext, Page } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
-/* Server action IDs change on every build and only ship in the JS of the
-   admin-only edit pages, so the test logs in to capture real action requests
-   and then replays them with and without a session. */
-const adminUsername = process.env.ADMIN_USERNAME;
-const adminPassword = process.env.ADMIN_PASSWORD;
-const hasCredentials = !!adminUsername && !!adminPassword;
-
-type CapturedAction = {
-    headers: Record<string, string>;
-    args: any[];
-};
-
-/* Log in through the NextAuth API rather than the form, so the password is
-   never typed into a field and recorded in the test report */
-async function login(page: Page, path: string) {
-    const csrfResponse = await page.request.get("/api/auth/csrf");
-    const { csrfToken } = await csrfResponse.json();
-
-    const loginResponse = await page.request.post(
-        "/api/auth/callback/credentials",
-        {
-            form: {
-                csrfToken: csrfToken,
-                username: adminUsername!,
-                password: adminPassword!,
-                json: "true",
-            },
-            maxRedirects: 0,
-        },
-    );
-    expect(loginResponse.ok()).toBe(true);
-
-    const session = await (await page.request.get("/api/auth/session")).json();
-    expect(session?.user?.role).toBe("admin");
-
-    await page.goto(path);
-    await expect(page).toHaveURL((url) => url.pathname === path);
-}
+import {
+    captureAction,
+    CapturedAction,
+    hasCredentials,
+    login,
+    replayAction,
+} from "./admin-helpers";
 
 /* Click Submit on the edit form and capture the server action request
    without letting it reach the server */
 async function captureSubmit(page: Page): Promise<CapturedAction> {
-    let resolveCapture: (action: CapturedAction) => void;
-    const captured = new Promise<CapturedAction>((resolve) => {
-        resolveCapture = resolve;
-    });
-
-    await page.route("**/facility/**", async (route) => {
-        const request = route.request();
-        const headers = request.headers();
-
-        if (request.method() !== "POST" || !headers["next-action"]) {
-            await route.continue();
-            return;
-        }
-
-        /* The replay sets its own session (or none) and body length */
-        delete headers["cookie"];
-        delete headers["content-length"];
-        resolveCapture({
-            headers: headers,
-            args: JSON.parse(request.postData() ?? "[]"),
-        });
-        await route.abort();
-    });
-
-    await page.getByRole("button", { name: "Submit" }).click();
-    const action = await captured;
-    await page.unroute("**/facility/**");
-
-    return action;
-}
-
-/* Replay a captured action with new arguments and return the action's
-   response body after checking it is a real server action response */
-async function replayAction(
-    context: APIRequestContext,
-    path: string,
-    action: CapturedAction,
-    args: any[],
-): Promise<string> {
-    const response = await context.post(path, {
-        headers: action.headers,
-        data: JSON.stringify(args),
-    });
-
-    expect(response.status()).toBe(200);
-    expect(response.headers()["content-type"]).toContain("text/x-component");
-
-    return response.text();
+    return captureAction(page, () =>
+        page.getByRole("button", { name: "Submit" }).click(),
+    );
 }
 
 async function getExistingSlug(page: Page): Promise<string> {
