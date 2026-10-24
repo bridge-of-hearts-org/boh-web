@@ -129,6 +129,18 @@ export function parseLatLngFromUrl(url: string): LatLng | null {
         }
     }
 
+    // Pattern: /maps/search/lat,+lng — a searched coordinate or dropped pin
+    // (e.g. google.com/maps/search/7.2906,+80.6337)
+    const searchMatch = decoded.match(
+        new RegExp(`/maps/search/${num},[\\s+]*${num}`),
+    );
+    if (searchMatch) {
+        const coords = toLatLng(searchMatch[1], searchMatch[2]);
+        if (coords) {
+            return coords;
+        }
+    }
+
     return null;
 }
 
@@ -179,12 +191,16 @@ export async function extractLatLng(
         return null;
     }
 
-    const resolvedUrl = unwrapConsentUrl(expanded);
+    const unwrapped = unwrapConsentUrl(expanded);
 
-    const coords = parseLatLngFromUrl(resolvedUrl);
+    const coords = parseLatLngFromUrl(unwrapped);
     if (!coords) {
         return null;
     }
+
+    /* The redirect target is stored as the facility's Maps URL, so only use it
+        if it is a Google Maps URL; otherwise keep the URL as entered */
+    const resolvedUrl = isGoogleMapsUrl(unwrapped) ? unwrapped : url;
 
     return { ...coords, resolvedUrl };
 }
@@ -195,6 +211,21 @@ export function isValidLatitude(value: number): boolean {
 
 export function isValidLongitude(value: number): boolean {
     return Number.isFinite(value) && value >= -180 && value <= 180;
+}
+
+/* Whether a facility has usable coordinates. Facilities created before the
+    lat/lng fields existed were saved with 0, 0, which means "unknown". */
+export function hasCoordinates(location: {
+    latitude: number | null;
+    longitude: number | null;
+}): location is { latitude: number; longitude: number } {
+    const { latitude, longitude } = location;
+
+    return (
+        latitude !== null &&
+        longitude !== null &&
+        !(latitude === 0 && longitude === 0)
+    );
 }
 
 export function isInSriLanka({ latitude, longitude }: LatLng): boolean {

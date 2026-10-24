@@ -10,7 +10,12 @@ import { config } from "dotenv";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
-import { extractLatLng, isGoogleMapsUrl, LatLng } from "@/utils/maps";
+import {
+    extractLatLng,
+    hasCoordinates,
+    isGoogleMapsUrl,
+    LatLng,
+} from "@/utils/maps";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -158,15 +163,19 @@ export async function fetchFacilityPins(
             },
         });
 
-        return facilities
-            .filter((f) => f.location.latitude && f.location.longitude)
-            .map((f) => ({
-                name: f.name,
-                slug: f.slug,
-                city: f.location.city,
-                lat: f.location.latitude!,
-                lng: f.location.longitude!,
-            }));
+        return facilities.flatMap((f) =>
+            hasCoordinates(f.location)
+                ? [
+                      {
+                          name: f.name,
+                          slug: f.slug,
+                          city: f.location.city,
+                          lat: f.location.latitude,
+                          lng: f.location.longitude,
+                      },
+                  ]
+                : [],
+        );
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);

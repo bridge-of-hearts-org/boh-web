@@ -15,6 +15,7 @@ import { ChildCareFacility, Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
+import { hasCoordinates } from "@/utils/maps";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -71,14 +72,9 @@ function buildMapEmbedSrc(
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
     }
 
-    /* Otherwise fall back to the coordinates (0, 0 is a legacy "unknown" value) */
-    const { latitude, longitude } = location;
-    if (
-        latitude !== null &&
-        longitude !== null &&
-        !(latitude === 0 && longitude === 0)
-    ) {
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${latitude},${longitude}&zoom=16`;
+    /* Otherwise fall back to the coordinates */
+    if (hasCoordinates(location)) {
+        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
     }
 
     return null;

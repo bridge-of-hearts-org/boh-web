@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Form from "next/form";
 import { twMerge } from "tailwind-merge";
 import { CircleX, Link2, MapPin, PhoneCall, Users } from "lucide-react";
@@ -18,6 +18,7 @@ import { addFacility, resolveLatLng, updateFacility } from "@/app/actions/data";
 import Link from "next/link";
 import { removeKeys } from "@/utils/utils";
 import {
+    hasCoordinates,
     isInSriLanka,
     isValidLatitude,
     isValidLongitude,
@@ -40,21 +41,14 @@ const validate = (data: ChildCareFacility) => {
     return "success";
 };
 
-/* Facilities created before the lat/lng fields existed were saved with 0, 0, which means "unknown" */
 const coordsToText = (
     location: ChildCareFacility["location"],
 ): [string, string] => {
-    const { latitude, longitude } = location;
-
-    if (
-        latitude === null ||
-        longitude === null ||
-        (latitude === 0 && longitude === 0)
-    ) {
+    if (!hasCoordinates(location)) {
         return ["", ""];
     }
 
-    return [String(latitude), String(longitude)];
+    return [String(location.latitude), String(location.longitude)];
 };
 
 const COORDINATE_PATTERN = /^-?\d+(\.\d+)?$/;
@@ -116,6 +110,11 @@ export default function EditForm(props: EditFormProps) {
     const [resolveError, setResolveError] = useState("");
     const [resolveNote, setResolveNote] = useState("");
 
+    /* The latest Maps URL, read after a lookup finishes to discard results
+        for a URL that has since been edited or cleared */
+    const googleUrlRef = useRef(data.location.google);
+    googleUrlRef.current = formData.location.google;
+
     /* Common styles */
     const inputRowStyle =
         "w-full grid grid-cols-[1fr,3fr] gap-3 items-center grow";
@@ -141,13 +140,18 @@ export default function EditForm(props: EditFormProps) {
         setResolveNote("");
         setResolvingCoords(true);
 
+        const requestedUrl = formData.location.google;
         let result: Awaited<ReturnType<typeof resolveLatLng>>;
         try {
-            result = await resolveLatLng(formData.location.google);
+            result = await resolveLatLng(requestedUrl);
         } catch {
             result = { error: "Something went wrong while resolving the URL" };
         } finally {
             setResolvingCoords(false);
+        }
+
+        if (googleUrlRef.current !== requestedUrl) {
+            return;
         }
 
         if ("error" in result) {
@@ -155,7 +159,11 @@ export default function EditForm(props: EditFormProps) {
             return;
         }
 
-        if (latitudeText.trim() || longitudeText.trim()) {
+        const unchanged =
+            Number(latitudeText) === result.latitude &&
+            Number(longitudeText) === result.longitude;
+
+        if ((latitudeText.trim() || longitudeText.trim()) && !unchanged) {
             const current = `${latitudeText.trim() || "-"}, ${longitudeText.trim() || "-"}`;
             const resolved = `${result.latitude}, ${result.longitude}`;
 
@@ -169,11 +177,13 @@ export default function EditForm(props: EditFormProps) {
 
         /* Store the full URL instead of a shortlink: the profile page needs the
             place name in it to show the embedded map */
-        if (result.resolvedUrl !== formData.location.google.trim()) {
-            setFormData({
-                ...formData,
-                location: { ...formData.location, google: result.resolvedUrl },
-            });
+        if (result.resolvedUrl !== requestedUrl.trim()) {
+            /* Use the latest form state: the lookup can take several seconds,
+                and other fields may have been edited meanwhile */
+            setFormData((prev) => ({
+                ...prev,
+                location: { ...prev.location, google: result.resolvedUrl },
+            }));
             setResolveNote(
                 "Replaced the shortlink with the full Google Maps URL",
             );
@@ -982,6 +992,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
+                        disabled={resolvingCoords}
                         onClick={handleSubmit}
                     >
                         Submit

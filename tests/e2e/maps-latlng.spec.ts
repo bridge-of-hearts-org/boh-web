@@ -1,6 +1,12 @@
-import { test, expect, Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 
 import { isGoogleMapsUrl, parseLatLngFromUrl } from "../../src/utils/maps";
+import {
+    captureAction,
+    hasCredentials,
+    login,
+    replayAction,
+} from "./admin-helpers";
 
 // Pure parsing tests: no browser needed
 test.describe("parseLatLngFromUrl", () => {
@@ -34,6 +40,15 @@ test.describe("parseLatLngFromUrl", () => {
         const target =
             "https://www.google.com/maps/place/Some+Home/@7.2906,80.6337,17z";
         const url = `https://consent.google.com/m?continue=${encodeURIComponent(target)}&gl=DE`;
+        expect(parseLatLngFromUrl(url)).toEqual({
+            latitude: 7.2906,
+            longitude: 80.6337,
+        });
+    });
+
+    test("falls back to /maps/search/lat,+lng", () => {
+        const url =
+            "https://www.google.com/maps/search/7.2906,+80.6337?entry=tts";
         expect(parseLatLngFromUrl(url)).toEqual({
             latitude: 7.2906,
             longitude: 80.6337,
@@ -90,35 +105,11 @@ test.describe("isGoogleMapsUrl", () => {
     });
 });
 
-// Admin form tests: need admin credentials. Nothing is submitted, so no data is changed.
-const adminUsername = process.env.ADMIN_USERNAME;
-const adminPassword = process.env.ADMIN_PASSWORD;
-const hasCredentials = !!adminUsername && !!adminPassword;
+/* Traces record request bodies and cookies, which here include the admin
+   password and session, and would end up in the uploaded report */
+test.use({ trace: "off" });
 
-/* Log in through the NextAuth API rather than the form, so the password is
-   never typed into a field and recorded in the test report */
-async function login(page: Page, path: string) {
-    const csrfResponse = await page.request.get("/api/auth/csrf");
-    const { csrfToken } = await csrfResponse.json();
-
-    const loginResponse = await page.request.post(
-        "/api/auth/callback/credentials",
-        {
-            form: {
-                csrfToken: csrfToken,
-                username: adminUsername!,
-                password: adminPassword!,
-                json: "true",
-            },
-            maxRedirects: 0,
-        },
-    );
-    expect(loginResponse.ok()).toBe(true);
-
-    await page.goto(path);
-    await expect(page).toHaveURL((url) => url.pathname === path);
-}
-
+// Admin form tests: need admin credentials. Nothing is saved, so no data is changed.
 test.describe("Latitude/longitude fields in the admin facility form", () => {
     /* Locally the tests are optional, but in CI missing credentials must fail
        rather than skip, or they would silently never run */
@@ -273,5 +264,36 @@ test.describe("Latitude/longitude fields in the admin facility form", () => {
         await expect
             .poll(() => dialogMessages)
             .toEqual(["Latitude must be a number between -90 and 90"]);
+    });
+
+    test("resolveLatLng rejects unauthenticated calls but lets admins through", async ({
+        page,
+        request,
+    }) => {
+        await page.getByLabel("Google Maps", { exact: true }).fill(mapsUrl);
+        const action = await captureAction(page, () =>
+            page
+                .getByRole("button", { name: "Resolve Latitude and Longitude" })
+                .click(),
+        );
+
+        /* resolveLatLng only reads, so replaying it can't change any data */
+        const unauthBody = await replayAction(
+            request,
+            "/facility/new",
+            action,
+            action.args,
+        );
+        expect(unauthBody).toContain("Unauthorized");
+        expect(unauthBody).not.toContain("7.2906");
+
+        const adminBody = await replayAction(
+            page.request,
+            "/facility/new",
+            action,
+            action.args,
+        );
+        expect(adminBody).not.toContain("Unauthorized");
+        expect(adminBody).toContain("7.2906");
     });
 });
