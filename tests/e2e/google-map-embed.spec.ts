@@ -6,7 +6,8 @@ const FACILITY_WITH_MAP = "memon-charitable-foundation-childrens-home-kaleliya";
 // A facility known to have no Google Maps link
 const FACILITY_WITHOUT_MAP = "mawupiya-sewana-childrens-home-gonapola";
 
-// A facility with stored coordinates in the database the previews read
+// A facility with stored coordinates and a Google Maps place link in the
+// database the previews read
 const FACILITY_WITH_COORDINATES = "al-arkam-childrens-home-atulugama";
 const FACILITY_COORDINATES = "6.6889615,79.9840452";
 
