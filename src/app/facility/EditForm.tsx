@@ -175,8 +175,8 @@ export default function EditForm(props: EditFormProps) {
         setLatitudeText(String(result.latitude));
         setLongitudeText(String(result.longitude));
 
-        /* Store the full URL instead of a shortlink: the profile page needs the
-            place name in it to show the embedded map */
+        /* Store the full URL instead of a shortlink: the profile page falls back
+            to the place name in it when a facility has no coordinates */
         if (result.resolvedUrl !== requestedUrl.trim()) {
             /* Use the latest form state: the lookup can take several seconds,
                 and other fields may have been edited meanwhile */

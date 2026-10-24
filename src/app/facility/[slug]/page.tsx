@@ -1,11 +1,12 @@
 import Link from "next/link";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
-import { Link2, MapPin, PhoneCall, Users } from "lucide-react";
+import { ExternalLink, Link2, MapPin, PhoneCall, Users } from "lucide-react";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
+import LocationMap from "./LocationMap";
 import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
@@ -15,7 +16,7 @@ import { ChildCareFacility, Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import { hasCoordinates } from "@/utils/maps";
+import { hasCoordinates, isGoogleMapsUrl } from "@/utils/maps";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -65,16 +66,33 @@ function buildMapEmbedSrc(
         return null;
     }
 
-    /* Prefer the named place, which shows a labelled pin */
+    /* Prefer the stored coordinates: a name search can match an unrelated
+        place with the same name (e.g. in another country) */
+    if (hasCoordinates(location)) {
+        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
+    }
+
+    /* Otherwise fall back to the place name in the Maps URL */
     const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
     if (placeMatch) {
         const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
     }
 
-    /* Otherwise fall back to the coordinates */
+    return null;
+}
+
+/* Link for opening the facility in Google Maps. Prefer the stored Maps URL, which
+    opens the named place; a search for the coordinates only opens a bare point. */
+function buildOpenInMapsUrl(
+    location: ChildCareFacility["location"],
+): string | null {
+    if (isGoogleMapsUrl(location.google)) {
+        return location.google.trim();
+    }
+
     if (hasCoordinates(location)) {
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
+        return `https://www.google.com/maps/search/?api=1&query=${location.latitude},${location.longitude}`;
     }
 
     return null;
@@ -97,6 +115,20 @@ export default async function FacilityProfilePage({
     }
 
     const mapEmbedSrc = buildMapEmbedSrc(data.location);
+    const openInMapsUrl = buildOpenInMapsUrl(data.location);
+
+    /* Our own map, whose pin popup can link to the named place. Without
+        coordinates or its key, fall back to the embed. */
+    const interactiveMapLocation =
+        process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY &&
+        hasCoordinates(data.location) &&
+        openInMapsUrl
+            ? {
+                  latitude: data.location.latitude,
+                  longitude: data.location.longitude,
+                  mapsUrl: openInMapsUrl,
+              }
+            : null;
 
     // Construct JSON-LD structured data
     const jsonLdData = {
@@ -149,6 +181,18 @@ export default async function FacilityProfilePage({
 
     /* Constants */
     const noInfoElement = <span>-</span>;
+
+    const openInMapsLink = openInMapsUrl ? (
+        <a
+            href={openInMapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full bg-secondary-green px-4 py-2 font-encode-sans-sc font-semibold text-green-950 transition-all duration-100 hover:bg-secondary-green-hover"
+        >
+            <ExternalLink className="h-4 w-4" />
+            Open in Google Maps
+        </a>
+    ) : null;
 
     /* Styles */
     const infoSectionStyles =
@@ -264,17 +308,42 @@ export default async function FacilityProfilePage({
                                         </div>
                                     </div>
                                     {/* Map */}
-                                    {mapEmbedSrc ? (
+                                    {interactiveMapLocation || mapEmbedSrc ? (
                                         <div className="overflow-hidden pt-4">
-                                            <iframe
-                                                title="Facility location map"
-                                                width="100%"
-                                                height="300"
-                                                className="rounded-3xl border-0"
-                                                loading="lazy"
-                                                referrerPolicy="no-referrer-when-downgrade"
-                                                src={mapEmbedSrc}
-                                            />
+                                            {interactiveMapLocation ? (
+                                                <LocationMap
+                                                    name={data.name}
+                                                    latitude={
+                                                        interactiveMapLocation.latitude
+                                                    }
+                                                    longitude={
+                                                        interactiveMapLocation.longitude
+                                                    }
+                                                    mapsUrl={
+                                                        interactiveMapLocation.mapsUrl
+                                                    }
+                                                    fallbackEmbedSrc={
+                                                        mapEmbedSrc
+                                                    }
+                                                />
+                                            ) : (
+                                                <iframe
+                                                    title="Facility location map"
+                                                    width="100%"
+                                                    height="300"
+                                                    className="rounded-3xl border-0"
+                                                    loading="lazy"
+                                                    referrerPolicy="no-referrer-when-downgrade"
+                                                    src={
+                                                        mapEmbedSrc ?? undefined
+                                                    }
+                                                />
+                                            )}
+                                            {openInMapsLink && (
+                                                <div className="flex justify-center pt-3 md:justify-end">
+                                                    {openInMapsLink}
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <div className={infoTableRowStyles}>
@@ -282,7 +351,8 @@ export default async function FacilityProfilePage({
                                                 Google Maps
                                             </div>
                                             <div className="">
-                                                {noInfoElement}
+                                                {openInMapsLink ??
+                                                    noInfoElement}
                                             </div>
                                         </div>
                                     )}
