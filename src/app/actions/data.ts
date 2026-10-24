@@ -255,9 +255,8 @@ export async function resolveLatLng(
     url: string,
 ): Promise<(LatLng & { resolvedUrl: string }) | { error: string }> {
     /* This fetches arbitrary URLs server-side, so restrict it to admins and Google Maps hosts */
-    const session = await getServerAuth();
-    if (!session) {
-        return { error: "Not authorised" };
+    if (!(await getServerAuth())) {
+        return { error: UNAUTHORIZED };
     }
 
     if (typeof url !== "string" || !isGoogleMapsUrl(url)) {
