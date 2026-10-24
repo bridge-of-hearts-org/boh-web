@@ -177,9 +177,9 @@ function FacilityMap({
                         >
                             More Info →
                         </Link>
-                        {/* The named place rather than directions to the bare
-                            coordinates, which snap to the nearest business Google
-                            knows; the place's own Directions button routes correctly */}
+                        {/* The stored Maps URL (the named place) when there is one,
+                            otherwise a search for the coordinates; not coordinate
+                            directions, which snap to the nearest business Google knows */}
                         <a
                             href={shownPin.mapsUrl}
                             target="_blank"
