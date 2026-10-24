@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type AutocompleteInputProps = {
     id: string;
@@ -22,6 +22,26 @@ export default function AutocompleteInput({
     onChange,
 }: AutocompleteInputProps) {
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const wrapperRef = useRef<HTMLDivElement>(null);
+
+    // Close on any tap or click outside. onBlur alone isn't enough on iOS
+    // Safari, where tapping a non-focusable area may not blur the input.
+    useEffect(() => {
+        if (!showSuggestions) {
+            return;
+        }
+
+        function handlePointerDown(e: PointerEvent) {
+            if (!wrapperRef.current?.contains(e.target as Node)) {
+                setShowSuggestions(false);
+            }
+        }
+
+        document.addEventListener("pointerdown", handlePointerDown);
+        return () => {
+            document.removeEventListener("pointerdown", handlePointerDown);
+        };
+    }, [showSuggestions]);
 
     const suggestions = value
         ? options.filter((option) =>
@@ -30,7 +50,7 @@ export default function AutocompleteInput({
         : options;
 
     return (
-        <div className="relative">
+        <div ref={wrapperRef} className="relative">
             <input
                 id={id}
                 name={name}
@@ -43,6 +63,8 @@ export default function AutocompleteInput({
                     setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                // Reopen when the already-focused input is tapped again
+                onClick={() => setShowSuggestions(true)}
                 onBlur={() => setShowSuggestions(false)}
                 onKeyDown={(e) => {
                     if (e.key === "Escape") {

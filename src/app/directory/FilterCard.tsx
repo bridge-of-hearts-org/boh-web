@@ -118,7 +118,7 @@ export default function FilterCard({
                         onChange={(name) =>
                             setActiveFilters({
                                 ...activeFilters,
-                                name: name,
+                                name,
                             })
                         }
                     />
