@@ -11,6 +11,16 @@ type PropsType = {
     onChange: (value: Date | null) => void;
 };
 
+/* Today in the admin's own time zone, as YYYY-MM-DD. toISOString would give
+   the UTC date, which is still yesterday until 5:30am in Sri Lanka. */
+function todayInputValue(): string {
+    const now = new Date();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${now.getFullYear()}-${month}-${day}`;
+}
+
 /* The "Verified on" date for one value in the admin form. An empty date means not verified. */
 export default function VerifiedOnInput(props: PropsType) {
     return (
@@ -21,7 +31,7 @@ export default function VerifiedOnInput(props: PropsType) {
                 className="px-2 py-1 text-sm"
                 aria-label={`${props.label} verified on`}
                 value={toDateInputValue(props.value)}
-                max={new Date().toISOString().slice(0, 10)}
+                max={todayInputValue()}
                 onChange={(e) =>
                     props.onChange(parseVerifiedDate(e.target.value))
                 }

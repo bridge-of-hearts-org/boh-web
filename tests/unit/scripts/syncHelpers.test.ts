@@ -445,6 +445,27 @@ describe("mergeSheetVerification", () => {
         ).toEqual(existing.verification.occupancy);
     });
 
+    it("doesn't replace a newer saved date with an older sheet date", () => {
+        const sheet = {
+            phones: [{ value: "0812345678", verifiedAt: march12 }],
+            emails: [],
+            occupancy: march12,
+        };
+        /* e.g. an admin verified the new counts on the site after the sheet's date */
+        const newer = {
+            verification: {
+                phones: [{ value: "0812345678", verifiedAt: march20 }],
+                emails: [],
+                occupancy: { ...changedCounts, verifiedAt: march20 },
+            },
+        };
+        const changed = { ...values, occupancy: changedCounts };
+
+        expect(mergeSheetVerification(sheet, changed, newer)).toEqual(
+            newer.verification,
+        );
+    });
+
     it("verifies a new facility from the sheet alone", () => {
         expect(
             mergeSheetVerification(

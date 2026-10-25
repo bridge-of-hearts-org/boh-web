@@ -72,21 +72,20 @@ export default function VerifiedBadge(props: PropsType) {
             >
                 <Check size={16} strokeWidth={3} aria-hidden="true" />
             </button>
-            {open && (
-                <span
-                    id={popoverId}
-                    role="status"
-                    /* It can cover the next row's checkmark, so a tap dismisses it */
-                    onClick={() => setOpen(false)}
-                    className={twMerge(
-                        "absolute top-full z-20 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white p-3 text-left text-sm font-normal not-italic shadow-lg",
-                        props.align === "start" ? "left-0" : "right-0",
-                    )}
-                >
-                    Verified by directly contacting the facility on{" "}
-                    {formatVerifiedDate(props.verifiedAt)}.
-                </span>
-            )}
+            {/* Always rendered, so aria-controls points at it while it's hidden */}
+            <span
+                id={popoverId}
+                hidden={!open}
+                /* It can cover the next row's checkmark, so a tap dismisses it */
+                onClick={() => setOpen(false)}
+                className={twMerge(
+                    "absolute top-full z-20 mt-1 w-56 max-w-[calc(100vw-2rem)] rounded-lg border border-gray-200 bg-white p-3 text-left text-sm font-normal not-italic shadow-lg",
+                    props.align === "start" ? "left-0" : "right-0",
+                )}
+            >
+                Verified by directly contacting the facility on{" "}
+                {formatVerifiedDate(props.verifiedAt)}.
+            </span>
         </span>
     );
 }

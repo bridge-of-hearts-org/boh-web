@@ -66,14 +66,6 @@ function isValidDate(date: unknown): date is Date {
     return date !== "" && !isNaN(new Date(date).getTime());
 }
 
-export function sameDate(a: Date | null, b: Date | null): boolean {
-    if (!a || !b) {
-        return a === b;
-    }
-
-    return new Date(a).getTime() === new Date(b).getTime();
-}
-
 /* The form stores an empty count as 0 and the sheet as null; both mean "no count" */
 export function sameOccupancy(a: Occupancy, b: Occupancy): boolean {
     return (
@@ -136,6 +128,20 @@ export function verifyOccupancy(
         female: occupancy.female || null,
         verifiedAt: date,
     };
+}
+
+/* What's left when the occupancy date is cleared. A saved verification for
+   other counts is kept: it isn't shown, but it stops a sheet that still has
+   its date from marking the current counts as verified. */
+export function clearOccupancyVerification(
+    occupancy: Occupancy,
+    saved: VerifiedOccupancy | null | undefined,
+): VerifiedOccupancy | null {
+    if (saved && !sameOccupancy(saved, occupancy)) {
+        return saved;
+    }
+
+    return null;
 }
 
 /* ----------- Saving ----------- */

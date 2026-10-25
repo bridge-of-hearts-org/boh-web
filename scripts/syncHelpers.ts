@@ -17,8 +17,7 @@ import {
     emptyVerification,
     normalizeVerification,
     parseVerifiedDate,
-    sameDate,
-    sameOccupancy,
+    findVerifiedDate,
     setVerifiedDate,
     verifyOccupancy,
 } from "../src/utils/verification";
@@ -115,9 +114,16 @@ export type SheetVerification = {
     occupancy: Date | null;
 };
 
+/* True when the sheet's date should replace the saved one. An older date
+   would undo a later verification, e.g. one an admin entered on the site. */
+function isNewerDate(date: Date, saved: Date | null): boolean {
+    return !saved || date.getTime() > new Date(saved).getTime();
+}
+
 /* Applies the sheet's verifications on top of the saved ones. The sheet only
-   adds or updates verifications; an empty cell never removes one. Verifications
-   for phone numbers and emails the sheet no longer lists are dropped. */
+   adds or updates verifications with newer dates; an empty cell never removes
+   one. Verifications for phone numbers and emails the sheet no longer lists
+   are dropped. */
 export function mergeSheetVerification(
     sheet: SheetVerification,
     values: Pick<ChildCareFacility, "contact" | "occupancy">,
@@ -126,28 +132,31 @@ export function mergeSheetVerification(
     const merged = { ...(existing?.verification ?? emptyVerification) };
 
     for (const entry of sheet.phones) {
-        merged.phones = setVerifiedDate(
-            merged.phones,
-            entry.value,
-            entry.verifiedAt,
-        );
+        const saved = findVerifiedDate(merged.phones, entry.value);
+        if (isNewerDate(entry.verifiedAt, saved)) {
+            merged.phones = setVerifiedDate(
+                merged.phones,
+                entry.value,
+                entry.verifiedAt,
+            );
+        }
     }
     for (const entry of sheet.emails) {
-        merged.emails = setVerifiedDate(
-            merged.emails,
-            entry.value,
-            entry.verifiedAt,
-        );
+        const saved = findVerifiedDate(merged.emails, entry.value);
+        if (isNewerDate(entry.verifiedAt, saved)) {
+            merged.emails = setVerifiedDate(
+                merged.emails,
+                entry.value,
+                entry.verifiedAt,
+            );
+        }
     }
 
-    /* The same date as the saved verification, but with different counts,
-        means the counts were changed without being verified again */
-    const saved = merged.occupancy;
-    const staleDate =
-        saved &&
-        sameDate(saved.verifiedAt, sheet.occupancy) &&
-        !sameOccupancy(saved, values.occupancy);
-    if (sheet.occupancy && !staleDate) {
+    /* Only a newer date verifies the current counts. The same or an older
+        date with different counts means the counts were changed without being
+        verified again, so the saved verification stays and isn't shown. */
+    const saved = merged.occupancy?.verifiedAt ?? null;
+    if (sheet.occupancy && isNewerDate(sheet.occupancy, saved)) {
         merged.occupancy = verifyOccupancy(values.occupancy, sheet.occupancy);
     }
 

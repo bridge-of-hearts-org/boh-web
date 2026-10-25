@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    clearOccupancyVerification,
     findOccupancyVerifiedDate,
     findVerifiedDate,
     formatVerifiedDate,
@@ -104,6 +105,22 @@ describe("occupancy verification", () => {
 
     it("removes the verification when the date is null", () => {
         expect(verifyOccupancy(counts, null)).toBeNull();
+    });
+
+    it("clearing the date removes a verification of the current counts", () => {
+        expect(
+            clearOccupancyVerification(
+                counts,
+                verifyOccupancy(counts, march12),
+            ),
+        ).toBeNull();
+        expect(clearOccupancyVerification(counts, null)).toBeNull();
+    });
+
+    it("clearing the date keeps a saved verification of other counts", () => {
+        const saved = verifyOccupancy({ ...counts, total: 29 }, march12);
+
+        expect(clearOccupancyVerification(counts, saved)).toEqual(saved);
     });
 });
 

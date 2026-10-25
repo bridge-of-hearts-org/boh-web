@@ -135,7 +135,8 @@ async function syncSheet(sheetName: string) {
     let upsertedCount = 0;
 
     for (const facility of facilities) {
-        const { photoUrls, sheetVerification, warnings, ...facilityData } = facility;
+        const { photoUrls, sheetVerification, warnings, ...facilityData } =
+            facility;
 
         for (const warning of warnings) {
             console.warn(`  Warning: ${warning}`);

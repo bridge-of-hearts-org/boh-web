@@ -51,6 +51,7 @@ import {
 } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
 import {
+    clearOccupancyVerification,
     emptyVerification,
     findOccupancyVerifiedDate,
     findVerifiedDate,
@@ -1082,10 +1083,15 @@ export default function EditForm(props: EditFormProps) {
                             )}
                             onChange={(date) =>
                                 setVerification({
-                                    occupancy: verifyOccupancy(
-                                        formData.occupancy,
-                                        date,
-                                    ),
+                                    occupancy: date
+                                        ? verifyOccupancy(
+                                              formData.occupancy,
+                                              date,
+                                          )
+                                        : clearOccupancyVerification(
+                                              formData.occupancy,
+                                              data.verification?.occupancy,
+                                          ),
                                 })
                             }
                         />

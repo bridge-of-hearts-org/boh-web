@@ -120,10 +120,13 @@ test.describe("Verified checkmarks on the public facility page", () => {
 
     const checkmarks = (page: Page) =>
         page.getByRole("button", { name: / verified$/ });
+    /* Closed notes stay in the page, hidden, so only visible ones count */
     const note = (page: Page) =>
-        page.getByText(
-            /^Verified by directly contacting the facility on \d{1,2} \w+ \d{4}\.$/,
-        );
+        page
+            .getByText(
+                /^Verified by directly contacting the facility on \d{1,2} \w+ \d{4}\.$/,
+            )
+            .filter({ visible: true });
 
     test.beforeEach(async ({ page }) => {
         await page.goto(`/facility/${verifiedFacilitySlug}`);
