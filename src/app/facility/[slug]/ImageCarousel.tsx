@@ -80,7 +80,12 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                             width={1024}
                             height={768}
                             alt="A picture taken at the children's home facility"
-                            title={`Source: ${enlargedImage.photo.source}`}
+                            /* Photos uploaded from the admin form have no source */
+                            title={
+                                enlargedImage.photo.source
+                                    ? `Source: ${enlargedImage.photo.source}`
+                                    : undefined
+                            }
                             className="h-[60vh] w-[80vw] max-w-4xl overflow-hidden rounded-3xl object-contain"
                         />
                     </div>

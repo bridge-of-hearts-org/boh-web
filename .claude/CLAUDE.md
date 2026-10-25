@@ -63,6 +63,11 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 - PRs merge into `dev`; `master` is updated periodically in bulk
 - When a PR that closes an issue merges into `dev`, close that issue right away. GitHub only auto-closes issues on merges to the default branch
 - After pushing commits to a branch, give the user the branch's Vercel preview link. Take it from the Vercel bot's comment on the PR (the "Preview" link) rather than building it by hand, since Vercel shortens long branch names (e.g. `https://boh-web-git-feature-36-di-17d93d-bridge-of-hearts-orgs-projects.vercel.app`)
+- After pushing to a PR, run reviewer iterations before reporting the work as done:
+  1. Spawn a reviewer subagent with the issue context. It reviews the full branch diff (`git diff origin/dev...HEAD`) against this file's conventions and reports concrete findings with file:line and severity, or exactly "NO ISSUES FOUND". It must not edit, commit, push, or post to GitHub
+  2. Verify each finding against the code. Fix the real ones, run `npx tsc --noEmit` and Prettier, then commit and push
+  3. Send the same reviewer the new commit to re-review, and repeat until it reports no issues. Every commit pushed to the PR, including test-only fixes, goes through at least one review round
+  4. Tell the user how many rounds ran and what was fixed
 - Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 
 # Testing

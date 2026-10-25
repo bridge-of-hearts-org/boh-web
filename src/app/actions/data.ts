@@ -7,15 +7,23 @@ import {
 } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
+import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
 import {
     extractLatLng,
+    buildOpenInMapsUrl,
     hasCoordinates,
     isGoogleMapsUrl,
     LatLng,
 } from "@/utils/maps";
+import {
+    contentTypeForFileName,
+    isValidPhotoFileName,
+    isValidSlug,
+    MAX_PHOTO_SIZE_BYTES,
+} from "@/utils/photos";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -158,24 +166,33 @@ export async function fetchFacilityPins(
                 name: true,
                 slug: true,
                 location: {
-                    select: { city: true, latitude: true, longitude: true },
+                    select: {
+                        city: true,
+                        google: true,
+                        latitude: true,
+                        longitude: true,
+                    },
                 },
             },
         });
 
-        return facilities.flatMap((f) =>
-            hasCoordinates(f.location)
-                ? [
-                      {
-                          name: f.name,
-                          slug: f.slug,
-                          city: f.location.city,
-                          lat: f.location.latitude,
-                          lng: f.location.longitude,
-                      },
-                  ]
-                : [],
-        );
+        return facilities.flatMap((f) => {
+            const mapsUrl = buildOpenInMapsUrl(f.location);
+            if (!hasCoordinates(f.location) || !mapsUrl) {
+                return [];
+            }
+
+            return [
+                {
+                    name: f.name,
+                    slug: f.slug,
+                    city: f.location.city,
+                    lat: f.location.latitude,
+                    lng: f.location.longitude,
+                    mapsUrl,
+                },
+            ];
+        });
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
@@ -201,6 +218,23 @@ export async function fetchFacilityNames(): Promise<string[]> {
             select: { name: true },
         });
         return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+        if (error instanceof Error) {
+            console.log("Error: ", error.stack);
+        }
+        return [];
+    }
+}
+
+export async function fetchDistinctManagedBy(): Promise<string[]> {
+    try {
+        const rows = await prisma.childCareFacility.findMany({
+            select: { managedBy: true },
+        });
+        const values = rows
+            .map((r) => r.managedBy.trim())
+            .filter((m) => m !== "");
+        return [...new Set(values)].sort((a, b) => a.localeCompare(b));
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
@@ -294,4 +328,53 @@ export async function resolveLatLng(
     }
 
     return coords;
+}
+
+/* Issues a short-lived token that lets the browser upload one photo straight
+   to Vercel Blob, so the file never passes through this server's request size
+   limit. The token only allows the given path, content type and size. */
+export async function createPhotoUploadToken(
+    slug: string,
+    fileName: string,
+): Promise<{ token: string } | { error: string }> {
+    if (!(await getServerAuth())) {
+        return { error: UNAUTHORIZED };
+    }
+
+    if (typeof slug !== "string" || !isValidSlug(slug)) {
+        return {
+            error: "The slug may only contain lowercase letters, numbers and hyphens",
+        };
+    }
+
+    const contentType =
+        typeof fileName === "string" && isValidPhotoFileName(fileName)
+            ? contentTypeForFileName(fileName)
+            : null;
+    if (!contentType) {
+        return { error: "Invalid photo file name" };
+    }
+
+    /* The sync script calls the Blob read-write token VERCEL_TOKEN */
+    const blobToken =
+        process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
+    if (!blobToken) {
+        return { error: "Photo storage is not configured on this server" };
+    }
+
+    try {
+        const token = await generateClientTokenFromReadWriteToken({
+            token: blobToken,
+            pathname: `${slug}/${fileName}`,
+            allowedContentTypes: [contentType],
+            maximumSizeInBytes: MAX_PHOTO_SIZE_BYTES,
+            addRandomSuffix: false,
+            validUntil: Date.now() + 5 * 60 * 1000,
+        });
+
+        return { token };
+    } catch (error) {
+        console.log("Couldn't create a photo upload token", error);
+        return { error: "Couldn't start the upload" };
+    }
 }

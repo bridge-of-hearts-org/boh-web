@@ -81,6 +81,8 @@ export type FacilityPin = {
     city: string;
     lat: number;
     lng: number;
+    /* Opens the facility as a named place in Google Maps when it has a Maps URL */
+    mapsUrl: string;
 };
 
 export const emptyFilter: DirectoryFilterType = {
