@@ -29,6 +29,7 @@ import Button from "@/components/Button";
 import {
     addFacility,
     createPhotoUploadToken,
+    deleteUnusedPhotos,
     resolveLatLng,
     updateFacility,
 } from "@/app/actions/data";
@@ -44,6 +45,8 @@ import {
     isValidSlug,
     PhotoContentTypes,
     photoFileName,
+    photosToDelete,
+    StoredPhoto,
     validatePhotoFile,
 } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
@@ -80,6 +83,12 @@ export default function EditForm(props: EditFormProps) {
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
 
+    /* The facility as last saved, which Reset goes back to, and the photos
+        uploaded since then. Photos go to Blob as soon as they're picked, so
+        these say which stored photos to delete once nothing needs them */
+    const savedDataRef = useRef(data);
+    const unsavedUploadsRef = useRef<StoredPhoto[]>([]);
+
     /* Photos are stored under the slug, so it can't change while the
         facility has any or one is uploading, or they would no longer be found */
     const slugLocked = formData.photos.length > 0 || uploadingPhotos;
@@ -106,8 +115,82 @@ export default function EditForm(props: EditFormProps) {
         setPhotoErrors([]);
     };
 
-    const handleClear = () => {
+    const savedPhotos = (): StoredPhoto[] =>
+        savedDataRef.current.photos.map((p) => ({
+            slug: savedDataRef.current.slug,
+            fileName: p.fileName,
+        }));
+
+    /* Delete the candidates that aren't in `keep` from storage. The server
+        also refuses to delete any photo the saved record still lists. */
+    const deleteStoredPhotos = async (
+        candidates: StoredPhoto[],
+        keep: StoredPhoto[],
+    ) => {
+        const bySlug = photosToDelete(candidates, keep);
+
+        for (const [slug, fileNames] of Object.entries(bySlug)) {
+            try {
+                const result = await deleteUnusedPhotos(slug, fileNames);
+                if ("error" in result) {
+                    console.log("Couldn't delete unused photos", result.error);
+                }
+            } catch (error) {
+                console.log("Couldn't delete unused photos", error);
+            }
+        }
+    };
+
+    /* After a save: delete the photos the record had before, or that were
+        uploaded since, and that the saved facility no longer lists */
+    const deletePhotosRemovedBySave = async (saved: ChildCareFacility) => {
+        const candidates = [...savedPhotos(), ...unsavedUploadsRef.current];
+        const keep = saved.photos.map((p) => ({
+            slug: saved.slug,
+            fileName: p.fileName,
+        }));
+
+        savedDataRef.current = saved;
+        unsavedUploadsRef.current = [];
+        await deleteStoredPhotos(candidates, keep);
+    };
+
+    /* Delete the photos uploaded since the last save, unless the saved
+        record has them. Returns the discarded file names. */
+    const discardUnsavedUploads = async (): Promise<Set<string>> => {
+        const uploads = unsavedUploadsRef.current;
+
+        unsavedUploadsRef.current = [];
+        await deleteStoredPhotos(uploads, savedPhotos());
+
+        return new Set(uploads.map((p) => p.fileName));
+    };
+
+    const handleReset = async () => {
+        resetForm(savedDataRef.current);
+        await discardUnsavedUploads();
+    };
+
+    const handleClear = async () => {
         resetForm(emptyChildCareFacilityDbObject);
+        await discardUnsavedUploads();
+    };
+
+    /* Adding failed, so no facility uses the uploaded photos: delete them
+        and take them off the form */
+    const discardUploadsAfterFailedAdd = async () => {
+        const discarded = await discardUnsavedUploads();
+        if (discarded.size === 0) {
+            return;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            photos: prev.photos.filter((p) => !discarded.has(p.fileName)),
+        }));
+        setPhotoErrors([
+            "The facility wasn't saved, so its uploaded photos were removed. Upload them again before submitting.",
+        ]);
     };
 
     const handleResolveCoordinates = async () => {
@@ -204,6 +287,7 @@ export default function EditForm(props: EditFormProps) {
                 });
 
                 knownFileNames.add(fileName);
+                unsavedUploadsRef.current.push({ slug, fileName });
                 /* Use the latest form state: other fields may have been
                     edited while the upload was running */
                 setFormData((prev) => ({
@@ -269,11 +353,19 @@ export default function EditForm(props: EditFormProps) {
 
         if (props.newFacility) {
             const status = await addFacility(payload);
+            if (status === "success") {
+                await deletePhotosRemovedBySave({ ...formData, ...payload });
+            } else {
+                await discardUploadsAfterFailedAdd();
+            }
             alert(status);
             redirect("/admin");
         } else {
             /* The fact that we are in the edit page means that the database entry exists */
             const status = await updateFacility(payload);
+            if (status === "success") {
+                await deletePhotosRemovedBySave({ ...formData, ...payload });
+            }
             alert(status);
         }
     };
@@ -1177,7 +1269,7 @@ export default function EditForm(props: EditFormProps) {
                         variant="secondary"
                         color="black"
                         disabled={uploadingPhotos}
-                        onClick={() => resetForm(data)}
+                        onClick={handleReset}
                     >
                         Reset
                     </Button>

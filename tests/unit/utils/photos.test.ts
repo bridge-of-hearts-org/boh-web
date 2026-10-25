@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
     contentTypeForFileName,
+    findOrphanPhotoBlobs,
     isValidPhotoFileName,
     isValidSlug,
     MAX_PHOTO_SIZE_BYTES,
     photoFileName,
+    photosToDelete,
     validatePhotoFile,
 } from "@/utils/photos";
 
@@ -131,5 +133,113 @@ describe("photoFileName", () => {
         const file = new File(["hello"], "a.png", { type: "image/png" });
 
         expect(isValidPhotoFileName(await photoFileName(file))).toBe(true);
+    });
+});
+
+describe("photosToDelete", () => {
+    const photo = (slug: string, fileName: string) => ({ slug, fileName });
+
+    it("returns the candidates that aren't kept, grouped by slug", () => {
+        expect(
+            photosToDelete(
+                [
+                    photo("home", "a.png"),
+                    photo("home", "b.png"),
+                    photo("other", "c.png"),
+                ],
+                [photo("home", "a.png")],
+            ),
+        ).toEqual({ home: ["b.png"], other: ["c.png"] });
+    });
+
+    it("never deletes a kept photo", () => {
+        expect(
+            photosToDelete(
+                [photo("home", "a.png"), photo("home", "b.png")],
+                [photo("home", "a.png"), photo("home", "b.png")],
+            ),
+        ).toEqual({});
+    });
+
+    it("matches kept photos by slug as well as file name", () => {
+        expect(
+            photosToDelete(
+                [photo("old-slug", "a.png")],
+                [photo("new-slug", "a.png")],
+            ),
+        ).toEqual({ "old-slug": ["a.png"] });
+    });
+
+    it("lists each photo once", () => {
+        expect(
+            photosToDelete(
+                [photo("home", "a.png"), photo("home", "a.png")],
+                [],
+            ),
+        ).toEqual({ home: ["a.png"] });
+    });
+
+    it("returns nothing without candidates", () => {
+        expect(photosToDelete([], [photo("home", "a.png")])).toEqual({});
+    });
+});
+
+describe("findOrphanPhotoBlobs", () => {
+    const cutoff = new Date("2026-01-02T00:00:00Z");
+    const old = new Date("2026-01-01T00:00:00Z");
+    const recent = new Date("2026-01-03T00:00:00Z");
+    const facilities = [
+        { slug: "home", photos: [{ fileName: "used.png" }] },
+        { slug: "empty-home", photos: [] },
+    ];
+
+    it("finds old photos no facility lists", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [
+                    { pathname: "home/used.png", uploadedAt: old },
+                    { pathname: "home/unused.png", uploadedAt: old },
+                    { pathname: "empty-home/a.png", uploadedAt: old },
+                    { pathname: "no-facility/b.png", uploadedAt: old },
+                ],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual(["home/unused.png", "empty-home/a.png", "no-facility/b.png"]);
+    });
+
+    it("only counts a file as used under its own facility's slug", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname: "empty-home/used.png", uploadedAt: old }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual(["empty-home/used.png"]);
+    });
+
+    it("leaves recent uploads alone, as they may not be saved yet", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname: "home/unused.png", uploadedAt: recent }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([]);
+    });
+
+    it.each([
+        "root-file.png",
+        "home/nested/a.png",
+        "Not A Slug/a.png",
+        "home/",
+    ])("ignores %j, which isn't a facility photo", (pathname) => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname, uploadedAt: old }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([]);
     });
 });

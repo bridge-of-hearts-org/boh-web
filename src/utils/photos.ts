@@ -61,3 +61,62 @@ export const photoFileName = async (file: File): Promise<string> => {
 
     return `${hash}.${PhotoContentTypes[file.type]}`;
 };
+
+/* A photo's place in Vercel Blob: `<slug>/<fileName>` */
+export type StoredPhoto = { slug: string; fileName: string };
+
+/* The photos to delete from storage, grouped by slug: every candidate that
+   isn't in `keep`, without duplicates. The form passes the photos of the saved
+   record and the ones uploaded this session as candidates, and the photos
+   the record now has (or still has) as `keep`. */
+export const photosToDelete = (
+    candidates: StoredPhoto[],
+    keep: StoredPhoto[],
+): Record<string, string[]> => {
+    const kept = new Set(keep.map((p) => `${p.slug}/${p.fileName}`));
+    const result: Record<string, string[]> = {};
+
+    for (const { slug, fileName } of candidates) {
+        if (kept.has(`${slug}/${fileName}`)) {
+            continue;
+        }
+
+        const fileNames = (result[slug] ??= []);
+        if (!fileNames.includes(fileName)) {
+            fileNames.push(fileName);
+        }
+    }
+
+    return result;
+};
+
+/* The pathnames of stored photos no facility uses: blobs under a facility
+   folder (`<slug>/<file>`) whose facility doesn't list the file, or whose
+   slug has no facility. Blobs uploaded after `uploadedBefore` are skipped, so
+   photos an admin has just uploaded but not saved yet are left alone, and so
+   is anything outside a facility folder. */
+export const findOrphanPhotoBlobs = (
+    blobs: { pathname: string; uploadedAt: Date }[],
+    facilities: { slug: string; photos: { fileName: string }[] }[],
+    uploadedBefore: Date,
+): string[] => {
+    const inUse = new Set(
+        facilities.flatMap((f) =>
+            f.photos.map((p) => `${f.slug}/${p.fileName}`),
+        ),
+    );
+
+    return blobs
+        .filter((blob) => {
+            const parts = blob.pathname.split("/");
+
+            return (
+                parts.length === 2 &&
+                isValidSlug(parts[0]) &&
+                parts[1] !== "" &&
+                blob.uploadedAt < uploadedBefore &&
+                !inUse.has(blob.pathname)
+            );
+        })
+        .map((blob) => blob.pathname);
+};

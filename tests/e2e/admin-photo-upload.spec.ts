@@ -108,6 +108,68 @@ async function mockBlobStorage(
     return uploadedPaths;
 }
 
+type PhotoDeletion = { args: any[]; response: string };
+
+/* Stand in for addFacility so nothing is written to the database: it is sent
+   without the session, and its "Unauthorized" answer is passed on as is, or
+   turned into "success" when `saveSucceeds`. deleteUnusedPhotos runs for real
+   (the uploads were mocked, so there is nothing to delete) and is recorded. */
+async function routeSaveAndDeletion(
+    page: Page,
+    saveSucceeds: boolean,
+): Promise<PhotoDeletion[]> {
+    const deletions: PhotoDeletion[] = [];
+
+    /* Match on the path: submitting the form can add a query string */
+    await page.route(
+        (url) => url.pathname === "/facility/new",
+        async (route) => {
+            const request = route.request();
+            const headers = request.headers();
+
+            if (request.method() !== "POST" || !headers["next-action"]) {
+                await route.continue();
+                return;
+            }
+
+            const args = JSON.parse(request.postData() ?? "[]");
+
+            if (Array.isArray(args[1])) {
+                const response = await route.fetch();
+                const body = await response.text();
+                deletions.push({ args: args, response: body });
+                await route.fulfill({ response: response, body: body });
+                return;
+            }
+
+            if (typeof args[0] === "object" && args[0] !== null) {
+                delete headers["cookie"];
+                const response = await route.fetch({ headers: headers });
+                let body = await response.text();
+                expect(body).toContain('"Unauthorized: admin login required"');
+                if (saveSucceeds) {
+                    body = body.replace(
+                        '"Unauthorized: admin login required"',
+                        '"success"',
+                    );
+                }
+                const responseHeaders = response.headers();
+                delete responseHeaders["content-length"];
+                await route.fulfill({
+                    status: response.status(),
+                    headers: responseHeaders,
+                    body: body,
+                });
+                return;
+            }
+
+            await route.continue();
+        },
+    );
+
+    return deletions;
+}
+
 /* Traces record request bodies and cookies, which here include the admin
    password and session, and would end up in the uploaded report */
 test.use({ trace: "off" });
@@ -295,5 +357,84 @@ test.describe("Photo upload in the admin facility form", () => {
         );
         expect(adminBody).not.toContain("Unauthorized");
         expect(adminBody).toContain("vercel_blob_client_");
+    });
+
+    test.describe("deleting stored photos nothing uses", () => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
+        const fileNameOf = (path: string) => path.split("/")[1];
+
+        test.beforeEach(async ({ page }) => {
+            page.on("dialog", (dialog) => dialog.accept());
+            await slugInput(page).fill(slug);
+            await page
+                .locator('label:text-is("Name") + input')
+                .fill("E2E Photo Cleanup");
+        });
+
+        test("deletes a removed photo when the facility is saved", async ({
+            page,
+        }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+            const deletions = await routeSaveAndDeletion(page, true);
+
+            await page
+                .locator("#photo-upload")
+                .setInputFiles([pngFile("kept.png"), pngFile("removed.png")]);
+            await expect(photoItems(page)).toHaveCount(2);
+            const [kept, removed] = uploadedPaths.map(fileNameOf);
+
+            await page.getByRole("button", { name: "Remove photo 2" }).click();
+            await expect(photoItems(page)).toHaveCount(1);
+            expect(deletions).toEqual([]);
+
+            await page.getByRole("button", { name: "Submit" }).click();
+
+            await expect.poll(() => deletions.length).toBe(1);
+            expect(deletions[0].args).toEqual([slug, [removed]]);
+            expect(deletions[0].response).toContain(removed);
+            expect(deletions[0].response).not.toContain(kept);
+            expect(deletions[0].response).not.toContain("error");
+        });
+
+        test("Clear deletes the photos uploaded since the last save", async ({
+            page,
+        }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+            const deletions = await routeSaveAndDeletion(page, true);
+
+            await page.locator("#photo-upload").setInputFiles(pngFile("a.png"));
+            await expect(photoItems(page)).toHaveCount(1);
+
+            await page.getByRole("button", { name: "Clear" }).click();
+
+            await expect(photoItems(page)).toHaveCount(0);
+            await expect.poll(() => deletions.length).toBe(1);
+            expect(deletions[0].args).toEqual([
+                slug,
+                [fileNameOf(uploadedPaths[0])],
+            ]);
+        });
+
+        test("a failed add deletes the uploaded photos", async ({ page }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+            const deletions = await routeSaveAndDeletion(page, false);
+
+            await page
+                .locator("#photo-upload")
+                .setInputFiles([pngFile("one.png"), pngFile("two.png")]);
+            await expect(photoItems(page)).toHaveCount(2);
+
+            await page.getByRole("button", { name: "Submit" }).click();
+
+            await expect.poll(() => deletions.length).toBe(1);
+            expect(deletions[0].args).toEqual([
+                slug,
+                uploadedPaths.map(fileNameOf),
+            ]);
+        });
     });
 });
