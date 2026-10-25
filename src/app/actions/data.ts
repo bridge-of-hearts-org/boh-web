@@ -87,7 +87,7 @@ function buildFilter(
             location: {
                 is: {
                     province: {
-                        contains: filterValues.province,
+                        equals: filterValues.province,
                         mode: "insensitive",
                     },
                 },
