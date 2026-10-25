@@ -7,6 +7,7 @@ import {
 } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
+import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
@@ -17,6 +18,12 @@ import {
     isGoogleMapsUrl,
     LatLng,
 } from "@/utils/maps";
+import {
+    contentTypeForFileName,
+    isValidPhotoFileName,
+    isValidSlug,
+    MAX_PHOTO_SIZE_BYTES,
+} from "@/utils/photos";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -321,4 +328,53 @@ export async function resolveLatLng(
     }
 
     return coords;
+}
+
+/* Issues a short-lived token that lets the browser upload one photo straight
+   to Vercel Blob, so the file never passes through this server's request size
+   limit. The token only allows the given path, content type and size. */
+export async function createPhotoUploadToken(
+    slug: string,
+    fileName: string,
+): Promise<{ token: string } | { error: string }> {
+    if (!(await getServerAuth())) {
+        return { error: UNAUTHORIZED };
+    }
+
+    if (typeof slug !== "string" || !isValidSlug(slug)) {
+        return {
+            error: "The slug may only contain lowercase letters, numbers and hyphens",
+        };
+    }
+
+    const contentType =
+        typeof fileName === "string" && isValidPhotoFileName(fileName)
+            ? contentTypeForFileName(fileName)
+            : null;
+    if (!contentType) {
+        return { error: "Invalid photo file name" };
+    }
+
+    /* The sync script calls the Blob read-write token VERCEL_TOKEN */
+    const blobToken =
+        process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
+    if (!blobToken) {
+        return { error: "Photo storage is not configured on this server" };
+    }
+
+    try {
+        const token = await generateClientTokenFromReadWriteToken({
+            token: blobToken,
+            pathname: `${slug}/${fileName}`,
+            allowedContentTypes: [contentType],
+            maximumSizeInBytes: MAX_PHOTO_SIZE_BYTES,
+            addRandomSuffix: false,
+            validUntil: Date.now() + 5 * 60 * 1000,
+        });
+
+        return { token };
+    } catch (error) {
+        console.log("Couldn't create a photo upload token", error);
+        return { error: "Couldn't start the upload" };
+    }
 }

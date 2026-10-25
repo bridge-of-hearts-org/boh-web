@@ -3,7 +3,18 @@
 import { useRef, useState } from "react";
 import Form from "next/form";
 import { twMerge } from "tailwind-merge";
-import { CircleX, Link2, MapPin, PhoneCall, Users } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    CircleX,
+    ExternalLink,
+    Images,
+    Link2,
+    MapPin,
+    PhoneCall,
+    Users,
+} from "lucide-react";
+import { put } from "@vercel/blob/client";
 import { redirect } from "next/navigation";
 
 import Card from "@/components/Card";
@@ -12,9 +23,15 @@ import {
     DistrictsList,
     emptyChildCareFacilityDbObject,
     ProvincesList,
+    vercelStorageUrl,
 } from "@/utils/defines";
 import Button from "@/components/Button";
-import { addFacility, resolveLatLng, updateFacility } from "@/app/actions/data";
+import {
+    addFacility,
+    createPhotoUploadToken,
+    resolveLatLng,
+    updateFacility,
+} from "@/app/actions/data";
 import Link from "next/link";
 import { removeKeys } from "@/utils/utils";
 import {
@@ -24,6 +41,13 @@ import {
     isValidLongitude,
     LatLng,
 } from "@/utils/maps";
+import {
+    isValidSlug,
+    PhotoContentTypes,
+    photoFileName,
+    validatePhotoFile,
+} from "@/utils/photos";
+import ImageComponent from "@/components/ImageComponent";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
@@ -109,6 +133,13 @@ export default function EditForm(props: EditFormProps) {
     const [resolvingCoords, setResolvingCoords] = useState(false);
     const [resolveError, setResolveError] = useState("");
     const [resolveNote, setResolveNote] = useState("");
+    const [uploadingPhotos, setUploadingPhotos] = useState(false);
+    const [photoErrors, setPhotoErrors] = useState<string[]>([]);
+    const photoInputRef = useRef<HTMLInputElement>(null);
+
+    /* Photos are stored under the slug, so it can't change while the
+        facility has any or one is uploading, or they would no longer be found */
+    const slugLocked = formData.photos.length > 0 || uploadingPhotos;
 
     /* The latest Maps URL, read after a lookup finishes to discard results
         for a URL that has since been edited or cleared */
@@ -129,6 +160,7 @@ export default function EditForm(props: EditFormProps) {
         setLongitudeText(longitude);
         setResolveError("");
         setResolveNote("");
+        setPhotoErrors([]);
     };
 
     const handleClear = () => {
@@ -188,6 +220,72 @@ export default function EditForm(props: EditFormProps) {
                 "Replaced the shortlink with the full Google Maps URL",
             );
         }
+    };
+
+    const handlePhotoUpload = async (files: File[]) => {
+        if (uploadingPhotos) {
+            return;
+        }
+
+        const slug = formData.slug;
+        const errors: string[] = [];
+        const knownFileNames = new Set(formData.photos.map((p) => p.fileName));
+
+        setPhotoErrors([]);
+        setUploadingPhotos(true);
+
+        for (const file of files) {
+            const invalid = validatePhotoFile(file);
+            if (invalid) {
+                errors.push(invalid);
+                continue;
+            }
+
+            try {
+                const fileName = await photoFileName(file);
+                if (knownFileNames.has(fileName)) {
+                    errors.push(`${file.name}: this photo is already added`);
+                    continue;
+                }
+
+                const result = await createPhotoUploadToken(slug, fileName);
+                if ("error" in result) {
+                    errors.push(`${file.name}: ${result.error}`);
+                    continue;
+                }
+
+                await put(`${slug}/${fileName}`, file, {
+                    access: "public",
+                    token: result.token,
+                    contentType: file.type,
+                });
+
+                knownFileNames.add(fileName);
+                /* Use the latest form state: other fields may have been
+                    edited while the upload was running */
+                setFormData((prev) => ({
+                    ...prev,
+                    photos: [...prev.photos, { fileName, source: "" }],
+                }));
+            } catch (error) {
+                console.log("Photo upload failed", error);
+                errors.push(`${file.name}: upload failed, please try again`);
+            }
+        }
+
+        setPhotoErrors(errors);
+        setUploadingPhotos(false);
+    };
+
+    const movePhoto = (index: number, offset: -1 | 1) => {
+        const target = index + offset;
+        if (target < 0 || target >= formData.photos.length) {
+            return;
+        }
+
+        const photos = [...formData.photos];
+        [photos[index], photos[target]] = [photos[target], photos[index]];
+        setFormData({ ...formData, photos: photos });
     };
 
     const handleSubmit = async () => {
@@ -295,8 +393,14 @@ export default function EditForm(props: EditFormProps) {
                     <div className={inputRowStyle}>
                         <label>Database Slug</label>
                         <input
-                            className="grow"
+                            className="grow read-only:bg-gray-100 read-only:text-gray-500"
                             value={formData.slug}
+                            readOnly={slugLocked}
+                            title={
+                                slugLocked
+                                    ? "Remove all photos to change the slug"
+                                    : undefined
+                            }
                             onChange={(e) =>
                                 setFormData({
                                     ...formData,
@@ -892,6 +996,140 @@ export default function EditForm(props: EditFormProps) {
                     </div>
                 </section>
 
+                {/* Photos */}
+                <section className={sectionStyle}>
+                    <div className={sectionHeaderStyles}>
+                        <Images />
+                        <h2 className="font-semibold">Photos</h2>
+                    </div>
+
+                    <div className={inputRowStyle}>
+                        <label htmlFor="photo-upload">Upload</label>
+                        <div className="flex flex-col items-start gap-2">
+                            <input
+                                id="photo-upload"
+                                ref={photoInputRef}
+                                type="file"
+                                disabled={
+                                    !isValidSlug(formData.slug) ||
+                                    uploadingPhotos
+                                }
+                                accept={Object.keys(PhotoContentTypes).join(
+                                    ",",
+                                )}
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                    const files = Array.from(
+                                        e.target.files ?? [],
+                                    );
+                                    /* Clear it so picking the same file again still fires onChange */
+                                    e.target.value = "";
+                                    if (files.length > 0) {
+                                        handlePhotoUpload(files);
+                                    }
+                                }}
+                            />
+                            <Button
+                                name="Upload Photos"
+                                variant="secondary"
+                                color="black"
+                                disabled={!isValidSlug(formData.slug)}
+                                loading={uploadingPhotos}
+                                loadingText="Uploading"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    photoInputRef.current?.click();
+                                }}
+                            >
+                                Upload Photos
+                            </Button>
+                            <span className="text-sm text-gray-600">
+                                {isValidSlug(formData.slug)
+                                    ? "JPEG, PNG or WebP, up to 10 MB each. Click Submit to save photo changes."
+                                    : "Enter a valid slug (lowercase letters, numbers and hyphens) before uploading photos."}
+                            </span>
+                            {photoErrors.map((error) => (
+                                <span
+                                    key={error}
+                                    role="alert"
+                                    className="text-sm text-red-700"
+                                >
+                                    {error}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Current photos, in the order the carousel shows them */}
+                    {formData.photos.length > 0 && (
+                        <ul
+                            aria-label="Facility photos"
+                            className="grid w-full grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4"
+                        >
+                            {formData.photos.map((photo, index) => (
+                                <li
+                                    key={photo.fileName}
+                                    data-file-name={photo.fileName}
+                                    className="flex flex-col items-center gap-2"
+                                >
+                                    <ImageComponent
+                                        src={`${vercelStorageUrl}/${formData.slug}/${photo.fileName}`}
+                                        sizes="200px"
+                                        width={200}
+                                        height={200}
+                                        alt={`Photo ${index + 1}`}
+                                        className="aspect-square w-full bg-gray-200 object-cover"
+                                    />
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            aria-label={`Move photo ${index + 1} earlier`}
+                                            disabled={index === 0}
+                                            className="disabled:opacity-30"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                movePhoto(index, -1);
+                                            }}
+                                        >
+                                            <ChevronLeft />
+                                        </button>
+                                        <button
+                                            aria-label={`Remove photo ${index + 1}`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                setFormData({
+                                                    ...formData,
+                                                    photos: formData.photos.filter(
+                                                        (p) =>
+                                                            p.fileName !==
+                                                            photo.fileName,
+                                                    ),
+                                                });
+                                            }}
+                                        >
+                                            <CircleX />
+                                        </button>
+                                        <button
+                                            aria-label={`Move photo ${index + 1} later`}
+                                            disabled={
+                                                index ===
+                                                formData.photos.length - 1
+                                            }
+                                            className="disabled:opacity-30"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                movePhoto(index, 1);
+                                            }}
+                                        >
+                                            <ChevronRight />
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </section>
+
                 {/* Sources */}
                 <section className={sectionStyle}>
                     <div className={sectionHeaderStyles}>
@@ -971,10 +1209,31 @@ export default function EditForm(props: EditFormProps) {
                             Back to Table
                         </Button>
                     </Link>
+                    {/* Only saved facilities have a public page. Use the saved
+                        slug, and open a new tab so unsaved edits aren't lost */}
+                    {!props.newFacility && (
+                        <Link
+                            href={`/facility/${data.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Button
+                                name="View Public Page"
+                                type="button"
+                                variant="secondary"
+                                color="black"
+                                className="flex items-center gap-2"
+                            >
+                                View Public Page
+                                <ExternalLink className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    )}
                     <Button
                         name="Reset"
                         variant="secondary"
                         color="black"
+                        disabled={uploadingPhotos}
                         onClick={() => resetForm(data)}
                     >
                         Reset
@@ -983,6 +1242,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="red"
+                        disabled={uploadingPhotos}
                         onClick={handleClear}
                     >
                         Clear
@@ -992,7 +1252,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
-                        disabled={resolvingCoords}
+                        disabled={resolvingCoords || uploadingPhotos}
                         onClick={handleSubmit}
                     >
                         Submit
