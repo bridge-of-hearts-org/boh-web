@@ -452,6 +452,7 @@ describe.each([
                 ],
                 emails: [{ value: "old@example.com", verifiedAt: verifiedAt }],
                 occupancy: null,
+                ageRanges: null,
             },
         };
 
@@ -460,6 +461,7 @@ describe.each([
             phones: [{ value: "0771234567", verifiedAt: verifiedAt }],
             emails: [],
             occupancy: null,
+            ageRanges: null,
         });
     });
 

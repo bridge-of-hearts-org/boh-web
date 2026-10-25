@@ -66,12 +66,22 @@ type VerifiedOccupancy {
     verifiedAt DateTime
 }
 
+// The age ranges that were confirmed, so later changes to them aren't shown
+// as verified
+type VerifiedAgeRanges {
+    all        String?
+    male       String?
+    female     String?
+    verifiedAt DateTime
+}
+
 // Fields confirmed by contacting the facility directly. Each verification is
 // tied to the value that was confirmed, so a changed value loses its verification.
 type Verification {
     phones    VerifiedValue[]
     emails    VerifiedValue[]
     occupancy VerifiedOccupancy?
+    ageRanges VerifiedAgeRanges?
 }
 
 type PhotoEntry {

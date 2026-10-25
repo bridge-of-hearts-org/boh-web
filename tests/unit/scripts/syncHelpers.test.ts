@@ -8,7 +8,10 @@ import {
     parseVerifiedEntries,
 } from "../../../scripts/syncHelpers";
 import { extractLatLng } from "@/utils/maps";
-import { findOccupancyVerifiedDate } from "@/utils/verification";
+import {
+    findAgeRangesVerifiedDate,
+    findOccupancyVerifiedDate,
+} from "@/utils/verification";
 
 vi.mock("@/utils/maps", () => ({
     extractLatLng: vi.fn(),
@@ -128,7 +131,12 @@ describe("parseRow", () => {
                 "https://example.com/2.jpg",
             ],
             sources: ["Sheet A", "Sheet B"],
-            sheetVerification: { phones: [], emails: [], occupancy: null },
+            sheetVerification: {
+                phones: [],
+                emails: [],
+                occupancy: null,
+                ageRanges: null,
+            },
             warnings: [],
         });
         expect(extractLatLng).not.toHaveBeenCalled();
@@ -310,6 +318,7 @@ describe("parseRow verification columns", () => {
         "Phone Numbers - Verified": "0771234567=2026-03-12",
         "Email Addresses - Verified": "home@example.com=2026-03-15",
         "Count - Verified On": " 2026-03-20 ",
+        "Age Range - Verified On": "2026-03-21",
     };
 
     it("reads the verified phones, emails and occupancy date", async () => {
@@ -328,9 +337,22 @@ describe("parseRow verification columns", () => {
                     },
                 ],
                 occupancy: new Date("2026-03-20T00:00:00Z"),
+                ageRanges: new Date("2026-03-21T00:00:00Z"),
             },
             warnings: [],
         });
+    });
+
+    it("warns about an invalid age range date and skips it", async () => {
+        const result = await parseRow({
+            ...row,
+            "Age Range - Verified On": "March 2026",
+        });
+
+        expect(result?.sheetVerification.ageRanges).toBeNull();
+        expect(result?.warnings).toEqual([
+            'Age Range - Verified On: "March 2026" isn\'t a YYYY-MM-DD date, skipped | Home',
+        ]);
     });
 
     it("warns about an invalid occupancy date and skips it", async () => {
@@ -359,6 +381,7 @@ describe("mergeSheetVerification", () => {
             instagram: "",
         },
         occupancy: { total: 30, male: null, female: 30 },
+        ageRanges: { all: "5-18", male: null, female: "5-18" },
     };
     const existing = {
         verification: {
@@ -370,9 +393,20 @@ describe("mergeSheetVerification", () => {
                 female: 30,
                 verifiedAt: march12,
             },
+            ageRanges: {
+                all: "5-18",
+                male: null,
+                female: "5-18",
+                verifiedAt: march12,
+            },
         },
     };
-    const emptySheet = { phones: [], emails: [], occupancy: null };
+    const emptySheet = {
+        phones: [],
+        emails: [],
+        occupancy: null,
+        ageRanges: null,
+    };
     const changedCounts = { total: 31, male: null, female: 31 };
 
     it("keeps saved verifications when the sheet's cells are empty", () => {
@@ -389,6 +423,7 @@ describe("mergeSheetVerification", () => {
             ],
             emails: [],
             occupancy: march20,
+            ageRanges: null,
         };
 
         expect(mergeSheetVerification(sheet, values, existing)).toEqual({
@@ -403,6 +438,7 @@ describe("mergeSheetVerification", () => {
                 female: 30,
                 verifiedAt: march20,
             },
+            ageRanges: existing.verification.ageRanges,
         });
     });
 
@@ -450,6 +486,7 @@ describe("mergeSheetVerification", () => {
             phones: [{ value: "0812345678", verifiedAt: march12 }],
             emails: [],
             occupancy: march12,
+            ageRanges: null,
         };
         /* e.g. an admin verified the new counts on the site after the sheet's date */
         const newer = {
@@ -457,6 +494,7 @@ describe("mergeSheetVerification", () => {
                 phones: [{ value: "0812345678", verifiedAt: march20 }],
                 emails: [],
                 occupancy: { ...changedCounts, verifiedAt: march20 },
+                ageRanges: null,
             },
         };
         const changed = { ...values, occupancy: changedCounts };
@@ -482,6 +520,37 @@ describe("mergeSheetVerification", () => {
                 female: 30,
                 verifiedAt: march20,
             },
+            ageRanges: null,
+        });
+    });
+
+    it("verifies changed age ranges only with a newer date", () => {
+        const changed = {
+            ...values,
+            ageRanges: { all: "6-18", male: null, female: "6-18" },
+        };
+
+        const sameDate = mergeSheetVerification(
+            { ...emptySheet, ageRanges: march12 },
+            changed,
+            existing,
+        );
+        expect(sameDate?.ageRanges).toEqual(existing.verification.ageRanges);
+        expect(
+            findAgeRangesVerifiedDate(changed.ageRanges, sameDate),
+        ).toBeNull();
+
+        expect(
+            mergeSheetVerification(
+                { ...emptySheet, ageRanges: march20 },
+                changed,
+                existing,
+            )?.ageRanges,
+        ).toEqual({
+            all: "6-18",
+            male: null,
+            female: "6-18",
+            verifiedAt: march20,
         });
     });
 

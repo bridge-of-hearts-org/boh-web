@@ -51,11 +51,14 @@ import {
 } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
 import {
+    clearAgeRangesVerification,
     clearOccupancyVerification,
     emptyVerification,
+    findAgeRangesVerifiedDate,
     findOccupancyVerifiedDate,
     findVerifiedDate,
     setVerifiedDate,
+    verifyAgeRanges,
     verifyOccupancy,
 } from "@/utils/verification";
 import VerifiedOnInput from "./VerifiedOnInput";
@@ -1150,6 +1153,31 @@ export default function EditForm(props: EditFormProps) {
                                 ></input>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Age ranges verification */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <VerifiedOnInput
+                            label="Age ranges"
+                            value={findAgeRangesVerifiedDate(
+                                formData.ageRanges,
+                                verification,
+                            )}
+                            onChange={(date) =>
+                                setVerification({
+                                    ageRanges: date
+                                        ? verifyAgeRanges(
+                                              formData.ageRanges,
+                                              date,
+                                          )
+                                        : clearAgeRangesVerification(
+                                              formData.ageRanges,
+                                              data.verification?.ageRanges,
+                                          ),
+                                })
+                            }
+                        />
                     </div>
                 </section>
 

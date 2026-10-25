@@ -11,7 +11,10 @@ import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import VerifiedBadge from "@/components/VerifiedBadge";
-import { findOccupancyVerifiedDate } from "@/utils/verification";
+import {
+    findAgeRangesVerifiedDate,
+    findOccupancyVerifiedDate,
+} from "@/utils/verification";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
@@ -82,6 +85,10 @@ export default async function FacilityProfilePage({
 
     const occupancyVerifiedAt = findOccupancyVerifiedDate(
         data.occupancy,
+        data.verification,
+    );
+    const ageRangesVerifiedAt = findAgeRangesVerifiedDate(
+        data.ageRanges,
         data.verification,
     );
 
@@ -518,6 +525,15 @@ export default async function FacilityProfilePage({
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
                                             Ages
+                                            {ageRangesVerifiedAt && (
+                                                <VerifiedBadge
+                                                    label="Age ranges"
+                                                    align="start"
+                                                    verifiedAt={
+                                                        ageRangesVerifiedAt
+                                                    }
+                                                />
+                                            )}
                                         </div>
                                         <div className="">
                                             <div>

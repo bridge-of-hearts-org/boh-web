@@ -35,6 +35,10 @@ test.describe("Verification dates in the admin form", () => {
         page.getByLabel("Occupancy counts verified on");
     const totalCount = (page: Page) =>
         page.locator('label:text-is("Total") + input');
+    const ageRangesDate = (page: Page) =>
+        page.getByLabel("Age ranges verified on");
+    const allAges = (page: Page) =>
+        page.locator('label:text-is("All") + input');
 
     async function addPhone(page: Page) {
         await page
@@ -56,6 +60,8 @@ test.describe("Verification dates in the admin form", () => {
         await phoneDate(page).fill("2026-03-12");
         await totalCount(page).fill("30");
         await occupancyDate(page).fill("2026-03-20");
+        await allAges(page).fill("5-18");
+        await ageRangesDate(page).fill("2026-03-21");
 
         /* The request is captured and aborted, so nothing is saved */
         page.on("dialog", (dialog) => dialog.dismiss());
@@ -70,6 +76,10 @@ test.describe("Verification dates in the admin form", () => {
         expect(verification.occupancy).toMatchObject({
             total: 30,
             verifiedAt: expect.stringContaining("2026-03-20"),
+        });
+        expect(verification.ageRanges).toMatchObject({
+            all: "5-18",
+            verifiedAt: expect.stringContaining("2026-03-21"),
         });
     });
 
@@ -109,6 +119,20 @@ test.describe("Verification dates in the admin form", () => {
         // Back to the verified counts
         await totalCount(page).fill("30");
         await expect(occupancyDate(page)).toHaveValue("2026-03-20");
+    });
+
+    test("changed age ranges need a new verification date", async ({
+        page,
+    }) => {
+        await allAges(page).fill("5-18");
+        await ageRangesDate(page).fill("2026-03-21");
+
+        await allAges(page).fill("6-18");
+        await expect(ageRangesDate(page)).toHaveValue("");
+
+        // Back to the verified age ranges
+        await allAges(page).fill("5-18");
+        await expect(ageRangesDate(page)).toHaveValue("2026-03-21");
     });
 });
 

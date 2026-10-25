@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    clearAgeRangesVerification,
     clearOccupancyVerification,
+    findAgeRangesVerifiedDate,
     findOccupancyVerifiedDate,
     findVerifiedDate,
     formatVerifiedDate,
@@ -9,6 +11,7 @@ import {
     parseVerifiedDate,
     setVerifiedDate,
     toDateInputValue,
+    verifyAgeRanges,
     verifyOccupancy,
 } from "@/utils/verification";
 
@@ -79,6 +82,7 @@ describe("occupancy verification", () => {
             phones: [],
             emails: [],
             occupancy: verifyOccupancy(counts, march12),
+            ageRanges: null,
         };
 
         expect(findOccupancyVerifiedDate(counts, verification)).toEqual(
@@ -95,6 +99,7 @@ describe("occupancy verification", () => {
             phones: [],
             emails: [],
             occupancy: verifyOccupancy(counts, march12),
+            ageRanges: null,
         };
 
         expect(
@@ -124,6 +129,39 @@ describe("occupancy verification", () => {
     });
 });
 
+describe("age ranges verification", () => {
+    const ages = { all: "5-18", male: null, female: "5-18" };
+
+    it("is verified while the age ranges match the verified ones", () => {
+        const verification = {
+            phones: [],
+            emails: [],
+            occupancy: null,
+            ageRanges: verifyAgeRanges(ages, march12),
+        };
+
+        expect(findAgeRangesVerifiedDate(ages, verification)).toEqual(march12);
+        /* The form stores an empty age range as "" */
+        expect(
+            findAgeRangesVerifiedDate({ ...ages, male: "" }, verification),
+        ).toEqual(march12);
+        expect(
+            findAgeRangesVerifiedDate({ ...ages, all: "6-18" }, verification),
+        ).toBeNull();
+        expect(findAgeRangesVerifiedDate(ages, null)).toBeNull();
+    });
+
+    it("clearing the date keeps only a saved verification of other age ranges", () => {
+        const saved = verifyAgeRanges({ ...ages, all: "6-18" }, march12);
+
+        expect(clearAgeRangesVerification(ages, saved)).toEqual(saved);
+        expect(
+            clearAgeRangesVerification(ages, verifyAgeRanges(ages, march12)),
+        ).toBeNull();
+        expect(verifyAgeRanges(ages, null)).toBeNull();
+    });
+});
+
 describe("normalizeVerification", () => {
     const contact = {
         phone: ["0771234567"],
@@ -144,12 +182,14 @@ describe("normalizeVerification", () => {
                     ],
                     emails: [{ value: "old@example.com", verifiedAt: march12 }],
                     occupancy: null,
+                    ageRanges: null,
                 },
             }),
         ).toEqual({
             phones: [{ value: "0771234567", verifiedAt: march12 }],
             emails: [],
             occupancy: null,
+            ageRanges: null,
         });
     });
 
@@ -176,12 +216,24 @@ describe("normalizeVerification", () => {
                         female: 30,
                         verifiedAt: "" as any,
                     },
+                    ageRanges: {
+                        all: " 5-18 ",
+                        male: null,
+                        female: null,
+                        verifiedAt: "2026-03-12T00:00:00.000Z" as any,
+                    },
                 },
             }),
         ).toEqual({
             phones: [{ value: "0771234567", verifiedAt: march12 }],
             emails: [],
             occupancy: null,
+            ageRanges: {
+                all: "5-18",
+                male: null,
+                female: null,
+                verifiedAt: march12,
+            },
         });
     });
 
@@ -196,6 +248,7 @@ describe("normalizeVerification", () => {
                     ],
                     emails: [],
                     occupancy: null,
+                    ageRanges: null,
                 },
             })?.phones,
         ).toEqual([{ value: "0771234567", verifiedAt: march20 }]);
@@ -208,7 +261,12 @@ describe("normalizeVerification", () => {
         expect(
             normalizeVerification({
                 contact,
-                verification: { phones: [], emails: [], occupancy: null },
+                verification: {
+                    phones: [],
+                    emails: [],
+                    occupancy: null,
+                    ageRanges: null,
+                },
             }),
         ).toBeNull();
     });

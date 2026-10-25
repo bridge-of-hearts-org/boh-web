@@ -6,16 +6,19 @@
 import {
     ChildCareFacility,
     Verification,
+    VerifiedAgeRanges,
     VerifiedOccupancy,
     VerifiedValue,
 } from "@prisma/client";
 
 type Occupancy = ChildCareFacility["occupancy"];
+type AgeRanges = ChildCareFacility["ageRanges"];
 
 export const emptyVerification: Verification = {
     phones: [],
     emails: [],
     occupancy: null,
+    ageRanges: null,
 };
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -72,6 +75,16 @@ export function sameOccupancy(a: Occupancy, b: Occupancy): boolean {
         (a.total || 0) === (b.total || 0) &&
         (a.male || 0) === (b.male || 0) &&
         (a.female || 0) === (b.female || 0)
+    );
+}
+
+/* The form stores an empty age range as "" and the sheet may leave it null;
+   both mean "no age range" */
+export function sameAgeRanges(a: AgeRanges, b: AgeRanges): boolean {
+    return (
+        (a.all ?? "").trim() === (b.all ?? "").trim() &&
+        (a.male ?? "").trim() === (b.male ?? "").trim() &&
+        (a.female ?? "").trim() === (b.female ?? "").trim()
     );
 }
 
@@ -144,6 +157,50 @@ export function clearOccupancyVerification(
     return null;
 }
 
+/* ----------- Age ranges ----------- */
+
+/* The date the current age ranges were verified, or null if they weren't */
+export function findAgeRangesVerifiedDate(
+    ageRanges: AgeRanges,
+    verification: Verification | null,
+): Date | null {
+    const verified = verification?.ageRanges;
+    if (!verified || !sameAgeRanges(verified, ageRanges)) {
+        return null;
+    }
+
+    return verified.verifiedAt;
+}
+
+/* Marks the current age ranges as verified on date, or removes the verification when date is null */
+export function verifyAgeRanges(
+    ageRanges: AgeRanges,
+    date: Date | null,
+): VerifiedAgeRanges | null {
+    if (!date) {
+        return null;
+    }
+
+    return {
+        all: ageRanges.all?.trim() || null,
+        male: ageRanges.male?.trim() || null,
+        female: ageRanges.female?.trim() || null,
+        verifiedAt: date,
+    };
+}
+
+/* What's left when the age ranges date is cleared; see clearOccupancyVerification */
+export function clearAgeRangesVerification(
+    ageRanges: AgeRanges,
+    saved: VerifiedAgeRanges | null | undefined,
+): VerifiedAgeRanges | null {
+    if (saved && !sameAgeRanges(saved, ageRanges)) {
+        return saved;
+    }
+
+    return null;
+}
+
 /* ----------- Saving ----------- */
 
 /* Keeps one verification per listed value and drops the rest */
@@ -174,10 +231,21 @@ function cleanOccupancy(
     return verifyOccupancy(verified, new Date(verified.verifiedAt));
 }
 
+function cleanAgeRanges(
+    verified: VerifiedAgeRanges | null | undefined,
+): VerifiedAgeRanges | null {
+    if (!verified || !isValidDate(verified.verifiedAt)) {
+        return null;
+    }
+
+    return verifyAgeRanges(verified, new Date(verified.verifiedAt));
+}
+
 /* Cleans up a facility's verification before it's saved: drops phone and email
    verifications for values that aren't listed, and invalid dates. Returns null
-   when nothing is verified. An occupancy verification for counts that have
-   since changed is kept but not shown, so it can't come back on its own. */
+   when nothing is verified. An occupancy or age ranges verification for values
+   that have since changed is kept but not shown, so it can't come back on its
+   own. */
 export function normalizeVerification(
     facility: Pick<ChildCareFacility, "contact" | "verification">,
 ): Verification | null {
@@ -187,12 +255,14 @@ export function normalizeVerification(
         phones: pruneValues(verification?.phones, facility.contact.phone),
         emails: pruneValues(verification?.emails, facility.contact.email),
         occupancy: cleanOccupancy(verification?.occupancy),
+        ageRanges: cleanAgeRanges(verification?.ageRanges),
     };
 
     if (
         normalized.phones.length === 0 &&
         normalized.emails.length === 0 &&
-        !normalized.occupancy
+        !normalized.occupancy &&
+        !normalized.ageRanges
     ) {
         return null;
     }

@@ -19,6 +19,7 @@ import {
     parseVerifiedDate,
     findVerifiedDate,
     setVerifiedDate,
+    verifyAgeRanges,
     verifyOccupancy,
 } from "../src/utils/verification";
 
@@ -112,6 +113,7 @@ export type SheetVerification = {
     phones: VerifiedValue[];
     emails: VerifiedValue[];
     occupancy: Date | null;
+    ageRanges: Date | null;
 };
 
 /* True when the sheet's date should replace the saved one. An older date
@@ -126,7 +128,7 @@ function isNewerDate(date: Date, saved: Date | null): boolean {
    are dropped. */
 export function mergeSheetVerification(
     sheet: SheetVerification,
-    values: Pick<ChildCareFacility, "contact" | "occupancy">,
+    values: Pick<ChildCareFacility, "contact" | "occupancy" | "ageRanges">,
     existing: Pick<ChildCareFacility, "verification"> | null,
 ): Verification | null {
     const merged = { ...(existing?.verification ?? emptyVerification) };
@@ -155,9 +157,15 @@ export function mergeSheetVerification(
     /* Only a newer date verifies the current counts. The same or an older
         date with different counts means the counts were changed without being
         verified again, so the saved verification stays and isn't shown. */
-    const saved = merged.occupancy?.verifiedAt ?? null;
-    if (sheet.occupancy && isNewerDate(sheet.occupancy, saved)) {
+    const savedOccupancy = merged.occupancy?.verifiedAt ?? null;
+    if (sheet.occupancy && isNewerDate(sheet.occupancy, savedOccupancy)) {
         merged.occupancy = verifyOccupancy(values.occupancy, sheet.occupancy);
+    }
+
+    /* The same goes for the age ranges */
+    const savedAgeRanges = merged.ageRanges?.verifiedAt ?? null;
+    if (sheet.ageRanges && isNewerDate(sheet.ageRanges, savedAgeRanges)) {
+        merged.ageRanges = verifyAgeRanges(values.ageRanges, sheet.ageRanges);
     }
 
     return normalizeVerification({
@@ -217,20 +225,24 @@ export async function parseRow(row: Record<string, string>) {
     );
     const warnings = [...verifiedPhones.warnings, ...verifiedEmails.warnings];
 
-    const occupancyCell = row["Count - Verified On"]?.trim() ?? "";
-    const occupancyVerifiedAt = occupancyCell
-        ? parseVerifiedDate(occupancyCell)
-        : null;
-    if (occupancyCell && !occupancyVerifiedAt) {
-        warnings.push(
-            `Count - Verified On: "${occupancyCell}" isn't a YYYY-MM-DD date, skipped | ${facilityName}`,
-        );
-    }
+    /* Reads a single "Verified On" date cell, warning about an invalid date */
+    const parseVerifiedOnCell = (column: string): Date | null => {
+        const cell = row[column]?.trim() ?? "";
+        const date = cell ? parseVerifiedDate(cell) : null;
+        if (cell && !date) {
+            warnings.push(
+                `${column}: "${cell}" isn't a YYYY-MM-DD date, skipped | ${facilityName}`,
+            );
+        }
+
+        return date;
+    };
 
     const sheetVerification: SheetVerification = {
         phones: verifiedPhones.entries,
         emails: verifiedEmails.entries,
-        occupancy: occupancyVerifiedAt,
+        occupancy: parseVerifiedOnCell("Count - Verified On"),
+        ageRanges: parseVerifiedOnCell("Age Range - Verified On"),
     };
 
     const googleUrl = row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "";
