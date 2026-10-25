@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
+import { Prisma } from "@prisma/client";
+import { del } from "@vercel/blob";
 
 import {
     addFacility,
     createPhotoUploadToken,
+    deleteUnusedPhotos,
     fetchAllFacilities,
     fetchDistinctCities,
     fetchDistinctManagedBy,
@@ -47,6 +50,10 @@ vi.mock("@/utils/maps", async (importOriginal) => ({
 
 vi.mock("@vercel/blob/client", () => ({
     generateClientTokenFromReadWriteToken: vi.fn(),
+}));
+
+vi.mock("@vercel/blob", () => ({
+    del: vi.fn(),
 }));
 
 const UNAUTHORIZED = "Unauthorized: admin login required";
@@ -145,9 +152,8 @@ describe("fetchAllFacilities", () => {
         });
     });
 
-    // Known bug #60: province uses `contains`, so "Western" also matches "North Western".
-    // Change `it.fails` to `it` when fixing #60.
-    it.fails("filters province with an exact match", async () => {
+    // Regression test for #60: "Western" must not also match "North Western".
+    it("filters province with an exact match", async () => {
         await fetchAllFacilities(
             { ...emptyFilter, province: "Western" },
             "name",
@@ -466,6 +472,24 @@ describe.each([
         expect(await action(input)).toBe("Unique constraint failed");
     });
 
+    it("explains a duplicate slug instead of returning the raw Prisma error", async () => {
+        loginAsAdmin();
+        facilityDb[query].mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError(
+                "Unique constraint failed on the constraint: `ChildCareFacility_slug_key`",
+                {
+                    code: "P2002",
+                    clientVersion: "test",
+                    meta: { target: "ChildCareFacility_slug_key" },
+                },
+            ),
+        );
+
+        expect(await action(input)).toBe(
+            "A facility with this slug already exists",
+        );
+    });
+
     it("describes errors that aren't Error objects", async () => {
         loginAsAdmin();
         facilityDb[query].mockRejectedValue("boom");
@@ -616,6 +640,173 @@ describe("createPhotoUploadToken", () => {
 
         expect(await createPhotoUploadToken("home", FILE_NAME)).toEqual({
             error: "Couldn't start the upload",
+        });
+    });
+});
+
+describe("deleteUnusedPhotos", () => {
+    const STORAGE = "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
+    const USED = "aaaaaaaaaaaaaaaa.jpg";
+    const UNUSED = "bbbbbbbbbbbbbbbb.png";
+    const deleteBlobs = vi.mocked(del);
+
+    function savedPhotos(...fileNames: string[]) {
+        facilityDb.findUnique.mockResolvedValue({
+            photos: fileNames.map((fileName) => ({ fileName, source: "" })),
+        } as any);
+    }
+
+    beforeEach(() => {
+        vi.stubEnv("BLOB_READ_WRITE_TOKEN", "blob-token");
+        deleteBlobs.mockResolvedValue(undefined);
+        savedPhotos(USED);
+    });
+
+    it("refuses without an admin session", async () => {
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            error: UNAUTHORIZED,
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it("deletes photos the saved facility doesn't list", async () => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            deleted: [UNUSED],
+        });
+        expect(facilityDb.findUnique).toHaveBeenCalledWith({
+            where: { slug: "home" },
+            select: { photos: true },
+        });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${UNUSED}`],
+            {
+                token: "blob-token",
+            },
+        );
+    });
+
+    it("never deletes a photo the saved facility still lists", async () => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", [USED, UNUSED])).toEqual({
+            deleted: [UNUSED],
+        });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${UNUSED}`],
+            expect.anything(),
+        );
+    });
+
+    it("skips the delete when every photo is in use", async () => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", [USED])).toEqual({
+            deleted: [],
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it("deletes photos under a slug no facility has", async () => {
+        loginAsAdmin();
+        facilityDb.findUnique.mockResolvedValue(null);
+
+        expect(await deleteUnusedPhotos("new-home", [UNUSED])).toEqual({
+            deleted: [UNUSED],
+        });
+    });
+
+    it("deletes nothing when it can't check which photos are in use", async () => {
+        loginAsAdmin();
+        facilityDb.findUnique.mockRejectedValue(new Error("DB down"));
+
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            error: "Couldn't check which photos are in use",
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it.each(["Home", "../home", "home/photos", "", 123])(
+        "rejects the slug %j",
+        async (slug) => {
+            loginAsAdmin();
+
+            expect(await deleteUnusedPhotos(slug as string, [UNUSED])).toEqual({
+                error: "The slug may only contain lowercase letters, numbers and hyphens",
+            });
+            expect(deleteBlobs).not.toHaveBeenCalled();
+        },
+    );
+
+    it("deletes GIFs, which the sheet sync can store", async () => {
+        loginAsAdmin();
+        const gif = "cccccccccccccccc.gif";
+
+        expect(await deleteUnusedPhotos("home", [gif])).toEqual({
+            deleted: [gif],
+        });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${gif}`],
+            expect.anything(),
+        );
+    });
+
+    it("skips invalid names and deletes the rest", async () => {
+        loginAsAdmin();
+
+        expect(
+            await deleteUnusedPhotos("home", [
+                "../bbbbbbbbbbbbbbbb.png",
+                "photo.png",
+                123 as unknown as string,
+                UNUSED,
+            ]),
+        ).toEqual({ deleted: [UNUSED] });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${UNUSED}`],
+            expect.anything(),
+        );
+    });
+
+    it("deletes nothing when every name is invalid", async () => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", ["photo.png"])).toEqual({
+            deleted: [],
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it.each([
+        ["a non-array", "bbbbbbbbbbbbbbbb.png"],
+        ["too many names", Array(51).fill(UNUSED)],
+    ])("rejects %s", async (_, fileNames) => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", fileNames as string[])).toEqual(
+            { error: "Invalid photo file names" },
+        );
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it("reports when photo storage isn't configured", async () => {
+        loginAsAdmin();
+        vi.stubEnv("BLOB_READ_WRITE_TOKEN", undefined);
+        vi.stubEnv("VERCEL_TOKEN", undefined);
+
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            error: "Photo storage is not configured on this server",
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
+    it("reports when the delete fails", async () => {
+        loginAsAdmin();
+        deleteBlobs.mockRejectedValue(new Error("Blob API down"));
+
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            error: "Couldn't delete the photos",
         });
     });
 });
