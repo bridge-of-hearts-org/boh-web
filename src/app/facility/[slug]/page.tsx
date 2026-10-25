@@ -12,11 +12,15 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
-import { ChildCareFacility, Gender } from "@prisma/client";
+import { Gender } from "@prisma/client";
 import { vercelStorageUrl } from "@/utils/defines";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import { buildOpenInMapsUrl, hasCoordinates } from "@/utils/maps";
+import {
+    buildMapEmbedSrc,
+    buildOpenInMapsUrl,
+    hasCoordinates,
+} from "@/utils/maps";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -57,30 +61,6 @@ export async function generateMetadata({
 }
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
-
-function buildMapEmbedSrc(
-    location: ChildCareFacility["location"],
-): string | null {
-    const apiKey = process.env.GOOGLE_MAPS_EMBED_API_KEY;
-    if (!apiKey) {
-        return null;
-    }
-
-    /* Prefer the stored coordinates: a name search can match an unrelated
-        place with the same name (e.g. in another country) */
-    if (hasCoordinates(location)) {
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
-    }
-
-    /* Otherwise fall back to the place name in the Maps URL */
-    const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
-    if (placeMatch) {
-        const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
-    }
-
-    return null;
-}
 
 export default async function FacilityProfilePage({
     params,
