@@ -80,8 +80,9 @@ export default function EditForm(props: EditFormProps) {
     const [resolveError, setResolveError] = useState("");
     const [resolveNote, setResolveNote] = useState("");
     const [uploadingPhotos, setUploadingPhotos] = useState(false);
-    /* Set for the whole submit, including deleting photos the save no longer
-        needs, so nothing can change the photos while that runs */
+    /* Set for the whole of a submit, Reset or Clear, including deleting the
+        photos they leave unused, so nothing can upload or change photos
+        while a delete runs */
     const [saving, setSaving] = useState(false);
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
@@ -156,32 +157,44 @@ export default function EditForm(props: EditFormProps) {
     const discardUnsavedUploads = async (): Promise<StoredPhoto[]> => {
         const uploads = unsavedUploadsRef.current;
 
-        unsavedUploadsRef.current = [];
         const deleted = await deleteStoredPhotos(uploads, savedPhotos());
         const deletedPaths = new Set(
             deleted.map((p) => `${p.slug}/${p.fileName}`),
         );
 
-        /* Keep uploads that finished while the delete ran */
-        unsavedUploadsRef.current = [
-            ...uploads.filter(
-                (p) => !deletedPaths.has(`${p.slug}/${p.fileName}`),
-            ),
-            ...unsavedUploadsRef.current,
-        ];
+        /* Callers run this while busy, so nothing was uploaded meanwhile */
+        unsavedUploadsRef.current = uploads.filter(
+            (p) => !deletedPaths.has(`${p.slug}/${p.fileName}`),
+        );
 
         return deleted;
     };
 
-    const handleReset = async () => {
-        resetForm(savedDataRef.current);
-        await discardUnsavedUploads();
+    /* Run a task that saves or deletes photos with the form locked */
+    const runBusy = async (task: () => Promise<void>) => {
+        if (saving) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await task();
+        } finally {
+            setSaving(false);
+        }
     };
 
-    const handleClear = async () => {
-        resetForm(emptyChildCareFacilityDbObject);
-        await discardUnsavedUploads();
-    };
+    const handleReset = () =>
+        runBusy(async () => {
+            resetForm(savedDataRef.current);
+            await discardUnsavedUploads();
+        });
+
+    const handleClear = () =>
+        runBusy(async () => {
+            resetForm(emptyChildCareFacilityDbObject);
+            await discardUnsavedUploads();
+        });
 
     /* Adding failed, so no facility uses the uploaded photos: delete them
         and take the deleted ones off the form, so a retry can't save
@@ -328,18 +341,7 @@ export default function EditForm(props: EditFormProps) {
         setFormData({ ...formData, photos: photos });
     };
 
-    const handleSubmit = async () => {
-        if (saving) {
-            return;
-        }
-
-        setSaving(true);
-        try {
-            await submitForm();
-        } finally {
-            setSaving(false);
-        }
-    };
+    const handleSubmit = () => runBusy(submitForm);
 
     const submitForm = async () => {
         const status = validateFacility(formData);

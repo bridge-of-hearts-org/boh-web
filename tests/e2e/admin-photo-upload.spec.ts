@@ -115,6 +115,10 @@ type PhotoActions = {
     mocked: any[][];
     /* deleteUnusedPhotos calls, which reach the server */
     deletions: { args: any[]; response: string }[];
+    /* deleteUnusedPhotos calls received, including ones still held */
+    pendingDeletions: number;
+    /* deleteUnusedPhotos calls wait for this before reaching the server */
+    deletionGate: Promise<void>;
 };
 
 const isString = (value: unknown) => typeof value === "string";
@@ -135,6 +139,8 @@ async function routePhotoActions(page: Page): Promise<PhotoActions> {
         saveResult: "success",
         mocked: [],
         deletions: [],
+        pendingDeletions: 0,
+        deletionGate: Promise.resolve(),
     };
 
     await page.route("**/*", async (route) => {
@@ -150,6 +156,11 @@ async function routePhotoActions(page: Page): Promise<PhotoActions> {
             args = JSON.parse(request.postData() ?? "");
         } catch {}
 
+        /* WARNING: calls are let through by argument shape alone, not by
+           action. Any server action added later whose arguments are
+           [string, string] or [string, string[]] would reach the real
+           server from these tests, so revisit this allowlist whenever the
+           admin form gains a server action. */
         const isUploadToken =
             Array.isArray(args) &&
             args.length === 2 &&
@@ -168,6 +179,8 @@ async function routePhotoActions(page: Page): Promise<PhotoActions> {
         }
 
         if (isDeletion) {
+            actions.pendingDeletions++;
+            await actions.deletionGate;
             const response = await route.fetch();
             const body = await response.text();
             actions.deletions.push({ args: args, response: body });
@@ -439,11 +452,30 @@ test.describe("Photo upload in the admin facility form", () => {
                 .setInputFiles([pngFile("r1.png"), pngFile("r2.png")]);
             await expect(photoItems(page)).toHaveCount(2);
 
+            /* Hold the delete to check the form stays locked until it ends */
+            let releaseDeletion = () => {};
+            actions.deletionGate = new Promise<void>((resolve) => {
+                releaseDeletion = resolve;
+            });
+
             await page.getByRole("button", { name: "Reset" }).click();
 
             await expect(photoItems(page)).toHaveCount(0);
             await expect(slugInput(page)).toHaveValue("");
+            await expect.poll(() => actions.pendingDeletions).toBe(1);
+            for (const name of ["Submit", "Reset", "Clear"]) {
+                await expect(
+                    page.getByRole("button", { name: name }),
+                ).toBeDisabled();
+            }
+
+            releaseDeletion();
             await expect.poll(() => actions.deletions.length).toBe(1);
+            for (const name of ["Submit", "Reset", "Clear"]) {
+                await expect(
+                    page.getByRole("button", { name: name }),
+                ).toBeEnabled();
+            }
             expect(actions.deletions[0].args).toEqual([
                 slug,
                 uploadedPaths.map(fileNameOf),
