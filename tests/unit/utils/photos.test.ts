@@ -112,7 +112,7 @@ describe("photoFileName", () => {
         expect(await photoFileName(file)).toBe("2cf24dba5fb0a30e.png");
     });
 
-    it("uses the extension for the content type, not the original name", async () => {
+    it("takes the extension from the content type, not the original name", async () => {
         const file = new File(["hello"], "photo.jpeg", { type: "image/jpeg" });
 
         expect(await photoFileName(file)).toBe("2cf24dba5fb0a30e.jpg");

@@ -78,8 +78,8 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 - Run `npm run test:unit` and `npm run test:e2e` before pushing; all tests must pass
 - Each feature PR should include a Playwright test for the new behaviour, and unit tests for any new logic (helpers, server actions)
 - Playwright CI runs automatically against Vercel previews on every PR; unit test CI runs on every PR without a preview
-- Unit tests live in `tests/unit/` (mirroring the source paths) and Playwright tests in `tests/e2e/`. Keep testable logic in plain modules (e.g. `src/utils/`), not inside components, so it can be unit tested
-- Server action tests mock `@/utils/db` (Prisma) and `@/lib/auth` (`getServerAuth`); see `tests/unit/actions/data.test.ts`
+- Unit tests live in `tests/unit/` (mirroring the source paths without the leading `src/`, e.g. `tests/unit/app/actions/data.test.ts`) and Playwright tests in `tests/e2e/`. Keep testable logic in plain modules (e.g. `src/utils/`), not inside components, so it can be unit tested
+- Server action tests mock `@/utils/db` (Prisma) and `@/lib/auth` (`getServerAuth`); see `tests/unit/app/actions/data.test.ts`
 - A test for a known, still-open bug is written for the correct behaviour and marked `it.fails`, with a comment naming the issue. Once the bug is fixed the test starts failing, which is the reminder to change it to `it`
 
 # Code Style

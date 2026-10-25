@@ -65,7 +65,10 @@ export async function parseRow(row: Record<string, string>) {
     }
 
     const phones = row["Phone Numbers"]
-        ? row["Phone Numbers"].split(",").map((p) => p.trim()).filter(Boolean)
+        ? row["Phone Numbers"]
+              .split(",")
+              .map((p) => p.trim())
+              .filter(Boolean)
         : [];
     for (const phone of phones) {
         if (!phone.startsWith("0") || phone.length !== 10) {
@@ -74,7 +77,10 @@ export async function parseRow(row: Record<string, string>) {
     }
 
     const emails = row["Email Addresses"]
-        ? row["Email Addresses"].split(",").map((e) => e.trim()).filter(Boolean)
+        ? row["Email Addresses"]
+              .split(",")
+              .map((e) => e.trim())
+              .filter(Boolean)
         : [];
     for (const email of emails) {
         if (!email.includes("@")) {
@@ -112,7 +118,9 @@ export async function parseRow(row: Record<string, string>) {
         occupancy: {
             total: row["Count - Total"] ? parseInt(row["Count - Total"]) : null,
             male: row["Count - Male"] ? parseInt(row["Count - Male"]) : null,
-            female: row["Count - Female"] ? parseInt(row["Count - Female"]) : null,
+            female: row["Count - Female"]
+                ? parseInt(row["Count - Female"])
+                : null,
         },
         ageRanges: {
             all: row["Age Range - All"]?.trim() ?? "",
@@ -120,10 +128,16 @@ export async function parseRow(row: Record<string, string>) {
             female: row["Age Range - Female"]?.trim() ?? "",
         },
         photoUrls: row["Photos"]
-            ? row["Photos"].split("|").map((u) => u.trim()).filter(Boolean)
+            ? row["Photos"]
+                  .split("|")
+                  .map((u) => u.trim())
+                  .filter(Boolean)
             : [],
         sources: row["Sources"]
-            ? row["Sources"].split("|").map((s) => s.trim()).filter(Boolean)
+            ? row["Sources"]
+                  .split("|")
+                  .map((s) => s.trim())
+                  .filter(Boolean)
             : [],
     };
 }

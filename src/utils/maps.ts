@@ -258,9 +258,6 @@ export function buildMapEmbedSrc(location: {
         return null;
     }
 
-    /* Read before the hasCoordinates guard, which narrows `location` to never in its else branch */
-    const { google } = location;
-
     /* Prefer the stored coordinates: a name search can match an unrelated
         place with the same name (e.g. in another country) */
     if (hasCoordinates(location)) {
@@ -268,7 +265,7 @@ export function buildMapEmbedSrc(location: {
     }
 
     /* Otherwise fall back to the place name in the Maps URL */
-    const placeMatch = google.match(/\/maps\/place\/([^/@?]+)/);
+    const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
     if (placeMatch) {
         const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
         return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
