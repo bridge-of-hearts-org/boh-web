@@ -29,6 +29,7 @@ import {
     MAX_PHOTOS_PER_DELETE,
     photosToDelete,
 } from "@/utils/photos";
+import { describeFacilityWriteError } from "@/utils/dbErrors";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -98,7 +99,7 @@ function buildFilter(
             location: {
                 is: {
                     province: {
-                        contains: filterValues.province,
+                        equals: filterValues.province,
                         mode: "insensitive",
                     },
                 },
@@ -282,13 +283,7 @@ export async function updateFacility(
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
-
-        if (error instanceof Error) {
-            return error.message;
-        } else {
-            console.log(error);
-            return `Unknown Error: ${error}`;
-        }
+        return describeFacilityWriteError(error);
     }
 
     return "success";
@@ -307,13 +302,7 @@ export async function addFacility(
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
-
-        if (error instanceof Error) {
-            return error.message;
-        } else {
-            console.log(error);
-            return `Unknown Error: ${error}`;
-        }
+        return describeFacilityWriteError(error);
     }
 
     return "success";

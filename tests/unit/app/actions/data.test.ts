@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
+import { Prisma } from "@prisma/client";
 import { del } from "@vercel/blob";
 
 import {
@@ -151,9 +152,8 @@ describe("fetchAllFacilities", () => {
         });
     });
 
-    // Known bug #60: province uses `contains`, so "Western" also matches "North Western".
-    // Change `it.fails` to `it` when fixing #60.
-    it.fails("filters province with an exact match", async () => {
+    // Regression test for #60: "Western" must not also match "North Western".
+    it("filters province with an exact match", async () => {
         await fetchAllFacilities(
             { ...emptyFilter, province: "Western" },
             "name",
@@ -446,6 +446,24 @@ describe.each([
         );
 
         expect(await action(input)).toBe("Unique constraint failed");
+    });
+
+    it("explains a duplicate slug instead of returning the raw Prisma error", async () => {
+        loginAsAdmin();
+        facilityDb[query].mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError(
+                "Unique constraint failed on the constraint: `ChildCareFacility_slug_key`",
+                {
+                    code: "P2002",
+                    clientVersion: "test",
+                    meta: { target: "ChildCareFacility_slug_key" },
+                },
+            ),
+        );
+
+        expect(await action(input)).toBe(
+            "A facility with this slug already exists",
+        );
     });
 
     it("describes errors that aren't Error objects", async () => {
