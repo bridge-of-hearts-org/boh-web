@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
 import { twMerge } from "tailwind-merge";
 
 import { formatVerifiedDate } from "@/utils/verification";
@@ -15,7 +15,7 @@ type PropsType = {
     align?: "start" | "end";
 };
 
-/* A green checkmark that opens a note saying when the value was verified */
+/* A filled green badge check that opens a note saying when the value was verified */
 export default function VerifiedBadge(props: PropsType) {
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLSpanElement>(null);
@@ -70,7 +70,11 @@ export default function VerifiedBadge(props: PropsType) {
                 aria-controls={popoverId}
                 onClick={() => setOpen(!open)}
             >
-                <Check size={16} strokeWidth={3} aria-hidden="true" />
+                <BadgeCheck
+                    size={18}
+                    className="fill-green-600 text-white"
+                    aria-hidden="true"
+                />
             </button>
             {/* Always rendered, so aria-controls points at it while it's hidden */}
             <span
