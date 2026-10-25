@@ -129,6 +129,7 @@ export const emptyChildCareFacilityDbObject: ChildCareFacility = {
     updatedAt: new Date(),
     sources: [],
     photos: [],
+    verification: null,
 };
 
 /* ----------- Default Values ----------- */

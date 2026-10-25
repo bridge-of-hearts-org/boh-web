@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     detectImageType,
     fileTypeFromUrl,
+    mergeSheetVerification,
     parseRow,
+    parseVerifiedEntries,
 } from "../../../scripts/syncHelpers";
 import { extractLatLng } from "@/utils/maps";
+import { findOccupancyVerifiedDate } from "@/utils/verification";
 
 vi.mock("@/utils/maps", () => ({
     extractLatLng: vi.fn(),
@@ -125,6 +128,8 @@ describe("parseRow", () => {
                 "https://example.com/2.jpg",
             ],
             sources: ["Sheet A", "Sheet B"],
+            sheetVerification: { phones: [], emails: [], occupancy: null },
+            warnings: [],
         });
         expect(extractLatLng).not.toHaveBeenCalled();
     });
@@ -234,5 +239,232 @@ describe("parseRow", () => {
             latitude: null,
             longitude: null,
         });
+    });
+});
+
+describe("parseVerifiedEntries", () => {
+    const listed = ["0812345678", "0771234567"];
+
+    it("parses comma-separated value=date pairs", () => {
+        expect(
+            parseVerifiedEntries(
+                " 0812345678 = 2026-03-12 ,0771234567=2026-03-15, ",
+                listed,
+                "Phone Numbers - Verified",
+                "Home",
+            ),
+        ).toEqual({
+            entries: [
+                {
+                    value: "0812345678",
+                    verifiedAt: new Date("2026-03-12T00:00:00Z"),
+                },
+                {
+                    value: "0771234567",
+                    verifiedAt: new Date("2026-03-15T00:00:00Z"),
+                },
+            ],
+            warnings: [],
+        });
+    });
+
+    it.each([undefined, "", "  "])("returns nothing for %j", (cell) => {
+        expect(parseVerifiedEntries(cell, listed, "Column", "Home")).toEqual({
+            entries: [],
+            warnings: [],
+        });
+    });
+
+    it.each(["0812345678", "0812345678=", "0812345678=12/03/2026"])(
+        "skips %j, which has no valid date, with a warning",
+        (cell) => {
+            const result = parseVerifiedEntries(cell, listed, "Column", "Home");
+
+            expect(result.entries).toEqual([]);
+            expect(result.warnings).toHaveLength(1);
+            expect(result.warnings[0]).toContain("YYYY-MM-DD");
+        },
+    );
+
+    it("skips values that aren't listed, with a warning", () => {
+        const result = parseVerifiedEntries(
+            "0112345678=2026-03-12",
+            listed,
+            "Phone Numbers - Verified",
+            "Home",
+        );
+
+        expect(result.entries).toEqual([]);
+        expect(result.warnings).toEqual([
+            `Phone Numbers - Verified: "0112345678" isn't listed in the facility's values, skipped | Home`,
+        ]);
+    });
+});
+
+describe("parseRow verification columns", () => {
+    const row = {
+        Name: "Home",
+        Slug: "home",
+        "Phone Numbers": "0812345678, 0771234567",
+        "Email Addresses": "home@example.com",
+        "Phone Numbers - Verified": "0771234567=2026-03-12",
+        "Email Addresses - Verified": "home@example.com=2026-03-15",
+        "Count - Verified On": " 2026-03-20 ",
+    };
+
+    it("reads the verified phones, emails and occupancy date", async () => {
+        expect(await parseRow(row)).toMatchObject({
+            sheetVerification: {
+                phones: [
+                    {
+                        value: "0771234567",
+                        verifiedAt: new Date("2026-03-12T00:00:00Z"),
+                    },
+                ],
+                emails: [
+                    {
+                        value: "home@example.com",
+                        verifiedAt: new Date("2026-03-15T00:00:00Z"),
+                    },
+                ],
+                occupancy: new Date("2026-03-20T00:00:00Z"),
+            },
+            warnings: [],
+        });
+    });
+
+    it("warns about an invalid occupancy date and skips it", async () => {
+        const result = await parseRow({
+            ...row,
+            "Count - Verified On": "20/03/2026",
+        });
+
+        expect(result?.sheetVerification.occupancy).toBeNull();
+        expect(result?.warnings).toEqual([
+            'Count - Verified On: "20/03/2026" isn\'t a YYYY-MM-DD date, skipped | Home',
+        ]);
+    });
+});
+
+describe("mergeSheetVerification", () => {
+    const march12 = new Date("2026-03-12T00:00:00Z");
+    const march20 = new Date("2026-03-20T00:00:00Z");
+
+    const values = {
+        contact: {
+            phone: ["0812345678", "0771234567"],
+            email: ["home@example.com"],
+            website: "",
+            facebook: "",
+            instagram: "",
+        },
+        occupancy: { total: 30, male: null, female: 30 },
+    };
+    const existing = {
+        verification: {
+            phones: [{ value: "0812345678", verifiedAt: march12 }],
+            emails: [{ value: "home@example.com", verifiedAt: march12 }],
+            occupancy: {
+                total: 30,
+                male: null,
+                female: 30,
+                verifiedAt: march12,
+            },
+        },
+    };
+    const emptySheet = { phones: [], emails: [], occupancy: null };
+    const changedCounts = { total: 31, male: null, female: 31 };
+
+    it("keeps saved verifications when the sheet's cells are empty", () => {
+        expect(mergeSheetVerification(emptySheet, values, existing)).toEqual(
+            existing.verification,
+        );
+    });
+
+    it("adds and updates verifications from the sheet", () => {
+        const sheet = {
+            phones: [
+                { value: "0812345678", verifiedAt: march20 },
+                { value: "0771234567", verifiedAt: march20 },
+            ],
+            emails: [],
+            occupancy: march20,
+        };
+
+        expect(mergeSheetVerification(sheet, values, existing)).toEqual({
+            phones: [
+                { value: "0812345678", verifiedAt: march20 },
+                { value: "0771234567", verifiedAt: march20 },
+            ],
+            emails: [{ value: "home@example.com", verifiedAt: march12 }],
+            occupancy: {
+                total: 30,
+                male: null,
+                female: 30,
+                verifiedAt: march20,
+            },
+        });
+    });
+
+    it("drops verifications for phone numbers the sheet no longer lists", () => {
+        const changed = {
+            ...values,
+            contact: { ...values.contact, phone: ["0771234567"] },
+        };
+
+        expect(
+            mergeSheetVerification(emptySheet, changed, existing)?.phones,
+        ).toEqual([]);
+    });
+
+    it("verifies changed counts when the sheet gives a new date", () => {
+        const changed = { ...values, occupancy: changedCounts };
+
+        expect(
+            mergeSheetVerification(
+                { ...emptySheet, occupancy: march20 },
+                changed,
+                existing,
+            )?.occupancy,
+        ).toEqual({ ...changedCounts, verifiedAt: march20 });
+    });
+
+    it("doesn't verify changed counts that still have the old date", () => {
+        const changed = { ...values, occupancy: changedCounts };
+        const sheet = { ...emptySheet, occupancy: march12 };
+
+        const merged = mergeSheetVerification(sheet, changed, existing);
+
+        /* Still the old counts, so the new ones aren't shown as verified,
+            and later syncs with the same sheet keep it that way */
+        expect(merged?.occupancy).toEqual(existing.verification.occupancy);
+        expect(findOccupancyVerifiedDate(changedCounts, merged)).toBeNull();
+        expect(
+            mergeSheetVerification(sheet, changed, { verification: merged })
+                ?.occupancy,
+        ).toEqual(existing.verification.occupancy);
+    });
+
+    it("verifies a new facility from the sheet alone", () => {
+        expect(
+            mergeSheetVerification(
+                { ...emptySheet, occupancy: march20 },
+                values,
+                null,
+            ),
+        ).toEqual({
+            phones: [],
+            emails: [],
+            occupancy: {
+                total: 30,
+                male: null,
+                female: 30,
+                verifiedAt: march20,
+            },
+        });
+    });
+
+    it("returns null when nothing is verified", () => {
+        expect(mergeSheetVerification(emptySheet, values, null)).toBeNull();
     });
 });

@@ -10,6 +10,8 @@ import LocationMap from "./LocationMap";
 import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import { findOccupancyVerifiedDate } from "@/utils/verification";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
@@ -77,6 +79,11 @@ export default async function FacilityProfilePage({
     if (!data) {
         return NotFound();
     }
+
+    const occupancyVerifiedAt = findOccupancyVerifiedDate(
+        data.occupancy,
+        data.verification,
+    );
 
     const mapEmbedSrc = buildMapEmbedSrc(data.location);
     const openInMapsUrl = buildOpenInMapsUrl(data.location);
@@ -337,6 +344,9 @@ export default async function FacilityProfilePage({
                                             <PhoneNumberList
                                                 numbers={data.contact.phone}
                                                 orientation="column"
+                                                verified={
+                                                    data.verification?.phones
+                                                }
                                             />
                                         </div>
                                     </div>
@@ -347,6 +357,9 @@ export default async function FacilityProfilePage({
                                         <div className="break-all">
                                             <EmailList
                                                 emails={data.contact.email}
+                                                verified={
+                                                    data.verification?.emails
+                                                }
                                             />
                                         </div>
                                     </div>
@@ -444,6 +457,15 @@ export default async function FacilityProfilePage({
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
                                             Occupancy
+                                            {occupancyVerifiedAt && (
+                                                <VerifiedBadge
+                                                    label="Occupancy counts"
+                                                    align="start"
+                                                    verifiedAt={
+                                                        occupancyVerifiedAt
+                                                    }
+                                                />
+                                            )}
                                         </div>
                                         <div className="">
                                             <div>

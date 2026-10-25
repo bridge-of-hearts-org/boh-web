@@ -5,9 +5,23 @@
  * without the script's config and credential files.
  */
 
-import { Gender } from "@prisma/client";
+import {
+    ChildCareFacility,
+    Gender,
+    Verification,
+    VerifiedValue,
+} from "@prisma/client";
 
 import { extractLatLng } from "../src/utils/maps";
+import {
+    emptyVerification,
+    normalizeVerification,
+    parseVerifiedDate,
+    sameDate,
+    sameOccupancy,
+    setVerifiedDate,
+    verifyOccupancy,
+} from "../src/utils/verification";
 
 // --- Image helpers ---
 
@@ -52,6 +66,97 @@ export function fileTypeFromUrl(url: string): string | null {
     return null;
 }
 
+// --- Verification columns ---
+
+/* Parses a "value=YYYY-MM-DD, value=YYYY-MM-DD" cell. Entries for values that
+   aren't listed, or with a bad date, are skipped with a warning. */
+export function parseVerifiedEntries(
+    cell: string | undefined,
+    listed: string[],
+    column: string,
+    facilityName: string,
+): { entries: VerifiedValue[]; warnings: string[] } {
+    const entries: VerifiedValue[] = [];
+    const warnings: string[] = [];
+
+    const items = (cell ?? "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+    for (const item of items) {
+        const separator = item.lastIndexOf("=");
+        const value = separator === -1 ? item : item.slice(0, separator).trim();
+        const date =
+            separator === -1
+                ? null
+                : parseVerifiedDate(item.slice(separator + 1));
+
+        if (!date) {
+            warnings.push(
+                `${column}: "${item}" needs a date as value=YYYY-MM-DD, skipped | ${facilityName}`,
+            );
+        } else if (!listed.includes(value)) {
+            warnings.push(
+                `${column}: "${value}" isn't listed in the facility's values, skipped | ${facilityName}`,
+            );
+        } else {
+            entries.push({ value: value, verifiedAt: date });
+        }
+    }
+
+    return { entries, warnings };
+}
+
+/* The verifications read from one sheet row, before they're merged with the saved ones */
+export type SheetVerification = {
+    phones: VerifiedValue[];
+    emails: VerifiedValue[];
+    occupancy: Date | null;
+};
+
+/* Applies the sheet's verifications on top of the saved ones. The sheet only
+   adds or updates verifications; an empty cell never removes one. Verifications
+   for phone numbers and emails the sheet no longer lists are dropped. */
+export function mergeSheetVerification(
+    sheet: SheetVerification,
+    values: Pick<ChildCareFacility, "contact" | "occupancy">,
+    existing: Pick<ChildCareFacility, "verification"> | null,
+): Verification | null {
+    const merged = { ...(existing?.verification ?? emptyVerification) };
+
+    for (const entry of sheet.phones) {
+        merged.phones = setVerifiedDate(
+            merged.phones,
+            entry.value,
+            entry.verifiedAt,
+        );
+    }
+    for (const entry of sheet.emails) {
+        merged.emails = setVerifiedDate(
+            merged.emails,
+            entry.value,
+            entry.verifiedAt,
+        );
+    }
+
+    /* The same date as the saved verification, but with different counts,
+        means the counts were changed without being verified again */
+    const saved = merged.occupancy;
+    const staleDate =
+        saved &&
+        sameDate(saved.verifiedAt, sheet.occupancy) &&
+        !sameOccupancy(saved, values.occupancy);
+    if (sheet.occupancy && !staleDate) {
+        merged.occupancy = verifyOccupancy(values.occupancy, sheet.occupancy);
+    }
+
+    return normalizeVerification({
+        contact: values.contact,
+        verification: merged,
+    });
+}
+
 // --- Data transformation ---
 
 export async function parseRow(row: Record<string, string>) {
@@ -87,6 +192,37 @@ export async function parseRow(row: Record<string, string>) {
             throw new Error(`Invalid email: "${email}" | ${row["Name"]}`);
         }
     }
+
+    const facilityName = row["Name"]?.trim() ?? "";
+    const verifiedPhones = parseVerifiedEntries(
+        row["Phone Numbers - Verified"],
+        phones,
+        "Phone Numbers - Verified",
+        facilityName,
+    );
+    const verifiedEmails = parseVerifiedEntries(
+        row["Email Addresses - Verified"],
+        emails,
+        "Email Addresses - Verified",
+        facilityName,
+    );
+    const warnings = [...verifiedPhones.warnings, ...verifiedEmails.warnings];
+
+    const occupancyCell = row["Count - Verified On"]?.trim() ?? "";
+    const occupancyVerifiedAt = occupancyCell
+        ? parseVerifiedDate(occupancyCell)
+        : null;
+    if (occupancyCell && !occupancyVerifiedAt) {
+        warnings.push(
+            `Count - Verified On: "${occupancyCell}" isn't a YYYY-MM-DD date, skipped | ${facilityName}`,
+        );
+    }
+
+    const sheetVerification: SheetVerification = {
+        phones: verifiedPhones.entries,
+        emails: verifiedEmails.entries,
+        occupancy: occupancyVerifiedAt,
+    };
 
     const googleUrl = row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "";
     const coords = googleUrl ? await extractLatLng(googleUrl) : null;
@@ -139,5 +275,8 @@ export async function parseRow(row: Record<string, string>) {
                   .map((s) => s.trim())
                   .filter(Boolean)
             : [],
+        /* Merged with the saved verification by mergeSheetVerification, not written as is */
+        sheetVerification: sheetVerification,
+        warnings: warnings,
     };
 }

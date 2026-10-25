@@ -24,6 +24,7 @@ import {
     isValidSlug,
     MAX_PHOTO_SIZE_BYTES,
 } from "@/utils/photos";
+import { normalizeVerification } from "@/utils/verification";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -267,7 +268,10 @@ export async function updateFacility(
             where: {
                 slug: data.slug,
             },
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
@@ -292,7 +296,10 @@ export async function addFacility(
 
     try {
         await prisma.childCareFacility.create({
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
