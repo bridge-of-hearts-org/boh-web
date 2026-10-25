@@ -270,7 +270,11 @@ export default function EditForm(props: EditFormProps) {
         if (props.newFacility) {
             const status = await addFacility(payload);
             alert(status);
-            redirect("/admin");
+
+            /* On failure stay on the form so the admin's input isn't lost */
+            if (status === "success") {
+                redirect("/admin");
+            }
         } else {
             /* The fact that we are in the edit page means that the database entry exists */
             const status = await updateFacility(payload);

@@ -9,6 +9,15 @@ export const adminUsername = process.env.ADMIN_USERNAME;
 export const adminPassword = process.env.ADMIN_PASSWORD;
 export const hasCredentials = !!adminUsername && !!adminPassword;
 
+/* The slug of a facility that exists, taken from the first directory card */
+export async function getExistingSlug(page: Page): Promise<string> {
+    await page.goto("/directory");
+    const link = page.locator('a[href^="/facility/"]').first();
+    await expect(link).toBeVisible({ timeout: 10000 });
+    const href = await link.getAttribute("href");
+    return href!.replace("/facility/", "");
+}
+
 export type CapturedAction = {
     headers: Record<string, string>;
     args: any[];
