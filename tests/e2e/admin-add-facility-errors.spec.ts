@@ -1,14 +1,6 @@
 import { test, expect, Page } from "@playwright/test";
 
-import { hasCredentials, login } from "./admin-helpers";
-
-async function getExistingSlug(page: Page): Promise<string> {
-    await page.goto("/directory");
-    const link = page.locator('a[href^="/facility/"]').first();
-    await expect(link).toBeVisible({ timeout: 10000 });
-    const href = await link.getAttribute("href");
-    return href!.replace("/facility/", "");
-}
+import { getExistingSlug, hasCredentials, login } from "./admin-helpers";
 
 const inputFor = (page: Page, label: RegExp) =>
     page.locator("label").filter({ hasText: label }).locator("+ input");
@@ -17,7 +9,9 @@ const inputFor = (page: Page, label: RegExp) =>
    password and session, and would end up in the uploaded report */
 test.use({ trace: "off" });
 
-// Admin form tests: need admin credentials. Nothing is saved, since the slug is taken.
+/* Admin form tests: need admin credentials. Nothing is saved, since the slug
+   is taken. This relies on the unique index on `slug` existing in the
+   database under test (e.g. the Vercel preview's), or the add would succeed */
 test.describe("Adding a facility that fails to save", () => {
     /* Locally the tests are optional, but in CI missing credentials must fail
        rather than skip, or they would silently never run */
@@ -47,6 +41,10 @@ test.describe("Adding a facility that fails to save", () => {
         const dialog = page.waitForEvent("dialog");
         await page.getByRole("button", { name: "Submit" }).click();
         const alert = await dialog;
+        expect(
+            alert.message(),
+            "The add succeeded, so a duplicate facility may have been inserted",
+        ).not.toBe("success");
         expect(alert.message()).toBe(
             "A facility with this slug already exists",
         );

@@ -3,6 +3,7 @@ import { test, expect, Page } from "@playwright/test";
 import {
     captureAction,
     CapturedAction,
+    getExistingSlug,
     hasCredentials,
     login,
     replayAction,
@@ -14,14 +15,6 @@ async function captureSubmit(page: Page): Promise<CapturedAction> {
     return captureAction(page, () =>
         page.getByRole("button", { name: "Submit" }).click(),
     );
-}
-
-async function getExistingSlug(page: Page): Promise<string> {
-    await page.goto("/directory");
-    const link = page.locator('a[href^="/facility/"]').first();
-    await expect(link).toBeVisible({ timeout: 10000 });
-    const href = await link.getAttribute("href");
-    return href!.replace("/facility/", "");
 }
 
 /* Traces record request bodies and cookies, which here include the admin
@@ -64,7 +57,7 @@ test.describe("Write server actions require an admin session", () => {
         const body = await replayAction(request, "/facility/new", action, args);
 
         expect(body).toContain("Unauthorized");
-        expect(body).not.toContain("Unique constraint");
+        expect(body).not.toContain("already exists");
     });
 
     test("updateFacility rejects unauthenticated calls but lets admins through", async ({
@@ -85,7 +78,7 @@ test.describe("Write server actions require an admin session", () => {
         const unauthBody = await replayAction(request, editPath, action, args);
 
         expect(unauthBody).toContain("Unauthorized");
-        expect(unauthBody).not.toContain("not found");
+        expect(unauthBody).not.toContain("no longer exists");
 
         /* With the admin session, the call passes the guard and reaches the
            database, which reports the missing record */
@@ -97,6 +90,6 @@ test.describe("Write server actions require an admin session", () => {
         );
 
         expect(adminBody).not.toContain("Unauthorized");
-        expect(adminBody).toContain("not found");
+        expect(adminBody).toContain("no longer exists");
     });
 });
