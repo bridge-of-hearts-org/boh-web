@@ -1,11 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+    chunk,
     contentTypeForFileName,
+    deletePhotosInBatches,
+    findOrphanPhotoBlobs,
+    isDeletablePhotoFileName,
+    isPhotoBlobPath,
     isValidPhotoFileName,
     isValidSlug,
+    MAX_ORPHAN_SHARE,
     MAX_PHOTO_SIZE_BYTES,
+    MAX_PHOTOS_PER_DELETE,
+    orphanCleanupRefusal,
     photoFileName,
+    photosToDelete,
     validatePhotoFile,
 } from "@/utils/photos";
 
@@ -131,5 +140,297 @@ describe("photoFileName", () => {
         const file = new File(["hello"], "a.png", { type: "image/png" });
 
         expect(isValidPhotoFileName(await photoFileName(file))).toBe(true);
+    });
+});
+
+describe("photosToDelete", () => {
+    const photo = (slug: string, fileName: string) => ({ slug, fileName });
+
+    it("returns the candidates that aren't kept, grouped by slug", () => {
+        expect(
+            photosToDelete(
+                [
+                    photo("home", "a.png"),
+                    photo("home", "b.png"),
+                    photo("other", "c.png"),
+                ],
+                [photo("home", "a.png")],
+            ),
+        ).toEqual({ home: ["b.png"], other: ["c.png"] });
+    });
+
+    it("never deletes a kept photo", () => {
+        expect(
+            photosToDelete(
+                [photo("home", "a.png"), photo("home", "b.png")],
+                [photo("home", "a.png"), photo("home", "b.png")],
+            ),
+        ).toEqual({});
+    });
+
+    it("matches kept photos by slug as well as file name", () => {
+        expect(
+            photosToDelete(
+                [photo("old-slug", "a.png")],
+                [photo("new-slug", "a.png")],
+            ),
+        ).toEqual({ "old-slug": ["a.png"] });
+    });
+
+    it("lists each photo once", () => {
+        expect(
+            photosToDelete(
+                [photo("home", "a.png"), photo("home", "a.png")],
+                [],
+            ),
+        ).toEqual({ home: ["a.png"] });
+    });
+
+    it("returns nothing without candidates", () => {
+        expect(photosToDelete([], [photo("home", "a.png")])).toEqual({});
+    });
+});
+
+describe("isDeletablePhotoFileName", () => {
+    it.each([
+        "0123456789abcdef.jpg",
+        "0123456789abcdef.png",
+        "0123456789abcdef.webp",
+        "0123456789abcdef.gif",
+    ])("accepts %j", (fileName) => {
+        expect(isDeletablePhotoFileName(fileName)).toBe(true);
+    });
+
+    it.each([
+        "photo.png",
+        "0123456789abcdef.svg",
+        "../0123456789abcdef.png",
+        "home/0123456789abcdef.png",
+        "",
+        123,
+        null,
+    ])("rejects %j", (fileName) => {
+        expect(isDeletablePhotoFileName(fileName)).toBe(false);
+    });
+
+    it("leaves upload validation unchanged: GIFs can't be uploaded", () => {
+        expect(isValidPhotoFileName("0123456789abcdef.gif")).toBe(false);
+    });
+});
+
+describe("chunk", () => {
+    it("splits a list into lists of at most the given size", () => {
+        expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+    });
+
+    it("returns no chunks for an empty list", () => {
+        expect(chunk([], 50)).toEqual([]);
+    });
+});
+
+describe("deletePhotosInBatches", () => {
+    const photo = (slug: string, fileName: string) => ({ slug, fileName });
+    const name = (i: number) => `${i.toString(16).padStart(16, "0")}.png`;
+
+    beforeEach(() => {
+        vi.spyOn(console, "log").mockImplementation(() => {});
+    });
+
+    it("deletes the photos that aren't kept and returns what was deleted", async () => {
+        const deleteBatch = vi.fn(async (_: string, fileNames: string[]) => ({
+            deleted: fileNames,
+        }));
+
+        expect(
+            await deletePhotosInBatches(
+                [photo("home", "a.png"), photo("home", "b.png")],
+                [photo("home", "a.png")],
+                deleteBatch,
+            ),
+        ).toEqual([photo("home", "b.png")]);
+        expect(deleteBatch).toHaveBeenCalledExactlyOnceWith("home", ["b.png"]);
+    });
+
+    it("returns only the photos the server reports deleted", async () => {
+        const deleteBatch = vi.fn(async () => ({ deleted: ["a.png"] }));
+
+        expect(
+            await deletePhotosInBatches(
+                [photo("home", "a.png"), photo("home", "b.png")],
+                [],
+                deleteBatch,
+            ),
+        ).toEqual([photo("home", "a.png")]);
+    });
+
+    it(`sends at most ${MAX_PHOTOS_PER_DELETE} names per call`, async () => {
+        const names = Array.from({ length: 120 }, (_, i) => name(i));
+        const deleteBatch = vi.fn(async (_: string, fileNames: string[]) => ({
+            deleted: fileNames,
+        }));
+
+        const deleted = await deletePhotosInBatches(
+            names.map((n) => photo("home", n)),
+            [],
+            deleteBatch,
+        );
+
+        expect(deleteBatch.mock.calls.map(([, n]) => n.length)).toEqual([
+            50, 50, 20,
+        ]);
+        expect(deleted).toHaveLength(120);
+    });
+
+    it("calls once per slug", async () => {
+        const deleteBatch = vi.fn(async (_: string, fileNames: string[]) => ({
+            deleted: fileNames,
+        }));
+
+        await deletePhotosInBatches(
+            [photo("old-slug", "a.png"), photo("new-slug", "b.png")],
+            [],
+            deleteBatch,
+        );
+
+        expect(deleteBatch.mock.calls).toEqual([
+            ["old-slug", ["a.png"]],
+            ["new-slug", ["b.png"]],
+        ]);
+    });
+
+    it("skips failed batches and still runs the others", async () => {
+        const names = Array.from({ length: 60 }, (_, i) => name(i));
+        const deleteBatch = vi
+            .fn()
+            .mockRejectedValueOnce(new Error("network"))
+            .mockResolvedValueOnce({ deleted: names.slice(50) });
+
+        expect(
+            await deletePhotosInBatches(
+                names.map((n) => photo("home", n)),
+                [],
+                deleteBatch,
+            ),
+        ).toEqual(names.slice(50).map((n) => photo("home", n)));
+    });
+
+    it("returns nothing deleted when the server reports an error", async () => {
+        const deleteBatch = vi.fn(async () => ({ error: "Unauthorized" }));
+
+        expect(
+            await deletePhotosInBatches(
+                [photo("home", "a.png")],
+                [],
+                deleteBatch,
+            ),
+        ).toEqual([]);
+    });
+
+    it("doesn't call the server when there's nothing to delete", async () => {
+        const deleteBatch = vi.fn();
+
+        await deletePhotosInBatches(
+            [photo("home", "a.png")],
+            [photo("home", "a.png")],
+            deleteBatch,
+        );
+
+        expect(deleteBatch).not.toHaveBeenCalled();
+    });
+});
+
+describe("findOrphanPhotoBlobs", () => {
+    const USED = "aaaaaaaaaaaaaaaa.png";
+    const UNUSED = "bbbbbbbbbbbbbbbb.jpg";
+    const cutoff = new Date("2026-01-02T00:00:00Z");
+    const old = new Date("2026-01-01T00:00:00Z");
+    const recent = new Date("2026-01-03T00:00:00Z");
+    const facilities = [
+        { slug: "home", photos: [{ fileName: USED }] },
+        { slug: "empty-home", photos: [] },
+    ];
+
+    it("finds old photos no facility lists", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [
+                    { pathname: `home/${USED}`, uploadedAt: old },
+                    { pathname: `home/${UNUSED}`, uploadedAt: old },
+                    { pathname: `empty-home/${UNUSED}`, uploadedAt: old },
+                    {
+                        pathname: "no-facility/cccccccccccccccc.gif",
+                        uploadedAt: old,
+                    },
+                ],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([
+            `home/${UNUSED}`,
+            `empty-home/${UNUSED}`,
+            "no-facility/cccccccccccccccc.gif",
+        ]);
+    });
+
+    it("only counts a file as used under its own facility's slug", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname: `empty-home/${USED}`, uploadedAt: old }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([`empty-home/${USED}`]);
+    });
+
+    it("leaves recent uploads alone, as they may not be saved yet", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname: `home/${UNUSED}`, uploadedAt: recent }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([]);
+    });
+
+    it.each([
+        "root-file.png",
+        `${UNUSED}`,
+        `home/nested/${UNUSED}`,
+        `Not A Slug/${UNUSED}`,
+        "home/",
+        "home/logo.png",
+        "home/bbbbbbbbbbbbbbbb.pdf",
+    ])("ignores %j, which isn't a facility photo", (pathname) => {
+        expect(isPhotoBlobPath(pathname)).toBe(false);
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname, uploadedAt: old }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([]);
+    });
+});
+
+describe("orphanCleanupRefusal", () => {
+    it("allows a cleanup of a small share of the photos", () => {
+        expect(orphanCleanupRefusal(370, 1000, 200)).toBeNull();
+        expect(orphanCleanupRefusal(370, 1000, 0)).toBeNull();
+    });
+
+    it("refuses when the database has no facilities", () => {
+        expect(orphanCleanupRefusal(0, 1000, 0)).toBe(
+            "The database has no facilities",
+        );
+    });
+
+    it(`refuses when more than ${MAX_ORPHAN_SHARE * 100}% of the photos look unused`, () => {
+        expect(orphanCleanupRefusal(370, 1000, 201)).toBe(
+            "201 of 1000 photos look unused, more than 20%",
+        );
+    });
+
+    it("refuses when every photo looks unused", () => {
+        expect(orphanCleanupRefusal(5, 10, 10)).not.toBeNull();
     });
 });
