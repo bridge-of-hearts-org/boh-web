@@ -145,9 +145,8 @@ describe("fetchAllFacilities", () => {
         });
     });
 
-    // Known bug #60: province uses `contains`, so "Western" also matches "North Western".
-    // Change `it.fails` to `it` when fixing #60.
-    it.fails("filters province with an exact match", async () => {
+    // Regression test for #60: "Western" must not also match "North Western".
+    it("filters province with an exact match", async () => {
         await fetchAllFacilities(
             { ...emptyFilter, province: "Western" },
             "name",
