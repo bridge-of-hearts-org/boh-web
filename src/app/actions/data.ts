@@ -10,6 +10,7 @@ import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { del } from "@vercel/blob";
+import { parseItemsPerPage, parsePage } from "@/utils/pagination";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
@@ -139,14 +140,18 @@ export async function fetchAllFacilities(
         }
     };
 
+    /* Server actions are public endpoints, so don't trust the paging arguments */
+    const safePage = parsePage(page);
+    const safeItemsPerPage = parseItemsPerPage(itemsPerPage);
+
     try {
         const [facilities, totalCount] = await prisma.$transaction([
             prisma.childCareFacility.findMany({
                 where: {
                     AND: buildFilter(filterValues),
                 },
-                take: itemsPerPage,
-                skip: (page - 1) * itemsPerPage,
+                take: safeItemsPerPage,
+                skip: (safePage - 1) * safeItemsPerPage,
                 orderBy: getOrderBy(),
             }),
             prisma.childCareFacility.count({
