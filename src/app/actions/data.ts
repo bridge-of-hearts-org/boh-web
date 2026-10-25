@@ -24,7 +24,9 @@ import {
     contentTypeForFileName,
     isValidPhotoFileName,
     isValidSlug,
+    isDeletablePhotoFileName,
     MAX_PHOTO_SIZE_BYTES,
+    MAX_PHOTOS_PER_DELETE,
     photosToDelete,
 } from "@/utils/photos";
 
@@ -33,9 +35,6 @@ import {
 const UNAUTHORIZED = "Unauthorized: admin login required";
 const INVALID_SLUG =
     "The slug may only contain lowercase letters, numbers and hyphens";
-
-/* More than a facility form ever deletes at once */
-const MAX_PHOTOS_PER_DELETE = 50;
 
 /* The sync script calls the Blob read-write token VERCEL_TOKEN */
 const getBlobToken = (): string | undefined =>
@@ -402,14 +401,17 @@ export async function deleteUnusedPhotos(
         return { error: INVALID_SLUG };
     }
 
-    if (
-        !Array.isArray(fileNames) ||
-        fileNames.length > MAX_PHOTOS_PER_DELETE ||
-        !fileNames.every(
-            (f) => typeof f === "string" && isValidPhotoFileName(f),
-        )
-    ) {
+    if (!Array.isArray(fileNames) || fileNames.length > MAX_PHOTOS_PER_DELETE) {
         return { error: "Invalid photo file names" };
+    }
+
+    /* Skip names that can't be a stored photo rather than refuse the rest */
+    const validNames = fileNames.filter(isDeletablePhotoFileName);
+    if (validNames.length < fileNames.length) {
+        console.log(
+            "Skipped invalid photo file names",
+            fileNames.filter((f) => !isDeletablePhotoFileName(f)),
+        );
     }
 
     const blobToken = getBlobToken();
@@ -431,7 +433,7 @@ export async function deleteUnusedPhotos(
 
     const toDelete =
         photosToDelete(
-            fileNames.map((fileName) => ({ slug, fileName })),
+            validNames.map((fileName) => ({ slug, fileName })),
             inUse.map((fileName) => ({ slug, fileName })),
         )[slug] ?? [];
 

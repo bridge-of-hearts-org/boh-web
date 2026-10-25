@@ -697,11 +697,47 @@ describe("deleteUnusedPhotos", () => {
         },
     );
 
+    it("deletes GIFs, which the sheet sync can store", async () => {
+        loginAsAdmin();
+        const gif = "cccccccccccccccc.gif";
+
+        expect(await deleteUnusedPhotos("home", [gif])).toEqual({
+            deleted: [gif],
+        });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${gif}`],
+            expect.anything(),
+        );
+    });
+
+    it("skips invalid names and deletes the rest", async () => {
+        loginAsAdmin();
+
+        expect(
+            await deleteUnusedPhotos("home", [
+                "../bbbbbbbbbbbbbbbb.png",
+                "photo.png",
+                123 as unknown as string,
+                UNUSED,
+            ]),
+        ).toEqual({ deleted: [UNUSED] });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/home/${UNUSED}`],
+            expect.anything(),
+        );
+    });
+
+    it("deletes nothing when every name is invalid", async () => {
+        loginAsAdmin();
+
+        expect(await deleteUnusedPhotos("home", ["photo.png"])).toEqual({
+            deleted: [],
+        });
+        expect(deleteBlobs).not.toHaveBeenCalled();
+    });
+
     it.each([
         ["a non-array", "bbbbbbbbbbbbbbbb.png"],
-        ["a path", ["../bbbbbbbbbbbbbbbb.png"]],
-        ["a name the form never creates", ["photo.png"]],
-        ["a non-string", [123]],
         ["too many names", Array(51).fill(UNUSED)],
     ])("rejects %s", async (_, fileNames) => {
         loginAsAdmin();

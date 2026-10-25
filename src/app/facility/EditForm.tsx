@@ -45,7 +45,7 @@ import {
     isValidSlug,
     PhotoContentTypes,
     photoFileName,
-    photosToDelete,
+    deletePhotosInBatches,
     StoredPhoto,
     validatePhotoFile,
 } from "@/utils/photos";
@@ -80,6 +80,9 @@ export default function EditForm(props: EditFormProps) {
     const [resolveError, setResolveError] = useState("");
     const [resolveNote, setResolveNote] = useState("");
     const [uploadingPhotos, setUploadingPhotos] = useState(false);
+    /* Set for the whole submit, including deleting photos the save no longer
+        needs, so nothing can change the photos while that runs */
+    const [saving, setSaving] = useState(false);
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,25 +124,17 @@ export default function EditForm(props: EditFormProps) {
             fileName: p.fileName,
         }));
 
-    /* Delete the candidates that aren't in `keep` from storage. The server
-        also refuses to delete any photo the saved record still lists. */
+    /* Delete the candidates that aren't in `keep` from storage and return
+        the photos actually deleted. The server also refuses to delete any
+        photo the saved record still lists. That check uses the record as
+        saved, so with the same facility open in two tabs, one can delete a
+        photo the other has uploaded or restored but not saved yet. With a
+        single admin, that's accepted. */
     const deleteStoredPhotos = async (
         candidates: StoredPhoto[],
         keep: StoredPhoto[],
-    ) => {
-        const bySlug = photosToDelete(candidates, keep);
-
-        for (const [slug, fileNames] of Object.entries(bySlug)) {
-            try {
-                const result = await deleteUnusedPhotos(slug, fileNames);
-                if ("error" in result) {
-                    console.log("Couldn't delete unused photos", result.error);
-                }
-            } catch (error) {
-                console.log("Couldn't delete unused photos", error);
-            }
-        }
-    };
+    ): Promise<StoredPhoto[]> =>
+        deletePhotosInBatches(candidates, keep, deleteUnusedPhotos);
 
     /* After a save: delete the photos the record had before, or that were
         uploaded since, and that the saved facility no longer lists */
@@ -156,14 +151,26 @@ export default function EditForm(props: EditFormProps) {
     };
 
     /* Delete the photos uploaded since the last save, unless the saved
-        record has them. Returns the discarded file names. */
-    const discardUnsavedUploads = async (): Promise<Set<string>> => {
+        record has them, and return the ones deleted. Any that couldn't be
+        deleted stay tracked, so a later save or reset tries again. */
+    const discardUnsavedUploads = async (): Promise<StoredPhoto[]> => {
         const uploads = unsavedUploadsRef.current;
 
         unsavedUploadsRef.current = [];
-        await deleteStoredPhotos(uploads, savedPhotos());
+        const deleted = await deleteStoredPhotos(uploads, savedPhotos());
+        const deletedPaths = new Set(
+            deleted.map((p) => `${p.slug}/${p.fileName}`),
+        );
 
-        return new Set(uploads.map((p) => p.fileName));
+        /* Keep uploads that finished while the delete ran */
+        unsavedUploadsRef.current = [
+            ...uploads.filter(
+                (p) => !deletedPaths.has(`${p.slug}/${p.fileName}`),
+            ),
+            ...unsavedUploadsRef.current,
+        ];
+
+        return deleted;
     };
 
     const handleReset = async () => {
@@ -177,9 +184,15 @@ export default function EditForm(props: EditFormProps) {
     };
 
     /* Adding failed, so no facility uses the uploaded photos: delete them
-        and take them off the form */
+        and take the deleted ones off the form, so a retry can't save
+        references to deleted files */
     const discardUploadsAfterFailedAdd = async () => {
-        const discarded = await discardUnsavedUploads();
+        const slug = formData.slug;
+        const discarded = new Set(
+            (await discardUnsavedUploads())
+                .filter((p) => p.slug === slug)
+                .map((p) => p.fileName),
+        );
         if (discarded.size === 0) {
             return;
         }
@@ -189,7 +202,7 @@ export default function EditForm(props: EditFormProps) {
             photos: prev.photos.filter((p) => !discarded.has(p.fileName)),
         }));
         setPhotoErrors([
-            "The facility wasn't saved, so its uploaded photos were removed. Upload them again before submitting.",
+            `The facility wasn't saved, so ${discarded.size} uploaded photo${discarded.size === 1 ? " was" : "s were"} removed. Upload them again before submitting.`,
         ]);
     };
 
@@ -249,7 +262,7 @@ export default function EditForm(props: EditFormProps) {
     };
 
     const handlePhotoUpload = async (files: File[]) => {
-        if (uploadingPhotos) {
+        if (uploadingPhotos || saving) {
             return;
         }
 
@@ -316,6 +329,19 @@ export default function EditForm(props: EditFormProps) {
     };
 
     const handleSubmit = async () => {
+        if (saving) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await submitForm();
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const submitForm = async () => {
         const status = validateFacility(formData);
 
         if (status !== "success") {
@@ -1047,7 +1073,8 @@ export default function EditForm(props: EditFormProps) {
                                 type="file"
                                 disabled={
                                     !isValidSlug(formData.slug) ||
-                                    uploadingPhotos
+                                    uploadingPhotos ||
+                                    saving
                                 }
                                 accept={Object.keys(PhotoContentTypes).join(
                                     ",",
@@ -1069,7 +1096,7 @@ export default function EditForm(props: EditFormProps) {
                                 name="Upload Photos"
                                 variant="secondary"
                                 color="black"
-                                disabled={!isValidSlug(formData.slug)}
+                                disabled={!isValidSlug(formData.slug) || saving}
                                 loading={uploadingPhotos}
                                 loadingText="Uploading"
                                 onClick={(e) => {
@@ -1119,7 +1146,7 @@ export default function EditForm(props: EditFormProps) {
                                     <div className="flex items-center gap-3">
                                         <button
                                             aria-label={`Move photo ${index + 1} earlier`}
-                                            disabled={index === 0}
+                                            disabled={index === 0 || saving}
                                             className="disabled:opacity-30"
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -1130,6 +1157,8 @@ export default function EditForm(props: EditFormProps) {
                                         </button>
                                         <button
                                             aria-label={`Remove photo ${index + 1}`}
+                                            disabled={saving}
+                                            className="disabled:opacity-30"
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 setFormData({
@@ -1148,7 +1177,8 @@ export default function EditForm(props: EditFormProps) {
                                             aria-label={`Move photo ${index + 1} later`}
                                             disabled={
                                                 index ===
-                                                formData.photos.length - 1
+                                                    formData.photos.length -
+                                                        1 || saving
                                             }
                                             className="disabled:opacity-30"
                                             onClick={(e) => {
@@ -1268,7 +1298,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="black"
-                        disabled={uploadingPhotos}
+                        disabled={uploadingPhotos || saving}
                         onClick={handleReset}
                     >
                         Reset
@@ -1277,7 +1307,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="red"
-                        disabled={uploadingPhotos}
+                        disabled={uploadingPhotos || saving}
                         onClick={handleClear}
                     >
                         Clear
@@ -1287,7 +1317,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
-                        disabled={resolvingCoords || uploadingPhotos}
+                        disabled={resolvingCoords || uploadingPhotos || saving}
                         onClick={handleSubmit}
                     >
                         Submit

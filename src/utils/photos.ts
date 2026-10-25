@@ -18,6 +18,27 @@ export const isValidSlug = (slug: string): boolean => SLUG_PATTERN.test(slug);
 export const isValidPhotoFileName = (fileName: string): boolean =>
     PHOTO_FILE_NAME_PATTERN.test(fileName);
 
+/* Names of stored photos that may be deleted: the form's uploads and the
+   sync script's photos, which can also be GIFs */
+const DELETABLE_PHOTO_FILE_NAME_PATTERN = /^[a-f0-9]{16}\.(jpg|png|webp|gif)$/;
+
+export const isDeletablePhotoFileName = (fileName: unknown): boolean =>
+    typeof fileName === "string" &&
+    DELETABLE_PHOTO_FILE_NAME_PATTERN.test(fileName);
+
+/* The most photo names one deleteUnusedPhotos call accepts */
+export const MAX_PHOTOS_PER_DELETE = 50;
+
+/* Splits a list into lists of at most `size` items */
+export const chunk = <T>(items: T[], size: number): T[][] => {
+    const chunks: T[][] = [];
+    for (let i = 0; i < items.length; i += size) {
+        chunks.push(items.slice(i, i + size));
+    }
+
+    return chunks;
+};
+
 /* The content type a photo file name was created for, or null */
 export const contentTypeForFileName = (fileName: string): string | null => {
     const extension = fileName.split(".").pop();
@@ -90,11 +111,59 @@ export const photosToDelete = (
     return result;
 };
 
-/* The pathnames of stored photos no facility uses: blobs under a facility
-   folder (`<slug>/<file>`) whose facility doesn't list the file, or whose
-   slug has no facility. Blobs uploaded after `uploadedBefore` are skipped, so
-   photos an admin has just uploaded but not saved yet are left alone, and so
-   is anything outside a facility folder. */
+/* Deletes the candidates not in `keep` through `deleteBatch` (the
+   deleteUnusedPhotos server action), at most MAX_PHOTOS_PER_DELETE names per
+   call, and returns the photos it reports deleted. Failed calls are logged
+   and skipped, so the other batches still run. */
+export const deletePhotosInBatches = async (
+    candidates: StoredPhoto[],
+    keep: StoredPhoto[],
+    deleteBatch: (
+        slug: string,
+        fileNames: string[],
+    ) => Promise<{ deleted: string[] } | { error: string }>,
+): Promise<StoredPhoto[]> => {
+    const deleted: StoredPhoto[] = [];
+
+    for (const [slug, fileNames] of Object.entries(
+        photosToDelete(candidates, keep),
+    )) {
+        for (const batch of chunk(fileNames, MAX_PHOTOS_PER_DELETE)) {
+            try {
+                const result = await deleteBatch(slug, batch);
+                if ("error" in result) {
+                    console.log("Couldn't delete unused photos", result.error);
+                    continue;
+                }
+
+                for (const fileName of result.deleted) {
+                    deleted.push({ slug, fileName });
+                }
+            } catch (error) {
+                console.log("Couldn't delete unused photos", error);
+            }
+        }
+    }
+
+    return deleted;
+};
+
+/* Whether a blob is a facility photo: `<slug>/<hashed photo name>`. Anything
+   else in the store is never treated as a photo. */
+export const isPhotoBlobPath = (pathname: string): boolean => {
+    const parts = pathname.split("/");
+
+    return (
+        parts.length === 2 &&
+        isValidSlug(parts[0]) &&
+        isDeletablePhotoFileName(parts[1])
+    );
+};
+
+/* The pathnames of stored photos no facility uses: photo blobs whose
+   facility doesn't list them, or whose slug has no facility. Blobs uploaded
+   after `uploadedBefore` are skipped, so photos an admin has just uploaded
+   but not saved yet are left alone. */
 export const findOrphanPhotoBlobs = (
     blobs: { pathname: string; uploadedAt: Date }[],
     facilities: { slug: string; photos: { fileName: string }[] }[],
@@ -107,16 +176,34 @@ export const findOrphanPhotoBlobs = (
     );
 
     return blobs
-        .filter((blob) => {
-            const parts = blob.pathname.split("/");
-
-            return (
-                parts.length === 2 &&
-                isValidSlug(parts[0]) &&
-                parts[1] !== "" &&
+        .filter(
+            (blob) =>
+                isPhotoBlobPath(blob.pathname) &&
                 blob.uploadedAt < uploadedBefore &&
-                !inUse.has(blob.pathname)
-            );
-        })
+                !inUse.has(blob.pathname),
+        )
         .map((blob) => blob.pathname);
+};
+
+/* The share of photo blobs above which the cleanup script stops unless
+   forced: that many unused photos more likely means the wrong database */
+export const MAX_ORPHAN_SHARE = 0.2;
+
+/* Why the cleanup script shouldn't delete the orphans it found, or null. It
+   guards against running with an empty or different database than the one
+   the Blob store belongs to, which would make every photo look unused. */
+export const orphanCleanupRefusal = (
+    facilityCount: number,
+    photoBlobCount: number,
+    orphanCount: number,
+): string | null => {
+    if (facilityCount === 0) {
+        return "The database has no facilities";
+    }
+
+    if (orphanCount > photoBlobCount * MAX_ORPHAN_SHARE) {
+        return `${orphanCount} of ${photoBlobCount} photos look unused, more than ${MAX_ORPHAN_SHARE * 100}%`;
+    }
+
+    return null;
 };
