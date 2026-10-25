@@ -7,6 +7,7 @@ import {
     ChevronLeft,
     ChevronRight,
     CircleX,
+    ExternalLink,
     Images,
     Link2,
     MapPin,
@@ -1208,6 +1209,26 @@ export default function EditForm(props: EditFormProps) {
                             Back to Table
                         </Button>
                     </Link>
+                    {/* Only saved facilities have a public page. Use the saved
+                        slug, and open a new tab so unsaved edits aren't lost */}
+                    {!props.newFacility && (
+                        <Link
+                            href={`/facility/${data.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <Button
+                                name="View Public Page"
+                                type="button"
+                                variant="secondary"
+                                color="black"
+                                className="flex items-center gap-2"
+                            >
+                                View Public Page
+                                <ExternalLink className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    )}
                     <Button
                         name="Reset"
                         variant="secondary"
