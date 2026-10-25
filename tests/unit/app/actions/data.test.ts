@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
+import { Prisma } from "@prisma/client";
 
 import {
     addFacility,
@@ -440,6 +441,24 @@ describe.each([
         );
 
         expect(await action(input)).toBe("Unique constraint failed");
+    });
+
+    it("explains a duplicate slug instead of returning the raw Prisma error", async () => {
+        loginAsAdmin();
+        facilityDb[query].mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError(
+                "Unique constraint failed on the constraint: `ChildCareFacility_slug_key`",
+                {
+                    code: "P2002",
+                    clientVersion: "test",
+                    meta: { target: "ChildCareFacility_slug_key" },
+                },
+            ),
+        );
+
+        expect(await action(input)).toBe(
+            "A facility with this slug already exists",
+        );
     });
 
     it("describes errors that aren't Error objects", async () => {
