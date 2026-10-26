@@ -3,16 +3,15 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PhotoEntry } from "@prisma/client";
 
 import ImageComponent from "@/components/ImageComponent";
-import { stepIndex, swipeStep } from "@/utils/carousel";
+import { showsPhotoDots, stepIndex, swipeStep } from "@/utils/carousel";
 import { photoUrl } from "@/utils/photos";
 
 type ListingPhotoCarouselProps = {
     slug: string;
     name: string;
-    photos: PhotoEntry[];
+    photoFileNames: string[];
 };
 
 /* A facility's photos on its Directory listing, one at a time. The photo links
@@ -20,18 +19,18 @@ type ListingPhotoCarouselProps = {
 export default function ListingPhotoCarousel({
     slug,
     name,
-    photos,
+    photoFileNames,
 }: ListingPhotoCarouselProps) {
     const [index, setIndex] = useState(0);
-    const touchStartX = useRef<number | null>(null);
-    const count = photos.length;
-    const photo = photos[index];
+    const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const count = photoFileNames.length;
+    const fileName = photoFileNames[index];
 
     const step = (by: number) => {
         setIndex((current) => stepIndex(current, by, count));
     };
 
-    const buttonClassName =
+    const arrowClassName =
         "absolute top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white";
 
     return (
@@ -39,18 +38,20 @@ export default function ListingPhotoCarousel({
             className="relative h-[180px] w-[180px] self-center"
             data-testid="listing-photo-carousel"
             onTouchStart={(e) => {
-                touchStartX.current = e.touches[0].clientX;
+                const touch = e.touches[0];
+                touchStart.current = { x: touch.clientX, y: touch.clientY };
             }}
             onTouchEnd={(e) => {
-                if (touchStartX.current === null) {
+                if (touchStart.current === null) {
                     return;
                 }
 
-                const by = swipeStep(
-                    touchStartX.current,
-                    e.changedTouches[0].clientX,
-                );
-                touchStartX.current = null;
+                const touch = e.changedTouches[0];
+                const by = swipeStep(touchStart.current, {
+                    x: touch.clientX,
+                    y: touch.clientY,
+                });
+                touchStart.current = null;
                 if (by !== 0) {
                     step(by);
                 }
@@ -59,8 +60,8 @@ export default function ListingPhotoCarousel({
             <Link href={`/facility/${slug}`}>
                 <ImageComponent
                     /* A new key per photo restarts the blur-in while it loads */
-                    key={photo.fileName}
-                    src={photoUrl(slug, photo.fileName)}
+                    key={fileName}
+                    src={photoUrl(slug, fileName)}
                     sizes="180px"
                     width={180}
                     height={180}
@@ -76,7 +77,7 @@ export default function ListingPhotoCarousel({
                 <>
                     <button
                         type="button"
-                        className={`${buttonClassName} left-2`}
+                        className={`${arrowClassName} left-2`}
                         aria-label="Previous photo"
                         onClick={() => {
                             step(-1);
@@ -86,7 +87,7 @@ export default function ListingPhotoCarousel({
                     </button>
                     <button
                         type="button"
-                        className={`${buttonClassName} right-2`}
+                        className={`${arrowClassName} right-2`}
                         aria-label="Next photo"
                         onClick={() => {
                             step(1);
@@ -94,20 +95,36 @@ export default function ListingPhotoCarousel({
                     >
                         <ChevronRight size={20} />
                     </button>
-                    <div className="absolute bottom-2 left-1/2 flex max-w-[160px] -translate-x-1/2 flex-wrap justify-center gap-1.5 rounded-full bg-black/40 px-2 py-1">
-                        {photos.map((p, i) => (
-                            <button
-                                key={p.fileName}
-                                type="button"
-                                aria-label={`Show photo ${i + 1} of ${count}`}
-                                aria-current={i === index}
-                                className={`h-2 w-2 rounded-full ${i === index ? "bg-white" : "bg-white/50 hover:bg-white/80"}`}
-                                onClick={() => {
-                                    setIndex(i);
-                                }}
-                            />
-                        ))}
-                    </div>
+                    {showsPhotoDots(count) && (
+                        <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2">
+                            {photoFileNames.map((f, i) => (
+                                /* A 24px button around each 8px dot, so it is easy to tap */
+                                <button
+                                    key={f}
+                                    type="button"
+                                    aria-label={`Show photo ${i + 1} of ${count}`}
+                                    aria-current={i === index}
+                                    className="group flex h-6 w-6 items-center justify-center"
+                                    onClick={() => {
+                                        setIndex(i);
+                                    }}
+                                >
+                                    <span
+                                        className={`h-2 w-2 rounded-full shadow shadow-black/50 ${i === index ? "bg-white" : "bg-white/60 group-hover:bg-white/90"}`}
+                                    />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    {!showsPhotoDots(count) && (
+                        /* The photo's alt text already gives its position */
+                        <div
+                            aria-hidden="true"
+                            className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/40 px-2 py-0.5 text-xs text-white"
+                        >
+                            {index + 1} / {count}
+                        </div>
+                    )}
                 </>
             )}
         </div>

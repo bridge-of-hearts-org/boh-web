@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { MIN_SWIPE_DISTANCE, stepIndex, swipeStep } from "@/utils/carousel";
+import {
+    MAX_PHOTO_DOTS,
+    MIN_SWIPE_DISTANCE,
+    showsPhotoDots,
+    stepIndex,
+    swipeStep,
+} from "@/utils/carousel";
 
 describe("stepIndex", () => {
     it.each([
@@ -34,17 +40,47 @@ describe("stepIndex", () => {
 });
 
 describe("swipeStep", () => {
+    const start = { x: 100, y: 100 };
+
     it("goes to the next photo on a swipe to the left", () => {
-        expect(swipeStep(200, 200 - MIN_SWIPE_DISTANCE)).toBe(1);
+        expect(swipeStep(start, { x: 100 - MIN_SWIPE_DISTANCE, y: 100 })).toBe(
+            1,
+        );
     });
 
     it("goes to the previous photo on a swipe to the right", () => {
-        expect(swipeStep(100, 100 + MIN_SWIPE_DISTANCE)).toBe(-1);
+        expect(swipeStep(start, { x: 100 + MIN_SWIPE_DISTANCE, y: 100 })).toBe(
+            -1,
+        );
+    });
+
+    it("counts a slightly diagonal swipe", () => {
+        expect(swipeStep(start, { x: 30, y: 120 })).toBe(1);
     });
 
     it("ignores movements shorter than a swipe", () => {
-        expect(swipeStep(100, 100 + MIN_SWIPE_DISTANCE - 1)).toBe(0);
-        expect(swipeStep(100, 100 - MIN_SWIPE_DISTANCE + 1)).toBe(0);
-        expect(swipeStep(100, 100)).toBe(0);
+        expect(
+            swipeStep(start, { x: 100 + MIN_SWIPE_DISTANCE - 1, y: 100 }),
+        ).toBe(0);
+        expect(
+            swipeStep(start, { x: 100 - MIN_SWIPE_DISTANCE + 1, y: 100 }),
+        ).toBe(0);
+        expect(swipeStep(start, start)).toBe(0);
+    });
+
+    it("ignores a mostly vertical movement, which scrolls the page", () => {
+        expect(swipeStep(start, { x: 50, y: 300 })).toBe(0);
+        expect(swipeStep(start, { x: 150, y: -100 })).toBe(0);
+    });
+});
+
+describe("showsPhotoDots", () => {
+    it("shows dots for up to MAX_PHOTO_DOTS photos", () => {
+        expect(showsPhotoDots(2)).toBe(true);
+        expect(showsPhotoDots(MAX_PHOTO_DOTS)).toBe(true);
+    });
+
+    it("shows a counter for more photos", () => {
+        expect(showsPhotoDots(MAX_PHOTO_DOTS + 1)).toBe(false);
     });
 });

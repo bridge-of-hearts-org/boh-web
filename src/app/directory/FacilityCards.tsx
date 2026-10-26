@@ -79,7 +79,9 @@ export async function FacilityCards(props: FacilityCardProps) {
                                     <ListingPhotoCarousel
                                         slug={facility.slug}
                                         name={facility.name}
-                                        photos={facility.photos}
+                                        photoFileNames={facility.photos.map(
+                                            (photo) => photo.fileName,
+                                        )}
                                     />
                                 )}
                                 {facility.photos.length == 0 && (
