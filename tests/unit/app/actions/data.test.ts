@@ -223,20 +223,15 @@ describe("fetchAllFacilities", () => {
         expect(findManyArgs()).toMatchObject({ take: 25, skip: 50 });
     });
 
-    // Known bug #61: an invalid page gives Prisma a negative or NaN skip, so no results are shown.
-    // Change `it.fails` to `it` when fixing #61.
-    it.fails.each([0, -1, NaN])(
-        "treats page %s as the first page",
-        async (page) => {
-            await fetchAllFacilities(emptyFilter, "name", page, 10);
+    // Regression test for #61: an invalid page used to give Prisma a negative or NaN skip.
+    it.each([0, -1, NaN])("treats page %s as the first page", async (page) => {
+        await fetchAllFacilities(emptyFilter, "name", page, 10);
 
-            expect(findManyArgs().skip).toBe(0);
-        },
-    );
+        expect(findManyArgs().skip).toBe(0);
+    });
 
-    // Known bug #61: an invalid itemsPerPage is passed to Prisma as is.
-    // Change `it.fails` to `it` when fixing #61.
-    it.fails.each([0, -5, NaN])(
+    // Regression test for #61: an invalid itemsPerPage used to be passed to Prisma as is.
+    it.each([0, -5, NaN])(
         "uses the default page size for itemsPerPage %s",
         async (itemsPerPage) => {
             await fetchAllFacilities(emptyFilter, "name", 1, itemsPerPage);
@@ -244,6 +239,18 @@ describe("fetchAllFacilities", () => {
             expect(findManyArgs().take).toBe(10);
         },
     );
+
+    it("caps itemsPerPage at the maximum page size", async () => {
+        await fetchAllFacilities(emptyFilter, "name", 1, 5000);
+
+        expect(findManyArgs().take).toBe(1000);
+    });
+
+    it("rounds a fractional page and itemsPerPage down", async () => {
+        await fetchAllFacilities(emptyFilter, "name", 2.7, 10.5);
+
+        expect(findManyArgs()).toMatchObject({ take: 10, skip: 10 });
+    });
 
     it("returns an empty result when the query fails", async () => {
         facilityDb.findMany.mockRejectedValue(new Error("connection lost"));

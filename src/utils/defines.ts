@@ -134,4 +134,6 @@ export const emptyChildCareFacilityDbObject: ChildCareFacility = {
 
 /* ----------- Default Values ----------- */
 export const defaultItemsPerPage = 10;
+/* Upper bound for a page size; the sitemap fetches every facility in one page */
+export const maxItemsPerPage = 1000;
 export const defaultSortBy = "name";

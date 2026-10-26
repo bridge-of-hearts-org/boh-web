@@ -1,10 +1,6 @@
 import FilterCard from "./FilterCard";
-import {
-    District,
-    Province,
-    defaultSortBy,
-    defaultItemsPerPage,
-} from "@/utils/defines";
+import { District, Province, defaultSortBy } from "@/utils/defines";
+import { parseItemsPerPage, parsePage } from "@/utils/pagination";
 import { Metadata } from "next";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
@@ -29,12 +25,12 @@ export default async function DirectoryPage(props: {
         district?: District | "";
         province?: Province | "";
         sortBy?: string;
-        page: number;
+        page?: string;
         itemsPerPage?: string;
     }>;
 }) {
     const searchParams = await props.searchParams;
-    const currentPage = searchParams.page || 1;
+    const currentPage = parsePage(searchParams.page);
     const [names, cities, managedByOptions] = await Promise.all([
         fetchFacilityNames(),
         fetchDistinctCities(),
@@ -81,10 +77,9 @@ export default async function DirectoryPage(props: {
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
                         sortBy={searchParams.sortBy || defaultSortBy}
-                        itemsPerPage={
-                            Number(searchParams.itemsPerPage) ||
-                            defaultItemsPerPage
-                        }
+                        itemsPerPage={parseItemsPerPage(
+                            searchParams.itemsPerPage,
+                        )}
                     />
                 </Suspense>
             </div>
