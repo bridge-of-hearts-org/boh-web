@@ -7,10 +7,11 @@ import { getExistingSlug, hasCredentials, login } from "./admin-helpers";
 test.use({ trace: "off" });
 
 const mobileViewport = { width: 390, height: 844 };
+const tabletViewport = { width: 768, height: 1024 };
 const laptopViewport = { width: 1366, height: 768 };
 
 const headerAdminLink = (page: Page) =>
-    page.locator("#header").getByRole("link", { name: "Admin Dashboard" });
+    page.locator("#header").getByRole("link", { name: "Admin", exact: true });
 
 const hamburgerButton = (page: Page) =>
     page.locator('#header button[name="Menu"]');
@@ -22,7 +23,7 @@ const editLink = (page: Page) =>
 
 // Public visitors: no credentials needed
 test.describe("Admin-only navigation for public visitors", () => {
-    test("mobile menu has no Admin Dashboard item", async ({ page }) => {
+    test("mobile menu has no Admin item", async ({ page }) => {
         await page.setViewportSize(mobileViewport);
         await page.goto("/");
 
@@ -30,7 +31,7 @@ test.describe("Admin-only navigation for public visitors", () => {
         await expect(hamburgerItems(page)).toBeVisible();
         await expect(hamburgerItems(page).getByText("Directory")).toBeVisible();
         await expect(
-            hamburgerItems(page).getByText("Admin Dashboard"),
+            hamburgerItems(page).getByText("Admin", { exact: true }),
         ).toHaveCount(0);
         await expect(headerAdminLink(page)).toHaveCount(0);
     });
@@ -63,7 +64,7 @@ test.describe("Admin-only navigation for admins", () => {
         ).toBe(true);
     });
 
-    test("on mobile, Admin Dashboard moves from the header into the hamburger menu", async ({
+    test("on mobile, Admin moves from the header into the hamburger menu", async ({
         page,
     }) => {
         await page.setViewportSize(mobileViewport);
@@ -72,18 +73,33 @@ test.describe("Admin-only navigation for admins", () => {
         await expect(headerAdminLink(page)).toBeHidden();
 
         await hamburgerButton(page).click();
-        const adminItem = hamburgerItems(page).getByText("Admin Dashboard");
+        const adminItem = hamburgerItems(page).getByText("Admin", {
+            exact: true,
+        });
         await expect(adminItem).toBeVisible();
         await expect(
             hamburgerItems(page).locator(":scope > div").first(),
-        ).toHaveText("Admin Dashboard");
+        ).toHaveText("Admin");
 
         await adminItem.click();
         await expect(page).toHaveURL((url) => url.pathname === "/admin");
         await expect(hamburgerItems(page)).toHaveCount(0);
     });
 
-    test("on laptop, Admin Dashboard stays in the header", async ({ page }) => {
+    test("on a tablet, the header with the Admin button fits the screen", async ({
+        page,
+    }) => {
+        await page.setViewportSize(tabletViewport);
+        await login(page, "/about");
+
+        await expect(headerAdminLink(page)).toBeVisible();
+        const scrollWidth = await page.evaluate(
+            () => document.documentElement.scrollWidth,
+        );
+        expect(scrollWidth).toBeLessThanOrEqual(tabletViewport.width);
+    });
+
+    test("on laptop, Admin stays in the header", async ({ page }) => {
         await page.setViewportSize(laptopViewport);
         await login(page, "/directory");
 

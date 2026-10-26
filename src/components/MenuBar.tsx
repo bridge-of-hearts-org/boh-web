@@ -35,7 +35,7 @@ export default async function MenuBar() {
             {inAdminSession && (
                 <Link
                     href={adminMenuItem.href}
-                    className="hidden flex-grow justify-end px-10 md:flex"
+                    className="hidden flex-grow justify-end px-2 md:flex lg:px-10"
                 >
                     <Button
                         name={adminMenuItem.label}
