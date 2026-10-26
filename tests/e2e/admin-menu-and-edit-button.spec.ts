@@ -39,7 +39,7 @@ test.describe("Admin-only navigation for public visitors", () => {
         const slug = await getExistingSlug(page);
         await page.goto(`/facility/${slug}`);
 
-        await expect(page.locator("h1")).toBeVisible();
+        await expect(page.locator("h1").first()).toBeVisible();
         await expect(editLink(page)).toHaveCount(0);
         await expect(
             page.locator(`a[href="/facility/edit/${slug}"]`),
