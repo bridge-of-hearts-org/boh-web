@@ -46,6 +46,8 @@ https://docs.google.com/spreadsheets/d/1JQdRIicCh6qPrdpfmJpKRxEiv_-qjTcURbqniMuc
 
 `scripts/syncFacilities.ts` reads a named sheet tab via the Google Sheets API, downloads photos, upserts records into MongoDB via Prisma, and uploads images to Vercel Blob. Run it once per province tab. Credentials are in `scripts/google-api-key.json` (not committed) and the sheet ID is in `scripts/config.json`.
 
+Photos live in Vercel Blob at `<slug>/<fileName>` for production. Every other build (local dev, Vercel previews) uses the `dev/` folder instead (`dev/<slug>/<fileName>`), chosen from `VERCEL_ENV` in `next.config.ts`, so dev uploads never touch production photos. Build photo URLs and paths with `photoUrl` / `photoBlobPath` from `src/utils/photos.ts`, never by hand. The sync and cleanup scripts take `--dev` to work on the dev folder, and `npx tsx scripts/copyPhotosToDev.ts <slug>...` copies a facility's production photos into it, e.g. for the facilities the e2e tests expect to have photos.
+
 All runtime DB reads/writes go through server actions in `src/app/actions/data.ts` (`fetchAllFacilities`, `fetchFacilityBySlug`, `fetchDistinctCities`, `updateFacility`, `addFacility`).
 
 ## Key Files
