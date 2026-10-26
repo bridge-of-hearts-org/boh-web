@@ -1,7 +1,14 @@
 import Link from "next/link";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
-import { ExternalLink, Link2, MapPin, PhoneCall, Users } from "lucide-react";
+import {
+    ExternalLink,
+    Link2,
+    MapPin,
+    Pencil,
+    PhoneCall,
+    Users,
+} from "lucide-react";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
@@ -26,6 +33,8 @@ import {
     buildOpenInMapsUrl,
     hasCoordinates,
 } from "@/utils/maps";
+import { facilityEditPath } from "@/utils/navigation";
+import { getServerAuth } from "@/lib/auth";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -82,6 +91,9 @@ export default async function FacilityProfilePage({
     if (!data) {
         return NotFound();
     }
+
+    const session = await getServerAuth();
+    const inAdminSession = session ? true : false;
 
     const occupancyVerifiedAt = findOccupancyVerifiedDate(
         data.occupancy,
@@ -230,6 +242,22 @@ export default async function FacilityProfilePage({
                                     {data.name}
                                 </h1>
                                 <div className="text-center">{data.type}</div>
+                                {inAdminSession && (
+                                    <Link
+                                        href={facilityEditPath(data.slug)}
+                                        className="mt-4 w-full sm:w-auto"
+                                    >
+                                        <Button
+                                            name="Edit"
+                                            variant="secondary"
+                                            color="black"
+                                            className="flex w-full items-center justify-center gap-2 sm:w-auto"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
 
                             {/* Location */}

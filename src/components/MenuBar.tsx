@@ -5,6 +5,7 @@ import ImageComponent from "./ImageComponent";
 
 import MenuLogo from "../../public/images/logo-dark-middle.png";
 import { getServerAuth } from "@/lib/auth";
+import { adminMenuItem, mainMenuItems } from "@/utils/navigation";
 
 export default async function MenuBar() {
     const session = await getServerAuth();
@@ -30,53 +31,37 @@ export default async function MenuBar() {
                 </Link>
             </div>
 
+            {/* Below md the hamburger menu carries this link instead */}
             {inAdminSession && (
                 <Link
-                    href="/admin"
-                    className="flex flex-grow justify-end px-10"
+                    href={adminMenuItem.href}
+                    className="hidden flex-grow justify-end px-2 md:flex lg:px-10"
                 >
-                    <Button name="Home" variant="secondary" color="red">
-                        Admin Session
+                    <Button
+                        name={adminMenuItem.label}
+                        variant="secondary"
+                        color="red"
+                    >
+                        {adminMenuItem.label}
                     </Button>
                 </Link>
             )}
 
             <nav className="mr-4 hidden gap-3 text-white md:flex">
-                <Link href="/">
-                    <Button name="Home" variant="secondary" color="transparent">
-                        Home
-                    </Button>
-                </Link>
-                <Link href="/directory">
-                    <Button
-                        name="Directory"
-                        variant="secondary"
-                        color="transparent"
-                    >
-                        Directory
-                    </Button>
-                </Link>
-                <Link href="/about">
-                    <Button
-                        name="About"
-                        variant="secondary"
-                        color="transparent"
-                    >
-                        About
-                    </Button>
-                </Link>
-                <Link href="/contact">
-                    <Button
-                        name="Contact"
-                        variant="secondary"
-                        color="transparent"
-                    >
-                        Contact
-                    </Button>
-                </Link>
+                {mainMenuItems.map((item) => (
+                    <Link key={item.href} href={item.href}>
+                        <Button
+                            name={item.label}
+                            variant="secondary"
+                            color="transparent"
+                        >
+                            {item.label}
+                        </Button>
+                    </Link>
+                ))}
             </nav>
             <div className="md:hidden">
-                <HamburgerMenu />
+                <HamburgerMenu inAdminSession={inAdminSession} />
             </div>
         </div>
     );
