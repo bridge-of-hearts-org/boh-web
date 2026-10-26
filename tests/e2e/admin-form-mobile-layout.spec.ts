@@ -105,7 +105,7 @@ test.describe("Admin facility form fits the screen width", () => {
         });
     }
 
-    test("dashboard table fits a phone and hides the Province column", async ({
+    test("dashboard table fits a phone and hides the District column", async ({
         page,
     }) => {
         await page.setViewportSize(phoneViewport);
@@ -114,16 +114,16 @@ test.describe("Admin facility form fits the screen width", () => {
         /* Located directly rather than by role, since role locators skip
            hidden elements and would pass even if the column were missing */
         const table = page.locator("table");
-        const provinceHeading = table.locator("th", { hasText: "Province" });
-        const firstRowProvince = table
-            .locator("tr:has(td)")
-            .first()
-            .locator("td")
-            .last();
-        await expect(table.locator("td").first()).toBeVisible();
-        await expect(provinceHeading).toHaveCount(1);
-        await expect(provinceHeading).toBeHidden();
-        await expect(firstRowProvince).toBeHidden();
+        const districtHeading = table.locator("th", { hasText: "District" });
+        const firstRowCells = table.locator("tr:has(td)").first().locator("td");
+        await expect(firstRowCells.first()).toBeVisible();
+        await expect(districtHeading).toHaveCount(1);
+        await expect(districtHeading).toBeHidden();
+        await expect(firstRowCells.nth(2)).toBeHidden();
+        await expect(
+            table.locator("th", { hasText: "Province" }),
+        ).toBeVisible();
+        await expect(firstRowCells.nth(3)).toBeVisible();
 
         const sizes = await page.evaluate(() => ({
             pageScrollWidth: document.documentElement.scrollWidth,
@@ -134,7 +134,7 @@ test.describe("Admin facility form fits the screen width", () => {
         expect(sizes.tableRight).toBeLessThanOrEqual(phoneViewport.width);
     });
 
-    test("dashboard table shows the Province column on a laptop", async ({
+    test("dashboard table shows the District column on a laptop", async ({
         page,
     }) => {
         await page.setViewportSize(laptopViewport);
@@ -143,7 +143,7 @@ test.describe("Admin facility form fits the screen width", () => {
         await expect(
             page
                 .locator("table")
-                .getByRole("columnheader", { name: "Province" }),
+                .getByRole("columnheader", { name: "District" }),
         ).toBeVisible();
     });
 });

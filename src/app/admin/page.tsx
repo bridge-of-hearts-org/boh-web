@@ -22,11 +22,11 @@ export default async function AdminDashboard() {
         400,
     );
 
-    /* Smaller text and padding on phones. Province is hidden there, since the
-       district already implies it. */
+    /* Smaller text and padding on phones, where the District column is
+       hidden to make room */
     const tableHeadingStyle = "px-2 py-2 text-left md:px-4 md:py-3";
     const tableCellStyle = "px-2 py-1";
-    const provinceColumnStyle = "hidden md:table-cell";
+    const districtColumnStyle = "hidden md:table-cell";
 
     return (
         <div className="flex flex-col items-center gap-5">
@@ -40,12 +40,12 @@ export default async function AdminDashboard() {
                     <tr className="bg-orange-100">
                         <th className={tableHeadingStyle}>Name</th>
                         <th className={tableHeadingStyle}>City</th>
-                        <th className={tableHeadingStyle}>District</th>
                         <th
-                            className={`${tableHeadingStyle} ${provinceColumnStyle}`}
+                            className={`${tableHeadingStyle} ${districtColumnStyle}`}
                         >
-                            Province
+                            District
                         </th>
+                        <th className={tableHeadingStyle}>Province</th>
                     </tr>
                     {facilities.map((facility, idx) => {
                         return (
@@ -63,12 +63,12 @@ export default async function AdminDashboard() {
                                 <td className={tableCellStyle}>
                                     {facility.location.city}
                                 </td>
-                                <td className={tableCellStyle}>
+                                <td
+                                    className={`${tableCellStyle} ${districtColumnStyle}`}
+                                >
                                     {facility.location.district}
                                 </td>
-                                <td
-                                    className={`${tableCellStyle} ${provinceColumnStyle}`}
-                                >
+                                <td className={tableCellStyle}>
                                     {facility.location.province}
                                 </td>
                             </tr>
