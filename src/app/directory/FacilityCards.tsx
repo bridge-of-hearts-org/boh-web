@@ -173,6 +173,7 @@ export async function FacilityCards(props: FacilityCardProps) {
 
                 <div className="mt-10 flex justify-center">
                     <NavigationBar
+                        currentPage={props.page}
                         totalPages={Math.ceil(totalCount / props.itemsPerPage)}
                     />
                 </div>

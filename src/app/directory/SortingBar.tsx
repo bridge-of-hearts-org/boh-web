@@ -5,8 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader } from "lucide-react";
 
 import Card from "@/components/Card";
-import { defaultSortBy, defaultItemsPerPage } from "@/utils/defines";
-import { parseItemsPerPage, parsePage } from "@/utils/pagination";
+import { defaultSortBy } from "@/utils/defines";
+import { parsePage } from "@/utils/pagination";
 
 type SortingBarProps = {
     page: number;
@@ -20,9 +20,7 @@ export default function SortingBar(props: SortingBarProps) {
     const [isPending, startTransition] = useTransition();
 
     const sortBy = searchParams.get("sortBy") || defaultSortBy;
-    const itemsPerPage = parseItemsPerPage(
-        searchParams.get("itemsPerPage") ?? props.itemsPerPage,
-    );
+    const itemsPerPage = props.itemsPerPage;
 
     /* Calculate start and end item indices in the page */
     const displayStart = (props.page - 1) * props.itemsPerPage + 1;

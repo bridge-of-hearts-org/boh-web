@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Form from "next/form";
 
 type NavigationProps = {
+    currentPage: number;
     totalPages: number;
 };
 
@@ -14,7 +15,8 @@ export default function NavigationBar(props: NavigationProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const currentPage: number = Number(searchParams.get("page")) || 1;
+    /* Parsed once from the URL by the directory page, so an invalid page counts as page 1 */
+    const currentPage = props.currentPage;
 
     const handleClick = (pageNumber: number) => {
         const params = new URLSearchParams(searchParams);
