@@ -1,6 +1,13 @@
+import { VerifiedValue } from "@prisma/client";
+
+import VerifiedBadge from "@/components/VerifiedBadge";
+import { findVerifiedDate } from "@/utils/verification";
+
 type PropsType = {
     numbers: string[];
     orientation: "row" | "column";
+    /* Shows a checkmark next to each verified number */
+    verified?: VerifiedValue[];
 };
 
 export default function PhoneNumberList(props: PropsType) {
@@ -12,6 +19,11 @@ export default function PhoneNumberList(props: PropsType) {
                     className={`flex gap-1 ${props.orientation == "column" ? "flex-col" : "flex-wrap"}`}
                 >
                     {props.numbers.map((number, idx) => {
+                        const verifiedAt = findVerifiedDate(
+                            props.verified,
+                            number,
+                        );
+
                         return (
                             <span key={number}>
                                 <a
@@ -22,6 +34,12 @@ export default function PhoneNumberList(props: PropsType) {
                                         "-" +
                                         number.substring(3)}
                                 </a>
+                                {verifiedAt && (
+                                    <VerifiedBadge
+                                        label={`Phone number ${number}`}
+                                        verifiedAt={verifiedAt}
+                                    />
+                                )}
                                 {props.orientation == "row" &&
                                     idx < props.numbers.length - 1 &&
                                     " / "}

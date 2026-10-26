@@ -51,27 +51,62 @@ type AgeRanges {
     female String?
 }
 
+// A phone number or email address confirmed by contacting the facility
+type VerifiedValue {
+    value      String
+    verifiedAt DateTime
+}
+
+// The occupancy counts that were confirmed, so later changes to the counts
+// aren't shown as verified
+type VerifiedOccupancy {
+    total      Int?
+    male       Int?
+    female     Int?
+    verifiedAt DateTime
+}
+
+// The age ranges that were confirmed, so later changes to them aren't shown
+// as verified
+type VerifiedAgeRanges {
+    all        String?
+    male       String?
+    female     String?
+    verifiedAt DateTime
+}
+
+// Fields confirmed by contacting the facility directly. Each verification is
+// tied to the value that was confirmed, so a changed value loses its verification.
+type Verification {
+    phones    VerifiedValue[]
+    emails    VerifiedValue[]
+    occupancy VerifiedOccupancy?
+    ageRanges VerifiedAgeRanges?
+}
+
 type PhotoEntry {
     fileName String
     source   String
 }
 
 model ChildCareFacility {
-    id          String       @id @default(auto()) @map("_id") @db.ObjectId
-    name        String       @unique
-    slug        String       @unique
-    type        String
-    managedBy   String
-    description String
-    location    Location
-    contact     Contact
-    occupancy   Occupancy
-    ageRanges   AgeRanges
-    genders     Gender
-    createdAt   DateTime     @default(now())
-    updatedAt   DateTime     @updatedAt
-    photos      PhotoEntry[]
-    sources     String[]
+    id           String        @id @default(auto()) @map("_id") @db.ObjectId
+    name         String        @unique
+    slug         String        @unique
+    type         String
+    managedBy    String
+    description  String
+    location     Location
+    contact      Contact
+    occupancy    Occupancy
+    ageRanges    AgeRanges
+    genders      Gender
+    createdAt    DateTime      @default(now())
+    updatedAt    DateTime      @updatedAt
+    photos       PhotoEntry[]
+    sources      String[]
+    // Optional so existing documents without it need no migration
+    verification Verification?
 
     @@map("facilities")
 }

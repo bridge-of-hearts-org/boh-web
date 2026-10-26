@@ -16,7 +16,12 @@ import { put, list } from "@vercel/blob";
 import { config } from "dotenv";
 import { PrismaClient } from "@prisma/client";
 
-import { detectImageType, fileTypeFromUrl, parseRow } from "./syncHelpers";
+import {
+    detectImageType,
+    fileTypeFromUrl,
+    mergeSheetVerification,
+    parseRow,
+} from "./syncHelpers";
 
 const SCRIPTS_DIR = __dirname;
 const PHOTOS_DIR = path.join(SCRIPTS_DIR, "data", "photos");
@@ -130,7 +135,12 @@ async function syncSheet(sheetName: string) {
     let upsertedCount = 0;
 
     for (const facility of facilities) {
-        const { photoUrls, ...facilityData } = facility;
+        const { photoUrls, sheetVerification, warnings, ...facilityData } =
+            facility;
+
+        for (const warning of warnings) {
+            console.warn(`  Warning: ${warning}`);
+        }
 
         // Download photos
         const photos: { fileName: string; source: string }[] = [];
@@ -148,7 +158,7 @@ async function syncSheet(sheetName: string) {
             // photos whose source URLs may have become unavailable since last sync.
             const existing = await prisma.childCareFacility.findUnique({
                 where: { slug: facilityData.slug },
-                select: { photos: true },
+                select: { photos: true, verification: true },
             });
             const mergedPhotos = new Map(
                 (existing?.photos ?? []).map((p) => [p.fileName, p]),
@@ -158,9 +168,15 @@ async function syncSheet(sheetName: string) {
             }
             const finalPhotos = Array.from(mergedPhotos.values());
 
+            const verification = mergeSheetVerification(
+                sheetVerification,
+                facilityData,
+                existing,
+            );
+
             const entry = await prisma.childCareFacility.upsert({
                 where: { slug: facilityData.slug },
-                create: { ...facilityData, photos: finalPhotos },
+                create: { ...facilityData, photos: finalPhotos, verification },
                 update: {
                     name: facilityData.name,
                     type: facilityData.type,
@@ -173,6 +189,7 @@ async function syncSheet(sheetName: string) {
                     ageRanges: facilityData.ageRanges,
                     photos: finalPhotos,
                     sources: facilityData.sources,
+                    verification: verification,
                 },
             });
 
