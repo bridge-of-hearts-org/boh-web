@@ -13,9 +13,13 @@
  * of the photos look unused, which suggests the database doesn't match the
  * Blob store. Pass --force to delete anyway.
  *
+ * It looks at production's photos, or with --dev at the dev folder's, which
+ * belong to the dev database.
+ *
  * Usage:   npx tsx scripts/cleanupOrphanPhotos.ts            (list only)
  *          npx tsx scripts/cleanupOrphanPhotos.ts --delete   (delete them)
  *          npx tsx scripts/cleanupOrphanPhotos.ts --delete --force
+ *          npx tsx scripts/cleanupOrphanPhotos.ts --dev [--delete]
  */
 
 import { del, list, ListBlobResultBlob } from "@vercel/blob";
@@ -23,6 +27,7 @@ import { config } from "dotenv";
 import { PrismaClient } from "@prisma/client";
 
 import {
+    DEV_PHOTO_FOLDER,
     findOrphanPhotoBlobs,
     isPhotoBlobPath,
     orphanCleanupRefusal,
@@ -31,12 +36,16 @@ import {
 const MIN_AGE_MS = 24 * 60 * 60 * 1000;
 const DELETE_BATCH_SIZE = 100;
 
-async function listAllBlobs(token: string): Promise<ListBlobResultBlob[]> {
+async function listAllBlobs(
+    token: string,
+    folder: string,
+): Promise<ListBlobResultBlob[]> {
     const blobs: ListBlobResultBlob[] = [];
+    const prefix = folder ? `${folder}/` : undefined;
     let cursor: string | undefined;
 
     do {
-        const page = await list({ cursor, limit: 1000, token });
+        const page = await list({ cursor, limit: 1000, prefix, token });
         blobs.push(...page.blobs);
         cursor = page.hasMore ? page.cursor : undefined;
     } while (cursor);
@@ -58,6 +67,7 @@ async function main() {
 
     const shouldDelete = process.argv.includes("--delete");
     const force = process.argv.includes("--force");
+    const folder = process.argv.includes("--dev") ? DEV_PHOTO_FOLDER : "";
     /* Same order as the server actions */
     const token = process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
     if (!token) {
@@ -66,6 +76,7 @@ async function main() {
     }
 
     console.log(`Connecting to database host: ${databaseHost()}`);
+    console.log(`Photo folder: ${folder || "production"}`);
     const prisma = new PrismaClient();
 
     try {
@@ -75,10 +86,15 @@ async function main() {
             select: { slug: true, photos: true },
         });
         const uploadedBefore = new Date(Date.now() - MIN_AGE_MS);
-        const blobs = await listAllBlobs(token);
-        const orphans = findOrphanPhotoBlobs(blobs, facilities, uploadedBefore);
+        const blobs = await listAllBlobs(token, folder);
+        const orphans = findOrphanPhotoBlobs(
+            blobs,
+            facilities,
+            uploadedBefore,
+            folder,
+        );
         const photoBlobCount = blobs.filter((b) =>
-            isPhotoBlobPath(b.pathname),
+            isPhotoBlobPath(b.pathname, folder),
         ).length;
 
         console.log(

@@ -2,6 +2,7 @@ import { test, expect, Page } from "@playwright/test";
 
 import {
     contentTypeForFileName,
+    DEV_PHOTO_FOLDER,
     isValidPhotoFileName,
     isValidSlug,
     MAX_PHOTO_SIZE_BYTES,
@@ -74,6 +75,7 @@ function pngFile(name: string) {
 async function mockBlobStorage(
     page: Page,
     release: Promise<void> = Promise.resolve(),
+    alreadyStored = false,
 ): Promise<string[]> {
     const uploadedPaths: string[] = [];
     const corsHeaders = {
@@ -91,6 +93,22 @@ async function mockBlobStorage(
         const pathname = new URL(route.request().url()).pathname.slice(1);
         uploadedPaths.push(pathname);
         await release;
+        if (alreadyStored) {
+            /* What Vercel Blob answers for a path that's already taken */
+            await route.fulfill({
+                status: 400,
+                headers: corsHeaders,
+                contentType: "application/json",
+                body: JSON.stringify({
+                    error: {
+                        code: "bad_request",
+                        message: "This blob already exists",
+                    },
+                }),
+            });
+            return;
+        }
+
         await route.fulfill({
             status: 200,
             headers: corsHeaders,
@@ -123,9 +141,12 @@ type PhotoActions = {
 
 const isString = (value: unknown) => typeof value === "string";
 
+/* The file name at the end of an uploaded photo's path */
+const fileNameOf = (path: string) => path.split("/").pop() ?? "";
+
 /* A server action response as the client reads it: row 0 points the action
    result at row 1. The client doesn't check the build id ("b"). */
-const mockedActionResponse = (result: string) =>
+const mockedActionResponse = (result: unknown) =>
     `0:{"a":"$@1","f":"","b":"e2e-mock"}\n1:${JSON.stringify(result)}\n`;
 
 /* Answer every server action call with `saveResult` without sending it to the
@@ -283,11 +304,16 @@ test.describe("Photo upload in the admin facility form", () => {
 
         await expect(photoItems(page)).toHaveCount(2);
         expect(uploadedPaths).toHaveLength(2);
+        /* Previews and local dev servers keep photos in the dev folder */
         for (const path of uploadedPaths) {
-            expect(path).toMatch(/^e2e-photo-upload\/[a-f0-9]{16}\.png$/);
+            expect(path).toMatch(
+                new RegExp(
+                    `^${DEV_PHOTO_FOLDER}/e2e-photo-upload/[a-f0-9]{16}\\.png$`,
+                ),
+            );
         }
 
-        const fileNames = uploadedPaths.map((p) => p.split("/")[1]);
+        const fileNames = uploadedPaths.map(fileNameOf);
         const shownOrder = () =>
             photoItems(page).evaluateAll((items) =>
                 items.map((item) => item.getAttribute("data-file-name")),
@@ -317,6 +343,84 @@ test.describe("Photo upload in the admin facility form", () => {
         await page.getByRole("button", { name: "Remove photo 1" }).click();
         await expect(photoItems(page)).toHaveCount(0);
         await expect(slugInput(page)).not.toHaveAttribute("readonly");
+    });
+
+    test("reuses a photo the server reports as already stored", async ({
+        page,
+    }) => {
+        const uploadedPaths = await mockBlobStorage(page);
+        /* Answer every server action, so nothing reaches the server. The
+            only one this test calls is createPhotoUploadToken. */
+        const tokenRequests: unknown[] = [];
+        await page.route("**/*", async (route) => {
+            const request = route.request();
+            if (
+                request.method() !== "POST" ||
+                !request.headers()["next-action"]
+            ) {
+                await route.fallback();
+                return;
+            }
+
+            tokenRequests.push(JSON.parse(request.postData() ?? "null"));
+            await route.fulfill({
+                status: 200,
+                contentType: "text/x-component",
+                body: mockedActionResponse({ exists: true }),
+            });
+        });
+        await slugInput(page).fill(slug);
+
+        await page
+            .locator("#photo-upload")
+            .setInputFiles(pngFile("stored.png"));
+
+        await expect(photoItems(page)).toHaveCount(1);
+        expect(tokenRequests).toHaveLength(1);
+        expect(uploadedPaths).toEqual([]);
+        await expect(
+            page.getByRole("alert").filter({ hasText: "stored.png" }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "stored.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
+    });
+
+    test("reuses a photo that was stored after the server checked", async ({
+        page,
+    }) => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
+        const uploadedPaths = await mockBlobStorage(
+            page,
+            Promise.resolve(),
+            true,
+        );
+        await slugInput(page).fill(slug);
+
+        await page.locator("#photo-upload").setInputFiles(pngFile("raced.png"));
+
+        await expect(photoItems(page)).toHaveCount(1);
+        expect(uploadedPaths).toHaveLength(1);
+        await expect(photoItems(page).first()).toHaveAttribute(
+            "data-file-name",
+            fileNameOf(uploadedPaths[0]),
+        );
+        await expect(
+            page.getByRole("alert").filter({ hasText: "raced.png" }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "raced.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
     });
 
     test("locks the slug, Reset and Clear while a photo uploads", async ({
@@ -394,7 +498,6 @@ test.describe("Photo upload in the admin facility form", () => {
             "Set BLOB_READ_WRITE_TOKEN to run upload tests",
         );
 
-        const fileNameOf = (path: string) => path.split("/")[1];
         let actions: PhotoActions;
         let alerts: string[];
 

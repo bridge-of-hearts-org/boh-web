@@ -4,13 +4,13 @@ import {
     ChildCareFacilityInput,
     DirectoryFilterType,
     FacilityPin,
-    vercelStorageUrl,
 } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
-import { del } from "@vercel/blob";
+import { BlobNotFoundError, del, head } from "@vercel/blob";
 import { parseItemsPerPage, parsePage } from "@/utils/pagination";
+import { abortAfter } from "@/utils/utils";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
@@ -28,7 +28,9 @@ import {
     isDeletablePhotoFileName,
     MAX_PHOTO_SIZE_BYTES,
     MAX_PHOTOS_PER_DELETE,
+    photoBlobPath,
     photosToDelete,
+    photoUrl,
 } from "@/utils/photos";
 import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
@@ -38,6 +40,9 @@ import { describeFacilityWriteError } from "@/utils/dbErrors";
 const UNAUTHORIZED = "Unauthorized: admin login required";
 const INVALID_SLUG =
     "The slug may only contain lowercase letters, numbers and hyphens";
+
+/* How long createPhotoUploadToken waits to learn whether a photo is stored */
+const PHOTO_CHECK_TIMEOUT_MS = 5000;
 
 /* The sync script calls the Blob read-write token VERCEL_TOKEN */
 const getBlobToken = (): string | undefined =>
@@ -344,11 +349,13 @@ export async function resolveLatLng(
 
 /* Issues a short-lived token that lets the browser upload one photo straight
    to Vercel Blob, so the file never passes through this server's request size
-   limit. The token only allows the given path, content type and size. */
+   limit. The token only allows the given path, content type and size.
+   Photos are named after their contents, so if the photo is already stored
+   it returns `exists` instead, and the form reuses the stored photo. */
 export async function createPhotoUploadToken(
     slug: string,
     fileName: string,
-): Promise<{ token: string } | { error: string }> {
+): Promise<{ token: string } | { exists: true } | { error: string }> {
     if (!(await getServerAuth())) {
         return { error: UNAUTHORIZED };
     }
@@ -370,10 +377,28 @@ export async function createPhotoUploadToken(
         return { error: "Photo storage is not configured on this server" };
     }
 
+    /* The SDK retries a failing API for minutes; don't hold up the upload
+       that long when the check can't be made */
+    const timeout = abortAfter(PHOTO_CHECK_TIMEOUT_MS);
+    try {
+        await head(photoUrl(slug, fileName), {
+            token: blobToken,
+            abortSignal: timeout.signal,
+        });
+        return { exists: true };
+    } catch (error) {
+        /* If the check itself failed, try the upload anyway */
+        if (!(error instanceof BlobNotFoundError)) {
+            console.log("Couldn't check whether the photo is stored", error);
+        }
+    } finally {
+        timeout.cancel();
+    }
+
     try {
         const token = await generateClientTokenFromReadWriteToken({
             token: blobToken,
-            pathname: `${slug}/${fileName}`,
+            pathname: photoBlobPath(slug, fileName),
             allowedContentTypes: [contentType],
             maximumSizeInBytes: MAX_PHOTO_SIZE_BYTES,
             addRandomSuffix: false,
@@ -444,9 +469,7 @@ export async function deleteUnusedPhotos(
 
     try {
         await del(
-            toDelete.map(
-                (fileName) => `${vercelStorageUrl}/${slug}/${fileName}`,
-            ),
+            toDelete.map((fileName) => photoUrl(slug, fileName)),
             { token: blobToken },
         );
     } catch (error) {

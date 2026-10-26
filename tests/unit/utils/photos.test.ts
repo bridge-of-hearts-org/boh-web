@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     chunk,
     contentTypeForFileName,
+    currentPhotoFolder,
     deletePhotosInBatches,
+    DEV_PHOTO_FOLDER,
     findOrphanPhotoBlobs,
+    isBlobAlreadyExistsError,
     isDeletablePhotoFileName,
     isPhotoBlobPath,
     isValidPhotoFileName,
@@ -13,8 +16,11 @@ import {
     MAX_PHOTO_SIZE_BYTES,
     MAX_PHOTOS_PER_DELETE,
     orphanCleanupRefusal,
+    planDevPhotoCopies,
+    photoBlobPath,
     photoFileName,
     photosToDelete,
+    photoUrl,
     validatePhotoFile,
 } from "@/utils/photos";
 
@@ -407,6 +413,171 @@ describe("findOrphanPhotoBlobs", () => {
                 [{ pathname, uploadedAt: old }],
                 facilities,
                 cutoff,
+            ),
+        ).toEqual([]);
+    });
+});
+
+describe("findOrphanPhotoBlobs in a folder", () => {
+    const USED = "aaaaaaaaaaaaaaaa.png";
+    const UNUSED = "bbbbbbbbbbbbbbbb.jpg";
+    const old = new Date("2026-01-01T00:00:00Z");
+    const cutoff = new Date("2026-01-02T00:00:00Z");
+    const facilities = [{ slug: "home", photos: [{ fileName: USED }] }];
+
+    it("only looks at photos in the folder", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [
+                    { pathname: `dev/home/${USED}`, uploadedAt: old },
+                    { pathname: `dev/home/${UNUSED}`, uploadedAt: old },
+                    { pathname: `home/${UNUSED}`, uploadedAt: old },
+                ],
+                facilities,
+                cutoff,
+                "dev",
+            ),
+        ).toEqual([`dev/home/${UNUSED}`]);
+    });
+
+    it("leaves the dev folder alone when cleaning production", () => {
+        expect(
+            findOrphanPhotoBlobs(
+                [{ pathname: `dev/home/${UNUSED}`, uploadedAt: old }],
+                facilities,
+                cutoff,
+            ),
+        ).toEqual([]);
+    });
+
+    it.each([
+        `dev/${UNUSED}`,
+        `dev/home/nested/${UNUSED}`,
+        `other/home/${UNUSED}`,
+    ])("ignores %j, which isn't a photo in the folder", (pathname) => {
+        expect(isPhotoBlobPath(pathname, "dev")).toBe(false);
+    });
+});
+
+describe("currentPhotoFolder", () => {
+    it("reads the folder next.config.ts sets", () => {
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "");
+        expect(currentPhotoFolder()).toBe("");
+
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "dev");
+        expect(currentPhotoFolder()).toBe("dev");
+    });
+
+    it("falls back to the dev folder when it isn't set", () => {
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", undefined);
+        expect(currentPhotoFolder()).toBe(DEV_PHOTO_FOLDER);
+    });
+});
+
+describe("photoBlobPath", () => {
+    it("puts production's photos under their slug", () => {
+        expect(photoBlobPath("home", "aaaaaaaaaaaaaaaa.png", "")).toBe(
+            "home/aaaaaaaaaaaaaaaa.png",
+        );
+    });
+
+    it("puts other photos under the folder", () => {
+        expect(photoBlobPath("home", "aaaaaaaaaaaaaaaa.png", "dev")).toBe(
+            "dev/home/aaaaaaaaaaaaaaaa.png",
+        );
+    });
+
+    it("defaults to this deployment's folder", () => {
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "dev");
+        expect(photoBlobPath("home", "aaaaaaaaaaaaaaaa.png")).toBe(
+            "dev/home/aaaaaaaaaaaaaaaa.png",
+        );
+    });
+});
+
+describe("photoUrl", () => {
+    const STORAGE = "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
+
+    it("points at this deployment's photo folder", () => {
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "");
+        expect(photoUrl("home", "aaaaaaaaaaaaaaaa.png")).toBe(
+            `${STORAGE}/home/aaaaaaaaaaaaaaaa.png`,
+        );
+
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "dev");
+        expect(photoUrl("home", "aaaaaaaaaaaaaaaa.png")).toBe(
+            `${STORAGE}/dev/home/aaaaaaaaaaaaaaaa.png`,
+        );
+    });
+});
+
+describe("isBlobAlreadyExistsError", () => {
+    it("recognises Vercel Blob's already-exists error", () => {
+        expect(
+            isBlobAlreadyExistsError(
+                new Error("Vercel Blob: This blob already exists"),
+            ),
+        ).toBe(true);
+    });
+
+    it.each([new Error("Vercel Blob: Unknown error"), "already exists", null])(
+        "ignores %j",
+        (error) => {
+            expect(isBlobAlreadyExistsError(error)).toBe(false);
+        },
+    );
+});
+
+describe("planDevPhotoCopies", () => {
+    const STORAGE = "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
+    const PHOTO = "aaaaaaaaaaaaaaaa.png";
+    const OTHER = "bbbbbbbbbbbbbbbb.jpg";
+    const blob = (pathname: string) => ({
+        pathname,
+        url: `${STORAGE}/${pathname}`,
+    });
+
+    it("copies the chosen facilities' production photos into the dev folder", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`home/${PHOTO}`),
+                    blob(`home/${OTHER}`),
+                    blob(`other-home/${PHOTO}`),
+                ],
+                new Set(["home"]),
+            ),
+        ).toEqual([
+            { url: `${STORAGE}/home/${PHOTO}`, devPath: `dev/home/${PHOTO}` },
+            { url: `${STORAGE}/home/${OTHER}`, devPath: `dev/home/${OTHER}` },
+        ]);
+    });
+
+    it("skips photos already in the dev folder", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`home/${PHOTO}`),
+                    blob(`home/${OTHER}`),
+                    blob(`dev/home/${PHOTO}`),
+                ],
+                new Set(["home"]),
+            ),
+        ).toEqual([
+            { url: `${STORAGE}/home/${OTHER}`, devPath: `dev/home/${OTHER}` },
+        ]);
+    });
+
+    it("never copies dev photos or blobs that aren't photos", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`dev/home/${PHOTO}`),
+                    blob("home/logo.png"),
+                    blob(`home/nested/${PHOTO}`),
+                    blob(PHOTO),
+                ],
+                new Set(["home", "dev"]),
             ),
         ).toEqual([]);
     });

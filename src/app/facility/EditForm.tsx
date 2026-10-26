@@ -23,7 +23,6 @@ import {
     DistrictsList,
     emptyChildCareFacilityDbObject,
     ProvincesList,
-    vercelStorageUrl,
 } from "@/utils/defines";
 import Button from "@/components/Button";
 import {
@@ -46,6 +45,9 @@ import {
     PhotoContentTypes,
     photoFileName,
     deletePhotosInBatches,
+    isBlobAlreadyExistsError,
+    photoBlobPath,
+    photoUrl,
     StoredPhoto,
     validatePhotoFile,
 } from "@/utils/photos";
@@ -97,6 +99,8 @@ export default function EditForm(props: EditFormProps) {
         while a delete runs */
     const [saving, setSaving] = useState(false);
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
+    /* Photos that were already stored and reused instead of uploaded */
+    const [photoNotes, setPhotoNotes] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
 
     /* The facility as last saved, which Reset goes back to, and the photos
@@ -147,6 +151,7 @@ export default function EditForm(props: EditFormProps) {
         setResolveError("");
         setResolveNote("");
         setPhotoErrors([]);
+        setPhotoNotes([]);
     };
 
     const savedPhotos = (): StoredPhoto[] =>
@@ -311,9 +316,11 @@ export default function EditForm(props: EditFormProps) {
 
         const slug = formData.slug;
         const errors: string[] = [];
+        const notes: string[] = [];
         const knownFileNames = new Set(formData.photos.map((p) => p.fileName));
 
         setPhotoErrors([]);
+        setPhotoNotes([]);
         setUploadingPhotos(true);
 
         for (const file of files) {
@@ -336,11 +343,33 @@ export default function EditForm(props: EditFormProps) {
                     continue;
                 }
 
-                await put(`${slug}/${fileName}`, file, {
-                    access: "public",
-                    token: result.token,
-                    contentType: file.type,
-                });
+                /* Photos are named after their contents, so a photo that's
+                    already stored is reused instead of uploaded again */
+                let reused = false;
+                if ("exists" in result) {
+                    reused = true;
+                } else {
+                    try {
+                        await put(photoBlobPath(slug, fileName), file, {
+                            access: "public",
+                            token: result.token,
+                            contentType: file.type,
+                        });
+                    } catch (error) {
+                        /* Stored since the server checked */
+                        if (!isBlobAlreadyExistsError(error)) {
+                            throw error;
+                        }
+
+                        reused = true;
+                    }
+                }
+
+                if (reused) {
+                    notes.push(
+                        `${file.name}: this photo was already stored, so the stored copy was reused`,
+                    );
+                }
 
                 knownFileNames.add(fileName);
                 unsavedUploadsRef.current.push({ slug, fileName });
@@ -357,6 +386,7 @@ export default function EditForm(props: EditFormProps) {
         }
 
         setPhotoErrors(errors);
+        setPhotoNotes(notes);
         setUploadingPhotos(false);
     };
 
@@ -1244,6 +1274,15 @@ export default function EditForm(props: EditFormProps) {
                                     {error}
                                 </span>
                             ))}
+                            {photoNotes.map((note) => (
+                                <span
+                                    key={note}
+                                    role="status"
+                                    className="text-sm text-gray-700"
+                                >
+                                    {note}
+                                </span>
+                            ))}
                         </div>
                     </div>
 
@@ -1260,7 +1299,10 @@ export default function EditForm(props: EditFormProps) {
                                     className="flex flex-col items-center gap-2"
                                 >
                                     <ImageComponent
-                                        src={`${vercelStorageUrl}/${formData.slug}/${photo.fileName}`}
+                                        src={photoUrl(
+                                            formData.slug,
+                                            photo.fileName,
+                                        )}
                                         sizes="200px"
                                         width={200}
                                         height={200}
