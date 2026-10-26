@@ -6,10 +6,12 @@ import { getExistingSlug, hasCredentials, login } from "./admin-helpers";
    password and session, and would end up in the uploaded report */
 test.use({ trace: "off" });
 
+const phoneViewport = { name: "phone", width: 375, height: 667 };
+const laptopViewport = { name: "laptop", width: 1280, height: 800 };
 const viewports = [
-    { name: "phone", width: 375, height: 667 },
+    phoneViewport,
     { name: "small laptop", width: 1024, height: 768 },
-    { name: "laptop", width: 1280, height: 800 },
+    laptopViewport,
 ];
 
 /* The page and the form must both fit the viewport, and every button must sit
@@ -106,28 +108,36 @@ test.describe("Admin facility form fits the screen width", () => {
     test("dashboard table fits a phone and hides the Province column", async ({
         page,
     }) => {
-        await page.setViewportSize(viewports[0]);
+        await page.setViewportSize(phoneViewport);
         await login(page, "/admin");
 
+        /* Located directly rather than by role, since role locators skip
+           hidden elements and would pass even if the column were missing */
         const table = page.locator("table");
+        const provinceHeading = table.locator("th", { hasText: "Province" });
+        const firstRowProvince = table
+            .locator("tr:has(td)")
+            .first()
+            .locator("td")
+            .last();
         await expect(table.locator("td").first()).toBeVisible();
-        await expect(
-            table.getByRole("columnheader", { name: "Province" }),
-        ).toBeHidden();
+        await expect(provinceHeading).toHaveCount(1);
+        await expect(provinceHeading).toBeHidden();
+        await expect(firstRowProvince).toBeHidden();
 
         const sizes = await page.evaluate(() => ({
             pageScrollWidth: document.documentElement.scrollWidth,
             tableRight: document.querySelector("table")!.getBoundingClientRect()
                 .right,
         }));
-        expect(sizes.pageScrollWidth).toBeLessThanOrEqual(viewports[0].width);
-        expect(sizes.tableRight).toBeLessThanOrEqual(viewports[0].width);
+        expect(sizes.pageScrollWidth).toBeLessThanOrEqual(phoneViewport.width);
+        expect(sizes.tableRight).toBeLessThanOrEqual(phoneViewport.width);
     });
 
     test("dashboard table shows the Province column on a laptop", async ({
         page,
     }) => {
-        await page.setViewportSize(viewports[2]);
+        await page.setViewportSize(laptopViewport);
         await login(page, "/admin");
 
         await expect(
