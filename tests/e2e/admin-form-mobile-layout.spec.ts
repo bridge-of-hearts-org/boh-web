@@ -102,4 +102,38 @@ test.describe("Admin facility form fits the screen width", () => {
             await expectNoSidewaysScroll(page, viewport.width);
         });
     }
+
+    test("dashboard table fits a phone and hides the Province column", async ({
+        page,
+    }) => {
+        await page.setViewportSize(viewports[0]);
+        await login(page, "/admin");
+
+        const table = page.locator("table");
+        await expect(table.locator("td").first()).toBeVisible();
+        await expect(
+            table.getByRole("columnheader", { name: "Province" }),
+        ).toBeHidden();
+
+        const sizes = await page.evaluate(() => ({
+            pageScrollWidth: document.documentElement.scrollWidth,
+            tableRight: document.querySelector("table")!.getBoundingClientRect()
+                .right,
+        }));
+        expect(sizes.pageScrollWidth).toBeLessThanOrEqual(viewports[0].width);
+        expect(sizes.tableRight).toBeLessThanOrEqual(viewports[0].width);
+    });
+
+    test("dashboard table shows the Province column on a laptop", async ({
+        page,
+    }) => {
+        await page.setViewportSize(viewports[2]);
+        await login(page, "/admin");
+
+        await expect(
+            page
+                .locator("table")
+                .getByRole("columnheader", { name: "Province" }),
+        ).toBeVisible();
+    });
 });

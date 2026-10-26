@@ -22,8 +22,11 @@ export default async function AdminDashboard() {
         400,
     );
 
-    const tableHeadingStyle = "px-4 py-3";
+    /* Smaller text and padding on phones. Province is hidden there, since the
+       district already implies it. */
+    const tableHeadingStyle = "px-2 py-2 text-left md:px-4 md:py-3";
     const tableCellStyle = "px-2 py-1";
+    const provinceColumnStyle = "hidden md:table-cell";
 
     return (
         <div className="flex flex-col items-center gap-5">
@@ -32,13 +35,17 @@ export default async function AdminDashboard() {
             </h1>
             <AdminActions />
 
-            <table className="mt-8 w-full rounded-3xl lg:w-2/3">
+            <table className="mt-8 w-full rounded-3xl text-sm md:text-base lg:w-2/3">
                 <tbody>
                     <tr className="bg-orange-100">
                         <th className={tableHeadingStyle}>Name</th>
                         <th className={tableHeadingStyle}>City</th>
                         <th className={tableHeadingStyle}>District</th>
-                        <th className={tableHeadingStyle}>Province</th>
+                        <th
+                            className={`${tableHeadingStyle} ${provinceColumnStyle}`}
+                        >
+                            Province
+                        </th>
                     </tr>
                     {facilities.map((facility, idx) => {
                         return (
@@ -59,7 +66,9 @@ export default async function AdminDashboard() {
                                 <td className={tableCellStyle}>
                                     {facility.location.district}
                                 </td>
-                                <td className={tableCellStyle}>
+                                <td
+                                    className={`${tableCellStyle} ${provinceColumnStyle}`}
+                                >
                                     {facility.location.province}
                                 </td>
                             </tr>
