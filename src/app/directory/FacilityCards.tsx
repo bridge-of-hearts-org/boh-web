@@ -14,10 +14,10 @@ import {
     Province,
     vercelStorageUrl,
 } from "@/utils/defines";
+import { lastPage } from "@/utils/pagination";
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
-import { lastPage } from "@/utils/pagination";
 
 type FacilityCardProps = {
     name: string;
@@ -190,7 +190,7 @@ export async function FacilityCards(props: FacilityCardProps) {
                 <div className="mt-10 flex justify-center">
                     <NavigationBar
                         currentPage={page}
-                        totalPages={Math.ceil(totalCount / props.itemsPerPage)}
+                        totalPages={lastPage(totalCount, props.itemsPerPage)}
                     />
                 </div>
             </div>
