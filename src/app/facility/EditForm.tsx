@@ -683,7 +683,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-3 md:flex-row md:items-center">
                                 <input
                                     id="google-maps-url"
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.location.google}
                                     onChange={(e) => {
                                         setResolveError("");
@@ -1034,11 +1034,11 @@ export default function EditForm(props: EditFormProps) {
                     {/* Occupancy */}
                     <div className={twMerge(inputRowStyle, "pt-8")}>
                         <label>Current Occupants</label>
-                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                        <div className="grid items-center gap-3 lg:grid-cols-3 lg:gap-10">
                             <div className="flex flex-col gap-2">
                                 <label>Male</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.male || ""}
                                     type="number"
                                     onChange={(e) =>
@@ -1051,7 +1051,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Female</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.female || ""}
                                     type="number"
                                     onChange={(e) =>
@@ -1064,7 +1064,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Total</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.total || ""}
                                     type="number"
                                     onChange={(e) =>
@@ -1105,11 +1105,11 @@ export default function EditForm(props: EditFormProps) {
                     {/* Ages */}
                     <div className={twMerge(inputRowStyle, "pt-8")}>
                         <label>Current Age Ranges</label>
-                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                        <div className="grid items-center gap-3 lg:grid-cols-3 lg:gap-10">
                             <div className="flex flex-col gap-2">
                                 <label>Male</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.male || ""}
                                     onChange={(e) =>
                                         setFormData({
@@ -1125,7 +1125,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Female</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.female || ""}
                                     onChange={(e) =>
                                         setFormData({
@@ -1141,7 +1141,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>All</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.all || ""}
                                     onChange={(e) =>
                                         setFormData({
