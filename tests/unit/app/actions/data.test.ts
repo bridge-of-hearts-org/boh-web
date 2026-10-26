@@ -446,6 +446,32 @@ describe.each([
         );
     });
 
+    it("drops verifications for values the facility no longer lists", async () => {
+        loginAsAdmin();
+        const verifiedAt = new Date("2026-03-12T00:00:00Z");
+        const withVerification = {
+            ...input,
+            contact: { ...input.contact, phone: ["0771234567"] },
+            verification: {
+                phones: [
+                    { value: "0771234567", verifiedAt: verifiedAt },
+                    { value: "0812345678", verifiedAt: verifiedAt },
+                ],
+                emails: [{ value: "old@example.com", verifiedAt: verifiedAt }],
+                occupancy: null,
+                ageRanges: null,
+            },
+        };
+
+        expect(await action(withVerification)).toBe("success");
+        expect(facilityDb[query].mock.calls[0][0].data.verification).toEqual({
+            phones: [{ value: "0771234567", verifiedAt: verifiedAt }],
+            emails: [],
+            occupancy: null,
+            ageRanges: null,
+        });
+    });
+
     it("returns the error message when the write fails", async () => {
         loginAsAdmin();
         facilityDb[query].mockRejectedValue(

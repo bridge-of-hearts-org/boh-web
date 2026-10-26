@@ -30,6 +30,7 @@ import {
     MAX_PHOTOS_PER_DELETE,
     photosToDelete,
 } from "@/utils/photos";
+import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
 
 /* Server actions are public POST endpoints, so every write action must check
@@ -284,7 +285,10 @@ export async function updateFacility(
             where: {
                 slug: data.slug,
             },
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
@@ -303,7 +307,10 @@ export async function addFacility(
 
     try {
         await prisma.childCareFacility.create({
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);

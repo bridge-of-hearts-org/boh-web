@@ -18,7 +18,7 @@ import { put } from "@vercel/blob/client";
 import { redirect } from "next/navigation";
 
 import Card from "@/components/Card";
-import { ChildCareFacility, Gender } from "@prisma/client";
+import { ChildCareFacility, Gender, Verification } from "@prisma/client";
 import {
     DistrictsList,
     emptyChildCareFacilityDbObject,
@@ -50,6 +50,18 @@ import {
     validatePhotoFile,
 } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
+import {
+    clearAgeRangesVerification,
+    clearOccupancyVerification,
+    emptyVerification,
+    findAgeRangesVerifiedDate,
+    findOccupancyVerifiedDate,
+    findVerifiedDate,
+    setVerifiedDate,
+    verifyAgeRanges,
+    verifyOccupancy,
+} from "@/utils/verification";
+import VerifiedOnInput from "./VerifiedOnInput";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
@@ -101,6 +113,24 @@ export default function EditForm(props: EditFormProps) {
         for a URL that has since been edited or cleared */
     const googleUrlRef = useRef(data.location.google);
     googleUrlRef.current = formData.location.google;
+
+    const verification = formData.verification ?? emptyVerification;
+
+    const setVerification = (changes: Partial<Verification>) => {
+        setFormData({
+            ...formData,
+            verification: { ...verification, ...changes },
+        });
+    };
+
+    /* The verification keeps the counts that were confirmed, so changed counts
+        show as unverified until a new date is entered */
+    const setOccupancy = (changes: Partial<ChildCareFacility["occupancy"]>) => {
+        setFormData({
+            ...formData,
+            occupancy: { ...formData.occupancy, ...changes },
+        });
+    };
 
     /* Common styles */
     const inputRowStyle =
@@ -770,14 +800,31 @@ export default function EditForm(props: EditFormProps) {
                     {/* Current list of phone numbers */}
                     <div className={inputRowStyle}>
                         <div></div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
                             {formData.contact.phone.map((phone) => (
                                 <div
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={phone}
                                 >
                                     <span>{phone}</span>
+                                    <VerifiedOnInput
+                                        label={phone}
+                                        value={findVerifiedDate(
+                                            verification.phones,
+                                            phone,
+                                        )}
+                                        onChange={(date) =>
+                                            setVerification({
+                                                phones: setVerifiedDate(
+                                                    verification.phones,
+                                                    phone,
+                                                    date,
+                                                ),
+                                            })
+                                        }
+                                    />
                                     <button
+                                        aria-label={`Remove ${phone}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setFormData({
@@ -786,6 +833,14 @@ export default function EditForm(props: EditFormProps) {
                                                     ...formData.contact,
                                                     phone: formData.contact.phone.filter(
                                                         (p) => p !== phone,
+                                                    ),
+                                                },
+                                                verification: {
+                                                    ...verification,
+                                                    phones: setVerifiedDate(
+                                                        verification.phones,
+                                                        phone,
+                                                        null,
                                                     ),
                                                 },
                                             });
@@ -839,14 +894,31 @@ export default function EditForm(props: EditFormProps) {
                     {/* Current list of email addresses */}
                     <div className={inputRowStyle}>
                         <div></div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
                             {formData.contact.email.map((email) => (
                                 <div
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={email}
                                 >
-                                    <span>{email}</span>
+                                    <span className="break-all">{email}</span>
+                                    <VerifiedOnInput
+                                        label={email}
+                                        value={findVerifiedDate(
+                                            verification.emails,
+                                            email,
+                                        )}
+                                        onChange={(date) =>
+                                            setVerification({
+                                                emails: setVerifiedDate(
+                                                    verification.emails,
+                                                    email,
+                                                    date,
+                                                ),
+                                            })
+                                        }
+                                    />
                                     <button
+                                        aria-label={`Remove ${email}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setFormData({
@@ -855,6 +927,14 @@ export default function EditForm(props: EditFormProps) {
                                                     ...formData.contact,
                                                     email: formData.contact.email.filter(
                                                         (p) => p !== email,
+                                                    ),
+                                                },
+                                                verification: {
+                                                    ...verification,
+                                                    emails: setVerifiedDate(
+                                                        verification.emails,
+                                                        email,
+                                                        null,
                                                     ),
                                                 },
                                             });
@@ -960,12 +1040,8 @@ export default function EditForm(props: EditFormProps) {
                                     value={formData.occupancy.male || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                male: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            male: Number(e.target.value),
                                         })
                                     }
                                 ></input>
@@ -977,12 +1053,8 @@ export default function EditForm(props: EditFormProps) {
                                     value={formData.occupancy.female || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                female: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            female: Number(e.target.value),
                                         })
                                     }
                                 ></input>
@@ -994,17 +1066,38 @@ export default function EditForm(props: EditFormProps) {
                                     value={formData.occupancy.total || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                total: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            total: Number(e.target.value),
                                         })
                                     }
                                 ></input>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Occupancy verification */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <VerifiedOnInput
+                            label="Occupancy counts"
+                            value={findOccupancyVerifiedDate(
+                                formData.occupancy,
+                                verification,
+                            )}
+                            onChange={(date) =>
+                                setVerification({
+                                    occupancy: date
+                                        ? verifyOccupancy(
+                                              formData.occupancy,
+                                              date,
+                                          )
+                                        : clearOccupancyVerification(
+                                              formData.occupancy,
+                                              data.verification?.occupancy,
+                                          ),
+                                })
+                            }
+                        />
                     </div>
 
                     {/* Ages */}
@@ -1060,6 +1153,31 @@ export default function EditForm(props: EditFormProps) {
                                 ></input>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Age ranges verification */}
+                    <div className={inputRowStyle}>
+                        <div></div>
+                        <VerifiedOnInput
+                            label="Age ranges"
+                            value={findAgeRangesVerifiedDate(
+                                formData.ageRanges,
+                                verification,
+                            )}
+                            onChange={(date) =>
+                                setVerification({
+                                    ageRanges: date
+                                        ? verifyAgeRanges(
+                                              formData.ageRanges,
+                                              date,
+                                          )
+                                        : clearAgeRangesVerification(
+                                              formData.ageRanges,
+                                              data.verification?.ageRanges,
+                                          ),
+                                })
+                            }
+                        />
                     </div>
                 </section>
 
