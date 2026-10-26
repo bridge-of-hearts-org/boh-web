@@ -6,7 +6,7 @@ export type MenuItem = {
 };
 
 export const adminMenuItem: MenuItem = {
-    label: "Admin Session",
+    label: "Admin Dashboard",
     href: "/admin",
 };
 
@@ -17,12 +17,12 @@ export const mainMenuItems: MenuItem[] = [
     { label: "Contact", href: "/contact" },
 ];
 
-/* Items for the hamburger menu on small screens. The header's Admin Session
-   button is hidden at those widths, so the menu carries it instead while an
-   admin is logged in. */
+/* Items for the hamburger menu on small screens. The header's Admin Dashboard
+   button is hidden at those widths, so the menu carries it instead, at the
+   top, while an admin is logged in. */
 export function getMobileMenuItems(inAdminSession: boolean): MenuItem[] {
     if (inAdminSession) {
-        return [...mainMenuItems, adminMenuItem];
+        return [adminMenuItem, ...mainMenuItems];
     }
 
     return [...mainMenuItems];

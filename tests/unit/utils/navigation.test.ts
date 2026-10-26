@@ -13,12 +13,12 @@ describe("getMobileMenuItems", () => {
         expect(getMobileMenuItems(false)).not.toContainEqual(adminMenuItem);
     });
 
-    it("appends the Admin Session item during an admin session", () => {
+    it("puts the Admin Dashboard item first during an admin session", () => {
         const items = getMobileMenuItems(true);
 
-        expect(items).toEqual([...mainMenuItems, adminMenuItem]);
-        expect(items.at(-1)).toEqual({
-            label: "Admin Session",
+        expect(items).toEqual([adminMenuItem, ...mainMenuItems]);
+        expect(items[0]).toEqual({
+            label: "Admin Dashboard",
             href: "/admin",
         });
     });
