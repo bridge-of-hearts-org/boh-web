@@ -133,8 +133,10 @@ export default function EditForm(props: EditFormProps) {
     };
 
     /* Common styles */
+    /* One column on phones, with the label above its input. The minmax(0, ...)
+       tracks let wide inputs shrink instead of pushing the page sideways. */
     const inputRowStyle =
-        "w-full grid grid-cols-[1fr,3fr] gap-3 items-center grow";
+        "w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr),minmax(0,3fr)] gap-3 items-center grow";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
@@ -472,7 +474,7 @@ export default function EditForm(props: EditFormProps) {
     };
 
     return (
-        <Card className="flex w-full flex-col items-center gap-8 p-10">
+        <Card className="flex w-full flex-col items-center gap-8 p-5 md:p-10">
             {/* Title */}
             <section className="flex flex-col items-center">
                 <div>
@@ -762,9 +764,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Phone numbers */}
                     <div className={inputRowStyle}>
                         <label>Phone Numbers</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newPhoneNumber}
                                 onChange={(e) =>
                                     setNewPhoneNumber(e.target.value)
@@ -799,7 +801,7 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of phone numbers */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <div className="flex flex-wrap gap-3">
                             {formData.contact.phone.map((phone) => (
                                 <div
@@ -856,9 +858,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Email addresses */}
                     <div className={twMerge(inputRowStyle, "pt-10")}>
                         <label>Email Addresses</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newEmailAddress}
                                 onChange={(e) =>
                                     setNewEmailAddress(e.target.value)
@@ -893,7 +895,7 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of email addresses */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <div className="flex flex-wrap gap-3">
                             {formData.contact.email.map((email) => (
                                 <div
@@ -1077,7 +1079,7 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Occupancy verification */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <VerifiedOnInput
                             label="Occupancy counts"
                             value={findOccupancyVerifiedDate(
@@ -1157,7 +1159,7 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Age ranges verification */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <VerifiedOnInput
                             label="Age ranges"
                             value={findAgeRangesVerifiedDate(
@@ -1329,9 +1331,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Sources input */}
                     <div className={inputRowStyle}>
                         <label>Sources</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newSource}
                                 onChange={(e) => setNewSource(e.target.value)}
                             ></input>
@@ -1363,14 +1365,14 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of sources */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <div className="flex flex-col items-start gap-2">
                             {formData.sources.map((source) => (
                                 <div
                                     className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={source}
                                 >
-                                    <span>{source}</span>
+                                    <span className="break-all">{source}</span>
                                     <button
                                         onClick={(e) => {
                                             e.preventDefault();
