@@ -381,6 +381,12 @@ test.describe("Photo upload in the admin facility form", () => {
         await expect(
             page.getByRole("alert").filter({ hasText: "stored.png" }),
         ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "stored.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
     });
 
     test("reuses a photo that was stored after the server checked", async ({
@@ -409,6 +415,12 @@ test.describe("Photo upload in the admin facility form", () => {
         await expect(
             page.getByRole("alert").filter({ hasText: "raced.png" }),
         ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "raced.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
     });
 
     test("locks the slug, Reset and Clear while a photo uploads", async ({

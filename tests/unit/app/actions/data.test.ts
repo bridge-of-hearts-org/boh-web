@@ -586,6 +586,7 @@ describe("createPhotoUploadToken", () => {
         });
         expect(headBlob).toHaveBeenCalledWith(`${STORAGE}/home/${FILE_NAME}`, {
             token: "blob-token",
+            abortSignal: expect.any(AbortSignal),
         });
         expect(generateToken).not.toHaveBeenCalled();
     });
@@ -607,7 +608,7 @@ describe("createPhotoUploadToken", () => {
 
         expect(headBlob).toHaveBeenCalledWith(
             `${STORAGE}/dev/home/${FILE_NAME}`,
-            { token: "blob-token" },
+            { token: "blob-token", abortSignal: expect.any(AbortSignal) },
         );
         expect(generateToken).toHaveBeenCalledWith(
             expect.objectContaining({ pathname: `dev/home/${FILE_NAME}` }),

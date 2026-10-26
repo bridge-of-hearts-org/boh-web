@@ -16,9 +16,9 @@ import {
     MAX_PHOTO_SIZE_BYTES,
     MAX_PHOTOS_PER_DELETE,
     orphanCleanupRefusal,
+    planDevPhotoCopies,
     photoBlobPath,
     photoFileName,
-    photoFolderFor,
     photosToDelete,
     photoUrl,
     validatePhotoFile,
@@ -459,19 +459,6 @@ describe("findOrphanPhotoBlobs in a folder", () => {
     });
 });
 
-describe("photoFolderFor", () => {
-    it("keeps production's photos at the top of the store", () => {
-        expect(photoFolderFor("production")).toBe("");
-    });
-
-    it.each(["preview", "development", "", undefined])(
-        "uses the dev folder for %j",
-        (vercelEnv) => {
-            expect(photoFolderFor(vercelEnv)).toBe(DEV_PHOTO_FOLDER);
-        },
-    );
-});
-
 describe("currentPhotoFolder", () => {
     it("reads the folder next.config.ts sets", () => {
         vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "");
@@ -539,6 +526,61 @@ describe("isBlobAlreadyExistsError", () => {
             expect(isBlobAlreadyExistsError(error)).toBe(false);
         },
     );
+});
+
+describe("planDevPhotoCopies", () => {
+    const STORAGE = "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
+    const PHOTO = "aaaaaaaaaaaaaaaa.png";
+    const OTHER = "bbbbbbbbbbbbbbbb.jpg";
+    const blob = (pathname: string) => ({
+        pathname,
+        url: `${STORAGE}/${pathname}`,
+    });
+
+    it("copies the chosen facilities' production photos into the dev folder", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`home/${PHOTO}`),
+                    blob(`home/${OTHER}`),
+                    blob(`other-home/${PHOTO}`),
+                ],
+                new Set(["home"]),
+            ),
+        ).toEqual([
+            { url: `${STORAGE}/home/${PHOTO}`, devPath: `dev/home/${PHOTO}` },
+            { url: `${STORAGE}/home/${OTHER}`, devPath: `dev/home/${OTHER}` },
+        ]);
+    });
+
+    it("skips photos already in the dev folder", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`home/${PHOTO}`),
+                    blob(`home/${OTHER}`),
+                    blob(`dev/home/${PHOTO}`),
+                ],
+                new Set(["home"]),
+            ),
+        ).toEqual([
+            { url: `${STORAGE}/home/${OTHER}`, devPath: `dev/home/${OTHER}` },
+        ]);
+    });
+
+    it("never copies dev photos or blobs that aren't photos", () => {
+        expect(
+            planDevPhotoCopies(
+                [
+                    blob(`dev/home/${PHOTO}`),
+                    blob("home/logo.png"),
+                    blob(`home/nested/${PHOTO}`),
+                    blob(PHOTO),
+                ],
+                new Set(["home", "dev"]),
+            ),
+        ).toEqual([]);
+    });
 });
 
 describe("orphanCleanupRefusal", () => {

@@ -209,7 +209,11 @@ async function syncSheet(sheetName: string, photoFolder: string) {
                         const filePath = path.join(facilityPhotosDir, photo.fileName);
                         if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
                             await vercelUpload(
-                                photoBlobPath(entry.slug, photo.fileName, photoFolder),
+                                photoBlobPath(
+                                    entry.slug,
+                                    photo.fileName,
+                                    photoFolder,
+                                ),
                                 fs.readFileSync(filePath),
                             );
                         }
@@ -233,7 +237,9 @@ async function main() {
     const sheetName = args.find((arg) => arg !== "--dev");
     const photoFolder = args.includes("--dev") ? DEV_PHOTO_FOLDER : "";
     if (!sheetName) {
-        console.log("Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]");
+        console.log(
+            "Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]",
+        );
         console.log('Example: npx tsx scripts/syncFacilities.ts "Central Province"');
         process.exit(1);
     }

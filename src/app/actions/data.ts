@@ -40,6 +40,9 @@ const UNAUTHORIZED = "Unauthorized: admin login required";
 const INVALID_SLUG =
     "The slug may only contain lowercase letters, numbers and hyphens";
 
+/* How long createPhotoUploadToken waits to learn whether a photo is stored */
+const PHOTO_CHECK_TIMEOUT_MS = 5000;
+
 /* The sync script calls the Blob read-write token VERCEL_TOKEN */
 const getBlobToken = (): string | undefined =>
     process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
@@ -374,7 +377,12 @@ export async function createPhotoUploadToken(
     }
 
     try {
-        await head(photoUrl(slug, fileName), { token: blobToken });
+        /* The SDK retries a failing API for minutes; don't hold up the
+           upload that long when the check can't be made */
+        await head(photoUrl(slug, fileName), {
+            token: blobToken,
+            abortSignal: AbortSignal.timeout(PHOTO_CHECK_TIMEOUT_MS),
+        });
         return { exists: true };
     } catch (error) {
         /* If the check itself failed, try the upload anyway */

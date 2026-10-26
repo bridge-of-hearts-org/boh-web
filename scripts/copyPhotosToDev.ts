@@ -1,37 +1,33 @@
 /**
  * copyPhotosToDev.ts
  *
- * Copies the photos of the given facilities from production's photo folder
- * into the dev folder, so local dev and Vercel previews can show realistic
- * photos without reading or changing production's. Photos already in the
- * dev folder are skipped, and production's photos are never changed.
+ * Copies facility photos from production's photo folder into the dev
+ * folder, so local dev and Vercel previews can show realistic photos without
+ * reading or changing production's. Photos already in the dev folder are
+ * skipped, and production's photos are never changed.
  *
- * Copy the photos of every facility the e2e tests expect to have photos,
- * e.g. the image carousel test's facility.
+ * Pass the slugs to copy, or --all to copy the photos of every facility in
+ * the database DATABASE_URL points at (the dev database). At the least, copy
+ * the facilities the e2e tests expect to have photos, e.g. the image carousel
+ * test's facility.
  *
  * Usage:   npx tsx scripts/copyPhotosToDev.ts <slug> [<slug> ...]
+ *          npx tsx scripts/copyPhotosToDev.ts --all
  * Example: npx tsx scripts/copyPhotosToDev.ts children-of-joy-childrens-home-wattala
  */
 
 import { copy, list, ListBlobResultBlob } from "@vercel/blob";
 import { config } from "dotenv";
+import { PrismaClient } from "@prisma/client";
 
-import {
-    DEV_PHOTO_FOLDER,
-    isPhotoBlobPath,
-    isValidSlug,
-    photoBlobPath,
-} from "../src/utils/photos";
+import { isValidSlug, planDevPhotoCopies } from "../src/utils/photos";
 
-async function listAllBlobs(
-    token: string,
-    prefix: string,
-): Promise<ListBlobResultBlob[]> {
+async function listAllBlobs(token: string): Promise<ListBlobResultBlob[]> {
     const blobs: ListBlobResultBlob[] = [];
     let cursor: string | undefined;
 
     do {
-        const page = await list({ cursor, limit: 1000, prefix, token });
+        const page = await list({ cursor, limit: 1000, token });
         blobs.push(...page.blobs);
         cursor = page.hasMore ? page.cursor : undefined;
     } while (cursor);
@@ -39,45 +35,46 @@ async function listAllBlobs(
     return blobs;
 }
 
-async function copyFacilityPhotos(slug: string, token: string) {
-    const devPrefix = `${DEV_PHOTO_FOLDER}/${slug}/`;
-    const production = (await listAllBlobs(token, `${slug}/`)).filter((b) =>
-        isPhotoBlobPath(b.pathname),
-    );
-    const inDev = new Set(
-        (await listAllBlobs(token, devPrefix)).map((b) => b.pathname),
-    );
+/* Only the host, so the credentials in the URL aren't printed */
+function databaseHost(): string {
+    try {
+        return new URL(process.env.DATABASE_URL ?? "").host || "unknown";
+    } catch {
+        return "unknown";
+    }
+}
 
-    console.log(`${slug}: ${production.length} photos`);
-    for (const blob of production) {
-        const fileName = blob.pathname.slice(slug.length + 1);
-        const devPath = photoBlobPath(slug, fileName, DEV_PHOTO_FOLDER);
-        if (inDev.has(devPath)) {
-            console.log(`  Already copied: ${devPath}`);
-            continue;
-        }
+/* The slugs of every facility in the database */
+async function allFacilitySlugs(): Promise<string[]> {
+    console.log(`Connecting to database host: ${databaseHost()}`);
+    const prisma = new PrismaClient();
 
-        await copy(blob.url, devPath, {
-            access: "public",
-            addRandomSuffix: false,
-            token,
+    try {
+        const facilities = await prisma.childCareFacility.findMany({
+            select: { slug: true },
         });
-        console.log(`  Copied: ${devPath}`);
+
+        return facilities.map((f) => f.slug);
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
 async function main() {
     config();
 
-    const slugs = process.argv.slice(2);
-    if (slugs.length === 0) {
+    const args = process.argv.slice(2);
+    const copyAll = args.includes("--all");
+    const slugArgs = args.filter((arg) => arg !== "--all");
+    if (copyAll === slugArgs.length > 0) {
         console.log(
             "Usage:   npx tsx scripts/copyPhotosToDev.ts <slug> [<slug> ...]",
         );
+        console.log("         npx tsx scripts/copyPhotosToDev.ts --all");
         process.exit(1);
     }
 
-    const invalid = slugs.filter((slug) => !isValidSlug(slug));
+    const invalid = slugArgs.filter((slug) => !isValidSlug(slug));
     if (invalid.length > 0) {
         console.log(`Not a facility slug: ${invalid.join(", ")}`);
         process.exit(1);
@@ -90,8 +87,17 @@ async function main() {
         process.exit(1);
     }
 
-    for (const slug of slugs) {
-        await copyFacilityPhotos(slug, token);
+    const slugs = new Set(copyAll ? await allFacilitySlugs() : slugArgs);
+    const copies = planDevPhotoCopies(await listAllBlobs(token), slugs);
+    console.log(`${slugs.size} facilities, ${copies.length} photos to copy`);
+
+    for (const { url, devPath } of copies) {
+        await copy(url, devPath, {
+            access: "public",
+            addRandomSuffix: false,
+            token,
+        });
+        console.log(`  Copied: ${devPath}`);
     }
 }
 

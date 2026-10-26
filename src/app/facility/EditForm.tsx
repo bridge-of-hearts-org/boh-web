@@ -99,6 +99,8 @@ export default function EditForm(props: EditFormProps) {
         while a delete runs */
     const [saving, setSaving] = useState(false);
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
+    /* Photos that were already stored and reused instead of uploaded */
+    const [photoNotes, setPhotoNotes] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
 
     /* The facility as last saved, which Reset goes back to, and the photos
@@ -149,6 +151,7 @@ export default function EditForm(props: EditFormProps) {
         setResolveError("");
         setResolveNote("");
         setPhotoErrors([]);
+        setPhotoNotes([]);
     };
 
     const savedPhotos = (): StoredPhoto[] =>
@@ -313,9 +316,11 @@ export default function EditForm(props: EditFormProps) {
 
         const slug = formData.slug;
         const errors: string[] = [];
+        const notes: string[] = [];
         const knownFileNames = new Set(formData.photos.map((p) => p.fileName));
 
         setPhotoErrors([]);
+        setPhotoNotes([]);
         setUploadingPhotos(true);
 
         for (const file of files) {
@@ -340,7 +345,10 @@ export default function EditForm(props: EditFormProps) {
 
                 /* Photos are named after their contents, so a photo that's
                     already stored is reused instead of uploaded again */
-                if (!("exists" in result)) {
+                let reused = false;
+                if ("exists" in result) {
+                    reused = true;
+                } else {
                     try {
                         await put(photoBlobPath(slug, fileName), file, {
                             access: "public",
@@ -352,7 +360,15 @@ export default function EditForm(props: EditFormProps) {
                         if (!isBlobAlreadyExistsError(error)) {
                             throw error;
                         }
+
+                        reused = true;
                     }
+                }
+
+                if (reused) {
+                    notes.push(
+                        `${file.name}: this photo was already stored, so the stored copy was reused`,
+                    );
                 }
 
                 knownFileNames.add(fileName);
@@ -370,6 +386,7 @@ export default function EditForm(props: EditFormProps) {
         }
 
         setPhotoErrors(errors);
+        setPhotoNotes(notes);
         setUploadingPhotos(false);
     };
 
@@ -1255,6 +1272,15 @@ export default function EditForm(props: EditFormProps) {
                                     className="text-sm text-red-700"
                                 >
                                     {error}
+                                </span>
+                            ))}
+                            {photoNotes.map((note) => (
+                                <span
+                                    key={note}
+                                    role="status"
+                                    className="text-sm text-gray-700"
+                                >
+                                    {note}
                                 </span>
                             ))}
                         </div>

@@ -222,6 +222,37 @@ export const findOrphanPhotoBlobs = (
         .map((blob) => blob.pathname);
 };
 
+/* A production photo to copy into the dev folder: its URL and the dev
+   pathname to copy it to */
+export type DevPhotoCopy = { url: string; devPath: string };
+
+/* The copies that put the production photos of `slugs` into the dev folder,
+   given every blob in the store. Photos already in the dev folder, and
+   anything that isn't a production photo, are skipped. */
+export const planDevPhotoCopies = (
+    blobs: { pathname: string; url: string }[],
+    slugs: Set<string>,
+): DevPhotoCopy[] => {
+    const inDev = new Set(
+        blobs
+            .filter((b) => isPhotoBlobPath(b.pathname, DEV_PHOTO_FOLDER))
+            .map((b) => b.pathname),
+    );
+
+    return blobs
+        .filter((b) => isPhotoBlobPath(b.pathname))
+        .map((b) => {
+            const [slug, fileName] = b.pathname.split("/");
+            return {
+                slug,
+                url: b.url,
+                devPath: photoBlobPath(slug, fileName, DEV_PHOTO_FOLDER),
+            };
+        })
+        .filter(({ slug, devPath }) => slugs.has(slug) && !inDev.has(devPath))
+        .map(({ url, devPath }) => ({ url, devPath }));
+};
+
 /* The share of photo blobs above which the cleanup script stops unless
    forced: that many unused photos more likely means the wrong database */
 export const MAX_ORPHAN_SHARE = 0.2;
