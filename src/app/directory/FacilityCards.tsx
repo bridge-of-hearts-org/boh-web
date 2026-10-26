@@ -8,13 +8,9 @@ import Button from "@/components/Button";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
 import { fetchAllFacilities, fetchFacilityPins } from "../actions/data";
-import {
-    DirectoryFilterType,
-    District,
-    Province,
-    vercelStorageUrl,
-} from "@/utils/defines";
+import { DirectoryFilterType, District, Province } from "@/utils/defines";
 import { lastPage } from "@/utils/pagination";
+import { photoUrl } from "@/utils/photos";
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
@@ -85,7 +81,10 @@ export async function FacilityCards(props: FacilityCardProps) {
                                 >
                                     {facility.photos.length > 0 && (
                                         <ImageComponent
-                                            src={`${vercelStorageUrl}/${facility.slug}/${facility.photos[0].fileName}`}
+                                            src={photoUrl(
+                                                facility.slug,
+                                                facility.photos[0].fileName,
+                                            )}
                                             sizes="180px"
                                             width={180}
                                             height={180}

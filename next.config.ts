@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
+import { photoFolderFor } from "./src/utils/photoFolder";
+
 const nextConfig: NextConfig = {
+    env: {
+        /* Vercel sets VERCEL_ENV for builds; production photos stay at the
+           top of the Blob store and every other build uses the dev folder */
+        NEXT_PUBLIC_PHOTO_FOLDER: photoFolderFor(process.env.VERCEL_ENV),
+    },
     images: {
         remotePatterns: [
             {

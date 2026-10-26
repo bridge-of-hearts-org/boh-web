@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { PhotoEntry } from "@prisma/client";
-import { vercelStorageUrl } from "@/utils/defines";
+import { photoUrl } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
 
 type ImageCarouselProps = {
@@ -47,7 +47,7 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                 {photos.map((photo) => (
                     <ImageComponent
                         key={photo.fileName}
-                        src={`${vercelStorageUrl}/${slug}/${photo.fileName}`}
+                        src={photoUrl(slug, photo.fileName)}
                         sizes="220px"
                         width={220}
                         height={220}
@@ -75,7 +75,7 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                     </button>
                     <div className="relative">
                         <ImageComponent
-                            src={`${vercelStorageUrl}/${slug}/${enlargedImage.photo.fileName}`}
+                            src={photoUrl(slug, enlargedImage.photo.fileName)}
                             sizes="(max-width: 1024px) 90vw, (max-width: 1768px) 70vw, 50vw"
                             width={1024}
                             height={768}

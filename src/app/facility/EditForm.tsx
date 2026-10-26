@@ -23,7 +23,6 @@ import {
     DistrictsList,
     emptyChildCareFacilityDbObject,
     ProvincesList,
-    vercelStorageUrl,
 } from "@/utils/defines";
 import Button from "@/components/Button";
 import {
@@ -46,6 +45,9 @@ import {
     PhotoContentTypes,
     photoFileName,
     deletePhotosInBatches,
+    isBlobAlreadyExistsError,
+    photoBlobPath,
+    photoUrl,
     StoredPhoto,
     validatePhotoFile,
 } from "@/utils/photos";
@@ -336,11 +338,22 @@ export default function EditForm(props: EditFormProps) {
                     continue;
                 }
 
-                await put(`${slug}/${fileName}`, file, {
-                    access: "public",
-                    token: result.token,
-                    contentType: file.type,
-                });
+                /* Photos are named after their contents, so a photo that's
+                    already stored is reused instead of uploaded again */
+                if (!("exists" in result)) {
+                    try {
+                        await put(photoBlobPath(slug, fileName), file, {
+                            access: "public",
+                            token: result.token,
+                            contentType: file.type,
+                        });
+                    } catch (error) {
+                        /* Stored since the server checked */
+                        if (!isBlobAlreadyExistsError(error)) {
+                            throw error;
+                        }
+                    }
+                }
 
                 knownFileNames.add(fileName);
                 unsavedUploadsRef.current.push({ slug, fileName });
@@ -1260,7 +1273,10 @@ export default function EditForm(props: EditFormProps) {
                                     className="flex flex-col items-center gap-2"
                                 >
                                     <ImageComponent
-                                        src={`${vercelStorageUrl}/${formData.slug}/${photo.fileName}`}
+                                        src={photoUrl(
+                                            formData.slug,
+                                            photo.fileName,
+                                        )}
                                         sizes="200px"
                                         width={200}
                                         height={200}

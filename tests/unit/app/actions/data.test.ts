@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { Prisma } from "@prisma/client";
-import { del } from "@vercel/blob";
+import { BlobNotFoundError, del, head } from "@vercel/blob";
 
 import {
     addFacility,
@@ -52,8 +52,11 @@ vi.mock("@vercel/blob/client", () => ({
     generateClientTokenFromReadWriteToken: vi.fn(),
 }));
 
-vi.mock("@vercel/blob", () => ({
+/* The error classes stay real, so the actions can tell them apart */
+vi.mock("@vercel/blob", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("@vercel/blob")>()),
     del: vi.fn(),
+    head: vi.fn(),
 }));
 
 const UNAUTHORIZED = "Unauthorized: admin login required";
@@ -553,12 +556,17 @@ describe("resolveLatLng", () => {
 });
 
 describe("createPhotoUploadToken", () => {
+    const STORAGE = "https://hzhlx0obnpowbirz.public.blob.vercel-storage.com";
     const FILE_NAME = "0123456789abcdef.png";
     const generateToken = vi.mocked(generateClientTokenFromReadWriteToken);
+    const headBlob = vi.mocked(head);
 
     beforeEach(() => {
         vi.stubEnv("BLOB_READ_WRITE_TOKEN", "blob-token");
+        /* Production's photo folder */
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "");
         generateToken.mockResolvedValue("client-token");
+        headBlob.mockRejectedValue(new BlobNotFoundError());
     });
 
     it("refuses without an admin session", async () => {
@@ -566,6 +574,44 @@ describe("createPhotoUploadToken", () => {
             error: UNAUTHORIZED,
         });
         expect(generateToken).not.toHaveBeenCalled();
+        expect(headBlob).not.toHaveBeenCalled();
+    });
+
+    it("reports a photo that's already stored instead of issuing a token", async () => {
+        loginAsAdmin();
+        headBlob.mockResolvedValue({} as any);
+
+        expect(await createPhotoUploadToken("home", FILE_NAME)).toEqual({
+            exists: true,
+        });
+        expect(headBlob).toHaveBeenCalledWith(`${STORAGE}/home/${FILE_NAME}`, {
+            token: "blob-token",
+        });
+        expect(generateToken).not.toHaveBeenCalled();
+    });
+
+    it("still issues a token when it can't check for a stored photo", async () => {
+        loginAsAdmin();
+        headBlob.mockRejectedValue(new Error("Blob API down"));
+
+        expect(await createPhotoUploadToken("home", FILE_NAME)).toEqual({
+            token: "client-token",
+        });
+    });
+
+    it("keeps photos in the dev folder outside production", async () => {
+        loginAsAdmin();
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "dev");
+
+        await createPhotoUploadToken("home", FILE_NAME);
+
+        expect(headBlob).toHaveBeenCalledWith(
+            `${STORAGE}/dev/home/${FILE_NAME}`,
+            { token: "blob-token" },
+        );
+        expect(generateToken).toHaveBeenCalledWith(
+            expect.objectContaining({ pathname: `dev/home/${FILE_NAME}` }),
+        );
     });
 
     it.each(["Home", "../home", "home/photos", "", 123])(
@@ -667,8 +713,23 @@ describe("deleteUnusedPhotos", () => {
 
     beforeEach(() => {
         vi.stubEnv("BLOB_READ_WRITE_TOKEN", "blob-token");
+        /* Production's photo folder */
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "");
         deleteBlobs.mockResolvedValue(undefined);
         savedPhotos(USED);
+    });
+
+    it("deletes from the dev folder outside production", async () => {
+        loginAsAdmin();
+        vi.stubEnv("NEXT_PUBLIC_PHOTO_FOLDER", "dev");
+
+        expect(await deleteUnusedPhotos("home", [UNUSED])).toEqual({
+            deleted: [UNUSED],
+        });
+        expect(deleteBlobs).toHaveBeenCalledWith(
+            [`${STORAGE}/dev/home/${UNUSED}`],
+            { token: "blob-token" },
+        );
     });
 
     it("refuses without an admin session", async () => {

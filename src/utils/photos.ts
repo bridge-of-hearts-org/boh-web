@@ -1,6 +1,28 @@
 /* Shared rules for facility photos uploaded from the admin form. Photos are
    stored in Vercel Blob at `<slug>/<fileName>`, the same layout the sync
-   script uses, so the rest of the site finds them without changes. */
+   script uses, so the rest of the site finds them without changes. Outside
+   production they go under DEV_PHOTO_FOLDER instead. */
+
+import { vercelStorageUrl } from "./defines";
+import { DEV_PHOTO_FOLDER } from "./photoFolder";
+
+export { DEV_PHOTO_FOLDER, photoFolderFor } from "./photoFolder";
+
+/* This deployment's photo folder. next.config.ts sets it at build time, so
+   the browser and the server agree on it. */
+export const currentPhotoFolder = (): string =>
+    process.env.NEXT_PUBLIC_PHOTO_FOLDER ?? DEV_PHOTO_FOLDER;
+
+/* A photo's pathname in Vercel Blob: `[<folder>/]<slug>/<fileName>` */
+export const photoBlobPath = (
+    slug: string,
+    fileName: string,
+    folder: string = currentPhotoFolder(),
+): string => (folder ? `${folder}/${slug}/${fileName}` : `${slug}/${fileName}`);
+
+/* A photo's public URL in this deployment's photo folder */
+export const photoUrl = (slug: string, fileName: string): string =>
+    `${vercelStorageUrl}/${photoBlobPath(slug, fileName)}`;
 
 export const PhotoContentTypes: Record<string, string> = {
     "image/jpeg": "jpg",
@@ -83,7 +105,12 @@ export const photoFileName = async (file: File): Promise<string> => {
     return `${hash}.${PhotoContentTypes[file.type]}`;
 };
 
-/* A photo's place in Vercel Blob: `<slug>/<fileName>` */
+/* Whether a failed upload failed because the blob is already stored. Photos
+   are named after their contents, so the stored blob is the same photo. */
+export const isBlobAlreadyExistsError = (error: unknown): boolean =>
+    error instanceof Error && /already exists/i.test(error.message);
+
+/* A photo's place in Vercel Blob, within the photo folder */
 export type StoredPhoto = { slug: string; fileName: string };
 
 /* The photos to delete from storage, grouped by slug: every candidate that
@@ -148,9 +175,18 @@ export const deletePhotosInBatches = async (
     return deleted;
 };
 
-/* Whether a blob is a facility photo: `<slug>/<hashed photo name>`. Anything
-   else in the store is never treated as a photo. */
-export const isPhotoBlobPath = (pathname: string): boolean => {
+/* Whether a blob is a facility photo in `folder`:
+   `[<folder>/]<slug>/<hashed photo name>`. Anything else in the store,
+   including photos in another folder, is never treated as a photo. */
+export const isPhotoBlobPath = (pathname: string, folder = ""): boolean => {
+    if (folder) {
+        if (!pathname.startsWith(`${folder}/`)) {
+            return false;
+        }
+
+        pathname = pathname.slice(folder.length + 1);
+    }
+
     const parts = pathname.split("/");
 
     return (
@@ -163,22 +199,23 @@ export const isPhotoBlobPath = (pathname: string): boolean => {
 /* The pathnames of stored photos no facility uses: photo blobs whose
    facility doesn't list them, or whose slug has no facility. Blobs uploaded
    after `uploadedBefore` are skipped, so photos an admin has just uploaded
-   but not saved yet are left alone. */
+   but not saved yet are left alone. Only photos in `folder` are looked at. */
 export const findOrphanPhotoBlobs = (
     blobs: { pathname: string; uploadedAt: Date }[],
     facilities: { slug: string; photos: { fileName: string }[] }[],
     uploadedBefore: Date,
+    folder = "",
 ): string[] => {
     const inUse = new Set(
         facilities.flatMap((f) =>
-            f.photos.map((p) => `${f.slug}/${p.fileName}`),
+            f.photos.map((p) => photoBlobPath(f.slug, p.fileName, folder)),
         ),
     );
 
     return blobs
         .filter(
             (blob) =>
-                isPhotoBlobPath(blob.pathname) &&
+                isPhotoBlobPath(blob.pathname, folder) &&
                 blob.uploadedAt < uploadedBefore &&
                 !inUse.has(blob.pathname),
         )

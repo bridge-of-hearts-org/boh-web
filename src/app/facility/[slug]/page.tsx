@@ -18,7 +18,7 @@ import {
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
-import { vercelStorageUrl } from "@/utils/defines";
+import { photoUrl } from "@/utils/photos";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
 import {
@@ -57,7 +57,7 @@ export async function generateMetadata({
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
                           return {
-                              url: `${vercelStorageUrl}/${facility.slug}/${photo.fileName}`,
+                              url: photoUrl(facility.slug, photo.fileName),
                           };
                       })
                     : [],
@@ -137,9 +137,8 @@ export default async function FacilityProfilePage({
         ].filter(Boolean),
         image:
             data.photos.length > 0
-                ? data.photos.map(
-                      (photo) =>
-                          `${vercelStorageUrl}/${data.slug}/${photo.fileName}`,
+                ? data.photos.map((photo) =>
+                      photoUrl(data.slug, photo.fileName),
                   )
                 : ["public/images/facility-directory-icon-default.png"],
         knowsAbout: [

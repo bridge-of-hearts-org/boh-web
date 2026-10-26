@@ -4,12 +4,11 @@ import {
     ChildCareFacilityInput,
     DirectoryFilterType,
     FacilityPin,
-    vercelStorageUrl,
 } from "@/utils/defines";
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
-import { del } from "@vercel/blob";
+import { BlobNotFoundError, del, head } from "@vercel/blob";
 import { parseItemsPerPage, parsePage } from "@/utils/pagination";
 
 import { prisma } from "@/utils/db";
@@ -28,7 +27,9 @@ import {
     isDeletablePhotoFileName,
     MAX_PHOTO_SIZE_BYTES,
     MAX_PHOTOS_PER_DELETE,
+    photoBlobPath,
     photosToDelete,
+    photoUrl,
 } from "@/utils/photos";
 import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
@@ -344,11 +345,13 @@ export async function resolveLatLng(
 
 /* Issues a short-lived token that lets the browser upload one photo straight
    to Vercel Blob, so the file never passes through this server's request size
-   limit. The token only allows the given path, content type and size. */
+   limit. The token only allows the given path, content type and size.
+   Photos are named after their contents, so if the photo is already stored
+   it returns `exists` instead, and the form reuses the stored photo. */
 export async function createPhotoUploadToken(
     slug: string,
     fileName: string,
-): Promise<{ token: string } | { error: string }> {
+): Promise<{ token: string } | { exists: true } | { error: string }> {
     if (!(await getServerAuth())) {
         return { error: UNAUTHORIZED };
     }
@@ -371,9 +374,19 @@ export async function createPhotoUploadToken(
     }
 
     try {
+        await head(photoUrl(slug, fileName), { token: blobToken });
+        return { exists: true };
+    } catch (error) {
+        /* If the check itself failed, try the upload anyway */
+        if (!(error instanceof BlobNotFoundError)) {
+            console.log("Couldn't check whether the photo is stored", error);
+        }
+    }
+
+    try {
         const token = await generateClientTokenFromReadWriteToken({
             token: blobToken,
-            pathname: `${slug}/${fileName}`,
+            pathname: photoBlobPath(slug, fileName),
             allowedContentTypes: [contentType],
             maximumSizeInBytes: MAX_PHOTO_SIZE_BYTES,
             addRandomSuffix: false,
@@ -444,9 +457,7 @@ export async function deleteUnusedPhotos(
 
     try {
         await del(
-            toDelete.map(
-                (fileName) => `${vercelStorageUrl}/${slug}/${fileName}`,
-            ),
+            toDelete.map((fileName) => photoUrl(slug, fileName)),
             { token: blobToken },
         );
     } catch (error) {

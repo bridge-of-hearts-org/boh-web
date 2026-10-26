@@ -4,7 +4,10 @@
  * Pulls children's home data from a Google Sheet tab, downloads photos,
  * upserts facilities into the database, and uploads photos to Vercel Blob.
  *
- * Usage:   npx tsx scripts/syncFacilities.ts <sheet-name>
+ * Photos go to production's photo folder. Pass --dev when syncing into the
+ * dev database, so they go to the dev folder instead.
+ *
+ * Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]
  * Example: npx tsx scripts/syncFacilities.ts "Central Province"
  */
 
@@ -22,6 +25,7 @@ import {
     mergeSheetVerification,
     parseRow,
 } from "./syncHelpers";
+import { DEV_PHOTO_FOLDER, photoBlobPath } from "../src/utils/photos";
 
 const SCRIPTS_DIR = __dirname;
 const PHOTOS_DIR = path.join(SCRIPTS_DIR, "data", "photos");
@@ -102,11 +106,13 @@ async function pullFromSheet(sheetName: string): Promise<Record<string, string>[
 // --- Vercel Blob upload ---
 
 async function vercelUpload(
-    slug: string,
     vercelPath: string,
     fileBuffer: Buffer,
 ): Promise<void> {
-    const blobs = await list({ prefix: slug, token: process.env.VERCEL_TOKEN });
+    const blobs = await list({
+        prefix: vercelPath,
+        token: process.env.VERCEL_TOKEN,
+    });
     const blobExists = blobs.blobs.some((b) => b.pathname === vercelPath);
 
     if (!blobExists) {
@@ -123,7 +129,7 @@ async function vercelUpload(
 
 // --- Main sync ---
 
-async function syncSheet(sheetName: string) {
+async function syncSheet(sheetName: string, photoFolder: string) {
     console.log(`\nPulling data from sheet: "${sheetName}"`);
     const rows = await pullFromSheet(sheetName);
 
@@ -203,8 +209,7 @@ async function syncSheet(sheetName: string) {
                         const filePath = path.join(facilityPhotosDir, photo.fileName);
                         if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
                             await vercelUpload(
-                                entry.slug,
-                                `${entry.slug}/${photo.fileName}`,
+                                photoBlobPath(entry.slug, photo.fileName, photoFolder),
                                 fs.readFileSync(filePath),
                             );
                         }
@@ -224,9 +229,11 @@ async function syncSheet(sheetName: string) {
 // --- Entry point ---
 
 async function main() {
-    const sheetName = process.argv[2];
+    const args = process.argv.slice(2);
+    const sheetName = args.find((arg) => arg !== "--dev");
+    const photoFolder = args.includes("--dev") ? DEV_PHOTO_FOLDER : "";
     if (!sheetName) {
-        console.log("Usage:   npx tsx scripts/syncFacilities.ts <sheet-name>");
+        console.log("Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]");
         console.log('Example: npx tsx scripts/syncFacilities.ts "Central Province"');
         process.exit(1);
     }
@@ -235,7 +242,8 @@ async function main() {
     console.log(`Connecting to: ${process.env.DATABASE_URL}`);
 
     try {
-        await syncSheet(sheetName);
+        console.log(`Photo folder: ${photoFolder || "production"}`);
+        await syncSheet(sheetName, photoFolder);
     } finally {
         await prisma.$disconnect();
     }
