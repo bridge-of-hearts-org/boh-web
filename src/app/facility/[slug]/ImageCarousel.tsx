@@ -46,7 +46,7 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
     const enlargedPhoto = enlargedIndex === null ? null : photos[enlargedIndex];
 
     const arrowClassName =
-        "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40";
+        "absolute top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white hover:bg-white/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white";
 
     return (
         <>
@@ -134,7 +134,11 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                             >
                                 <ChevronRight size={24} />
                             </button>
-                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-sm text-white">
+                            {/* The photo's alt text already gives its position */}
+                            <div
+                                aria-hidden="true"
+                                className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-sm text-white"
+                            >
                                 {enlargedIndex + 1} / {count}
                             </div>
                         </>
