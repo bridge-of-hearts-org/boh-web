@@ -10,10 +10,10 @@ import SortingBar from "./SortingBar";
 import { fetchAllFacilities, fetchFacilityPins } from "../actions/data";
 import { DirectoryFilterType, District, Province } from "@/utils/defines";
 import { lastPage } from "@/utils/pagination";
-import { photoUrl } from "@/utils/photos";
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
+import ListingPhotoCarousel from "./ListingPhotoCarousel";
 
 type FacilityCardProps = {
     name: string;
@@ -75,24 +75,20 @@ export async function FacilityCards(props: FacilityCardProps) {
                     return (
                         <Card key={facility.id}>
                             <div className="flex flex-col items-center gap-5 md:flex-row md:items-stretch">
-                                <Link
-                                    href={`/facility/${facility.slug}`}
-                                    className="self-center"
-                                >
-                                    {facility.photos.length > 0 && (
-                                        <ImageComponent
-                                            src={photoUrl(
-                                                facility.slug,
-                                                facility.photos[0].fileName,
-                                            )}
-                                            sizes="180px"
-                                            width={180}
-                                            height={180}
-                                            alt="A picture taken at the children's home facility"
-                                            className="h-[180px] w-[180px] object-cover"
-                                        />
-                                    )}
-                                    {facility.photos.length == 0 && (
+                                {facility.photos.length > 0 && (
+                                    <ListingPhotoCarousel
+                                        slug={facility.slug}
+                                        name={facility.name}
+                                        photoFileNames={facility.photos.map(
+                                            (photo) => photo.fileName,
+                                        )}
+                                    />
+                                )}
+                                {facility.photos.length == 0 && (
+                                    <Link
+                                        href={`/facility/${facility.slug}`}
+                                        className="self-center"
+                                    >
                                         <div className="h-[180px] w-[180px] rounded-3xl bg-orange-50 p-10">
                                             <ImageComponent
                                                 src={DefaultFacilityIconImage}
@@ -106,8 +102,8 @@ export async function FacilityCards(props: FacilityCardProps) {
                                                 }
                                             />
                                         </div>
-                                    )}
-                                </Link>
+                                    </Link>
+                                )}
                                 <div className="flex grow flex-col justify-center gap-5">
                                     {/* Title section */}
                                     <div className="flex flex-col items-center gap-1 md:items-start">
