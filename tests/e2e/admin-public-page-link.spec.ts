@@ -1,14 +1,6 @@
 import { test, expect, Page } from "@playwright/test";
 
-import { hasCredentials, login } from "./admin-helpers";
-
-async function getExistingSlug(page: Page): Promise<string> {
-    await page.goto("/directory");
-    const link = page.locator('a[href^="/facility/"]').first();
-    await expect(link).toBeVisible({ timeout: 10000 });
-    const href = await link.getAttribute("href");
-    return href!.replace("/facility/", "");
-}
+import { getExistingSlug, hasCredentials, login } from "./admin-helpers";
 
 /* Traces record request bodies and cookies, which here include the admin
    password and session, and would end up in the uploaded report */

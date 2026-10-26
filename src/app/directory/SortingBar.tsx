@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Loader } from "lucide-react";
 
 import Card from "@/components/Card";
-import { defaultSortBy, defaultItemsPerPage } from "@/utils/defines";
+import { defaultSortBy } from "@/utils/defines";
+import { parsePage } from "@/utils/pagination";
 
 type SortingBarProps = {
     page: number;
@@ -19,7 +20,7 @@ export default function SortingBar(props: SortingBarProps) {
     const [isPending, startTransition] = useTransition();
 
     const sortBy = searchParams.get("sortBy") || defaultSortBy;
-    const itemsPerPage = Number(searchParams.get("itemsPerPage")) || props.itemsPerPage;
+    const itemsPerPage = props.itemsPerPage;
 
     /* Calculate start and end item indices in the page */
     const displayStart = (props.page - 1) * props.itemsPerPage + 1;
@@ -32,7 +33,7 @@ export default function SortingBar(props: SortingBarProps) {
     function navigate(newSortBy: string, newItemsPerPage: number) {
         const params = new URLSearchParams(searchParams);
         const currentSortBy = searchParams.get("sortBy") || defaultSortBy;
-        const currentPage = searchParams.get("page") || "1";
+        const currentPage = String(parsePage(searchParams.get("page")));
         const newPage = currentSortBy === newSortBy ? currentPage : "1";
 
         params.set("sortBy", newSortBy);
@@ -65,7 +66,9 @@ export default function SortingBar(props: SortingBarProps) {
                             name="sortBy"
                             value={sortBy}
                             disabled={isPending}
-                            onChange={(e) => navigate(e.target.value, itemsPerPage)}
+                            onChange={(e) =>
+                                navigate(e.target.value, itemsPerPage)
+                            }
                         >
                             <option value="name">Name</option>
                             <option value="city">City</option>
@@ -75,7 +78,9 @@ export default function SortingBar(props: SortingBarProps) {
                             name="itemsPerPage"
                             value={itemsPerPage}
                             disabled={isPending}
-                            onChange={(e) => navigate(sortBy, Number(e.target.value))}
+                            onChange={(e) =>
+                                navigate(sortBy, Number(e.target.value))
+                            }
                         >
                             {[5, 10, 20, 50].map((n) => (
                                 <option key={n} value={n}>

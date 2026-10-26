@@ -4,7 +4,10 @@
  * Pulls children's home data from a Google Sheet tab, downloads photos,
  * upserts facilities into the database, and uploads photos to Vercel Blob.
  *
- * Usage:   npx tsx scripts/syncFacilities.ts <sheet-name>
+ * Photos go to production's photo folder. Pass --dev when syncing into the
+ * dev database, so they go to the dev folder instead.
+ *
+ * Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]
  * Example: npx tsx scripts/syncFacilities.ts "Central Province"
  */
 
@@ -14,9 +17,15 @@ import crypto from "crypto";
 import { google } from "googleapis";
 import { put, list } from "@vercel/blob";
 import { config } from "dotenv";
-import { Gender, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-import { extractLatLng } from "../src/utils/maps";
+import {
+    detectImageType,
+    fileTypeFromUrl,
+    mergeSheetVerification,
+    parseRow,
+} from "./syncHelpers";
+import { DEV_PHOTO_FOLDER, photoBlobPath } from "../src/utils/photos";
 
 const SCRIPTS_DIR = __dirname;
 const PHOTOS_DIR = path.join(SCRIPTS_DIR, "data", "photos");
@@ -28,48 +37,7 @@ const GOOGLE_CREDENTIALS = JSON.parse(fs.readFileSync(CREDENTIALS_FILE, "utf-8")
 
 const prisma = new PrismaClient();
 
-// --- Image helpers ---
-
-function detectImageType(buffer: Buffer): string | null {
-    if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-        return "jpg";
-    }
-    if (
-        buffer[0] === 0x89 &&
-        buffer[1] === 0x50 &&
-        buffer[2] === 0x4e &&
-        buffer[3] === 0x47
-    ) {
-        return "png";
-    }
-    if (
-        buffer[0] === 0x52 &&
-        buffer[1] === 0x49 &&
-        buffer[2] === 0x46 &&
-        buffer[3] === 0x46 &&
-        buffer[8] === 0x57 &&
-        buffer[9] === 0x45 &&
-        buffer[10] === 0x42 &&
-        buffer[11] === 0x50
-    ) {
-        return "webp";
-    }
-    if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46) {
-        return "gif";
-    }
-    return null;
-}
-
-function fileTypeFromUrl(url: string): string | null {
-    const ext = url.split("?")[0].split(".").pop()?.toLowerCase();
-    if (ext === "jpeg") {
-        return "jpg";
-    }
-    if (ext && ["jpg", "png", "webp", "gif"].includes(ext)) {
-        return ext;
-    }
-    return null;
-}
+// --- Photo download ---
 
 async function downloadPhoto(
     facilityName: string,
@@ -135,90 +103,16 @@ async function pullFromSheet(sheetName: string): Promise<Record<string, string>[
     });
 }
 
-// --- Data transformation ---
-
-async function parseRow(row: Record<string, string>) {
-    if (!row["Slug"]?.trim()) {
-        return null;
-    }
-
-    const gender = row["Accepted Genders"]?.trim() ?? "";
-    if (!["Male", "Female", "Both", ""].includes(gender)) {
-        throw new Error(`Invalid gender: "${gender}" | ${row["Name"]}`);
-    }
-
-    const phones = row["Phone Numbers"]
-        ? row["Phone Numbers"].split(",").map((p) => p.trim()).filter(Boolean)
-        : [];
-    for (const phone of phones) {
-        if (!phone.startsWith("0") || phone.length !== 10) {
-            throw new Error(`Invalid phone: "${phone}" | ${row["Name"]}`);
-        }
-    }
-
-    const emails = row["Email Addresses"]
-        ? row["Email Addresses"].split(",").map((e) => e.trim()).filter(Boolean)
-        : [];
-    for (const email of emails) {
-        if (!email.includes("@")) {
-            throw new Error(`Invalid email: "${email}" | ${row["Name"]}`);
-        }
-    }
-
-    const googleUrl = row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "";
-    const coords = googleUrl ? await extractLatLng(googleUrl) : null;
-
-    return {
-        name: row["Name"].trim(),
-        slug: row["Slug"].trim(),
-        type: row["Type"]?.trim() || "Voluntary Children's Home",
-        managedBy: row["Managed By"]?.trim() ?? "",
-        description: row["Description"]?.trim() ?? "",
-        location: {
-            address: row["Address"]?.trim() ?? "",
-            city: row["City"]?.trim() ?? "",
-            district: row["District"]?.trim() ?? "",
-            province: row["Province"]?.trim() ?? "",
-            divisionalSecretariat: row["Divisional Secretariat"]?.trim() ?? "",
-            google: coords?.resolvedUrl ?? googleUrl,
-            latitude: coords?.latitude ?? null,
-            longitude: coords?.longitude ?? null,
-        },
-        contact: {
-            phone: phones,
-            email: emails,
-            website: row["Website"]?.trim().replace(/[/ ]+$/, "") ?? "",
-            facebook: row["Facebook"]?.trim().replace(/[/ ]+$/, "") ?? "",
-            instagram: row["Instagram"]?.trim().replace(/[/ ]+$/, "") ?? "",
-        },
-        genders: (gender.toLowerCase() || "unknown") as Gender,
-        occupancy: {
-            total: row["Count - Total"] ? parseInt(row["Count - Total"]) : null,
-            male: row["Count - Male"] ? parseInt(row["Count - Male"]) : null,
-            female: row["Count - Female"] ? parseInt(row["Count - Female"]) : null,
-        },
-        ageRanges: {
-            all: row["Age Range - All"]?.trim() ?? "",
-            male: row["Age Range - Male"]?.trim() ?? "",
-            female: row["Age Range - Female"]?.trim() ?? "",
-        },
-        photoUrls: row["Photos"]
-            ? row["Photos"].split("|").map((u) => u.trim()).filter(Boolean)
-            : [],
-        sources: row["Sources"]
-            ? row["Sources"].split("|").map((s) => s.trim()).filter(Boolean)
-            : [],
-    };
-}
-
 // --- Vercel Blob upload ---
 
 async function vercelUpload(
-    slug: string,
     vercelPath: string,
     fileBuffer: Buffer,
 ): Promise<void> {
-    const blobs = await list({ prefix: slug, token: process.env.VERCEL_TOKEN });
+    const blobs = await list({
+        prefix: vercelPath,
+        token: process.env.VERCEL_TOKEN,
+    });
     const blobExists = blobs.blobs.some((b) => b.pathname === vercelPath);
 
     if (!blobExists) {
@@ -235,7 +129,7 @@ async function vercelUpload(
 
 // --- Main sync ---
 
-async function syncSheet(sheetName: string) {
+async function syncSheet(sheetName: string, photoFolder: string) {
     console.log(`\nPulling data from sheet: "${sheetName}"`);
     const rows = await pullFromSheet(sheetName);
 
@@ -247,7 +141,12 @@ async function syncSheet(sheetName: string) {
     let upsertedCount = 0;
 
     for (const facility of facilities) {
-        const { photoUrls, ...facilityData } = facility;
+        const { photoUrls, sheetVerification, warnings, ...facilityData } =
+            facility;
+
+        for (const warning of warnings) {
+            console.warn(`  Warning: ${warning}`);
+        }
 
         // Download photos
         const photos: { fileName: string; source: string }[] = [];
@@ -265,7 +164,7 @@ async function syncSheet(sheetName: string) {
             // photos whose source URLs may have become unavailable since last sync.
             const existing = await prisma.childCareFacility.findUnique({
                 where: { slug: facilityData.slug },
-                select: { photos: true },
+                select: { photos: true, verification: true },
             });
             const mergedPhotos = new Map(
                 (existing?.photos ?? []).map((p) => [p.fileName, p]),
@@ -275,9 +174,15 @@ async function syncSheet(sheetName: string) {
             }
             const finalPhotos = Array.from(mergedPhotos.values());
 
+            const verification = mergeSheetVerification(
+                sheetVerification,
+                facilityData,
+                existing,
+            );
+
             const entry = await prisma.childCareFacility.upsert({
                 where: { slug: facilityData.slug },
-                create: { ...facilityData, photos: finalPhotos },
+                create: { ...facilityData, photos: finalPhotos, verification },
                 update: {
                     name: facilityData.name,
                     type: facilityData.type,
@@ -290,6 +195,7 @@ async function syncSheet(sheetName: string) {
                     ageRanges: facilityData.ageRanges,
                     photos: finalPhotos,
                     sources: facilityData.sources,
+                    verification: verification,
                 },
             });
 
@@ -303,8 +209,11 @@ async function syncSheet(sheetName: string) {
                         const filePath = path.join(facilityPhotosDir, photo.fileName);
                         if (fs.existsSync(filePath) && fs.lstatSync(filePath).isFile()) {
                             await vercelUpload(
-                                entry.slug,
-                                `${entry.slug}/${photo.fileName}`,
+                                photoBlobPath(
+                                    entry.slug,
+                                    photo.fileName,
+                                    photoFolder,
+                                ),
                                 fs.readFileSync(filePath),
                             );
                         }
@@ -324,9 +233,13 @@ async function syncSheet(sheetName: string) {
 // --- Entry point ---
 
 async function main() {
-    const sheetName = process.argv[2];
+    const args = process.argv.slice(2);
+    const sheetName = args.find((arg) => arg !== "--dev");
+    const photoFolder = args.includes("--dev") ? DEV_PHOTO_FOLDER : "";
     if (!sheetName) {
-        console.log("Usage:   npx tsx scripts/syncFacilities.ts <sheet-name>");
+        console.log(
+            "Usage:   npx tsx scripts/syncFacilities.ts <sheet-name> [--dev]",
+        );
         console.log('Example: npx tsx scripts/syncFacilities.ts "Central Province"');
         process.exit(1);
     }
@@ -335,7 +248,8 @@ async function main() {
     console.log(`Connecting to: ${process.env.DATABASE_URL}`);
 
     try {
-        await syncSheet(sheetName);
+        console.log(`Photo folder: ${photoFolder || "production"}`);
+        await syncSheet(sheetName, photoFolder);
     } finally {
         await prisma.$disconnect();
     }

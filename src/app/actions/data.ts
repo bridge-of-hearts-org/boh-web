@@ -8,6 +8,9 @@ import {
 import { ChildCareFacility, Prisma } from "@prisma/client";
 import { config } from "dotenv";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
+import { BlobNotFoundError, del, head } from "@vercel/blob";
+import { parseItemsPerPage, parsePage } from "@/utils/pagination";
+import { abortAfter } from "@/utils/utils";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
@@ -22,12 +25,28 @@ import {
     contentTypeForFileName,
     isValidPhotoFileName,
     isValidSlug,
+    isDeletablePhotoFileName,
     MAX_PHOTO_SIZE_BYTES,
+    MAX_PHOTOS_PER_DELETE,
+    photoBlobPath,
+    photosToDelete,
+    photoUrl,
 } from "@/utils/photos";
+import { normalizeVerification } from "@/utils/verification";
+import { describeFacilityWriteError } from "@/utils/dbErrors";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
 const UNAUTHORIZED = "Unauthorized: admin login required";
+const INVALID_SLUG =
+    "The slug may only contain lowercase letters, numbers and hyphens";
+
+/* How long createPhotoUploadToken waits to learn whether a photo is stored */
+const PHOTO_CHECK_TIMEOUT_MS = 5000;
+
+/* The sync script calls the Blob read-write token VERCEL_TOKEN */
+const getBlobToken = (): string | undefined =>
+    process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
 
 type FilteredFacilityResponse = Promise<
     [data: ChildCareFacility[], totalCount: number]
@@ -87,7 +106,7 @@ function buildFilter(
             location: {
                 is: {
                     province: {
-                        contains: filterValues.province,
+                        equals: filterValues.province,
                         mode: "insensitive",
                     },
                 },
@@ -127,14 +146,18 @@ export async function fetchAllFacilities(
         }
     };
 
+    /* Server actions are public endpoints, so don't trust the paging arguments */
+    const safePage = parsePage(page);
+    const safeItemsPerPage = parseItemsPerPage(itemsPerPage);
+
     try {
         const [facilities, totalCount] = await prisma.$transaction([
             prisma.childCareFacility.findMany({
                 where: {
                     AND: buildFilter(filterValues),
                 },
-                take: itemsPerPage,
-                skip: (page - 1) * itemsPerPage,
+                take: safeItemsPerPage,
+                skip: (safePage - 1) * safeItemsPerPage,
                 orderBy: getOrderBy(),
             }),
             prisma.childCareFacility.count({
@@ -267,17 +290,14 @@ export async function updateFacility(
             where: {
                 slug: data.slug,
             },
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
-
-        if (error instanceof Error) {
-            return error.message;
-        } else {
-            console.log(error);
-            return `Unknown Error: ${error}`;
-        }
+        return describeFacilityWriteError(error);
     }
 
     return "success";
@@ -292,17 +312,14 @@ export async function addFacility(
 
     try {
         await prisma.childCareFacility.create({
-            data: data,
+            data: {
+                ...data,
+                verification: normalizeVerification(data),
+            },
         });
     } catch (error) {
         console.log("Ran into prisma error", error);
-
-        if (error instanceof Error) {
-            return error.message;
-        } else {
-            console.log(error);
-            return `Unknown Error: ${error}`;
-        }
+        return describeFacilityWriteError(error);
     }
 
     return "success";
@@ -332,19 +349,19 @@ export async function resolveLatLng(
 
 /* Issues a short-lived token that lets the browser upload one photo straight
    to Vercel Blob, so the file never passes through this server's request size
-   limit. The token only allows the given path, content type and size. */
+   limit. The token only allows the given path, content type and size.
+   Photos are named after their contents, so if the photo is already stored
+   it returns `exists` instead, and the form reuses the stored photo. */
 export async function createPhotoUploadToken(
     slug: string,
     fileName: string,
-): Promise<{ token: string } | { error: string }> {
+): Promise<{ token: string } | { exists: true } | { error: string }> {
     if (!(await getServerAuth())) {
         return { error: UNAUTHORIZED };
     }
 
     if (typeof slug !== "string" || !isValidSlug(slug)) {
-        return {
-            error: "The slug may only contain lowercase letters, numbers and hyphens",
-        };
+        return { error: INVALID_SLUG };
     }
 
     const contentType =
@@ -355,17 +372,33 @@ export async function createPhotoUploadToken(
         return { error: "Invalid photo file name" };
     }
 
-    /* The sync script calls the Blob read-write token VERCEL_TOKEN */
-    const blobToken =
-        process.env.BLOB_READ_WRITE_TOKEN ?? process.env.VERCEL_TOKEN;
+    const blobToken = getBlobToken();
     if (!blobToken) {
         return { error: "Photo storage is not configured on this server" };
+    }
+
+    /* The SDK retries a failing API for minutes; don't hold up the upload
+       that long when the check can't be made */
+    const timeout = abortAfter(PHOTO_CHECK_TIMEOUT_MS);
+    try {
+        await head(photoUrl(slug, fileName), {
+            token: blobToken,
+            abortSignal: timeout.signal,
+        });
+        return { exists: true };
+    } catch (error) {
+        /* If the check itself failed, try the upload anyway */
+        if (!(error instanceof BlobNotFoundError)) {
+            console.log("Couldn't check whether the photo is stored", error);
+        }
+    } finally {
+        timeout.cancel();
     }
 
     try {
         const token = await generateClientTokenFromReadWriteToken({
             token: blobToken,
-            pathname: `${slug}/${fileName}`,
+            pathname: photoBlobPath(slug, fileName),
             allowedContentTypes: [contentType],
             maximumSizeInBytes: MAX_PHOTO_SIZE_BYTES,
             addRandomSuffix: false,
@@ -377,4 +410,72 @@ export async function createPhotoUploadToken(
         console.log("Couldn't create a photo upload token", error);
         return { error: "Couldn't start the upload" };
     }
+}
+
+/* Deletes photos the admin form uploaded or removed and no longer needs from
+   Vercel Blob. Photos the facility saved under `slug` still lists, including
+   ones added by the sheet sync, are never deleted, whatever the form sends. */
+export async function deleteUnusedPhotos(
+    slug: string,
+    fileNames: string[],
+): Promise<{ deleted: string[] } | { error: string }> {
+    if (!(await getServerAuth())) {
+        return { error: UNAUTHORIZED };
+    }
+
+    if (typeof slug !== "string" || !isValidSlug(slug)) {
+        return { error: INVALID_SLUG };
+    }
+
+    if (!Array.isArray(fileNames) || fileNames.length > MAX_PHOTOS_PER_DELETE) {
+        return { error: "Invalid photo file names" };
+    }
+
+    /* Skip names that can't be a stored photo rather than refuse the rest */
+    const validNames = fileNames.filter(isDeletablePhotoFileName);
+    if (validNames.length < fileNames.length) {
+        console.log(
+            "Skipped invalid photo file names",
+            fileNames.filter((f) => !isDeletablePhotoFileName(f)),
+        );
+    }
+
+    const blobToken = getBlobToken();
+    if (!blobToken) {
+        return { error: "Photo storage is not configured on this server" };
+    }
+
+    let inUse: string[];
+    try {
+        const facility = await prisma.childCareFacility.findUnique({
+            where: { slug: slug },
+            select: { photos: true },
+        });
+        inUse = facility?.photos.map((p) => p.fileName) ?? [];
+    } catch (error) {
+        console.log("Couldn't look up the facility's photos", error);
+        return { error: "Couldn't check which photos are in use" };
+    }
+
+    const toDelete =
+        photosToDelete(
+            validNames.map((fileName) => ({ slug, fileName })),
+            inUse.map((fileName) => ({ slug, fileName })),
+        )[slug] ?? [];
+
+    if (toDelete.length === 0) {
+        return { deleted: [] };
+    }
+
+    try {
+        await del(
+            toDelete.map((fileName) => photoUrl(slug, fileName)),
+            { token: blobToken },
+        );
+    } catch (error) {
+        console.log("Couldn't delete photos", error);
+        return { error: "Couldn't delete the photos" };
+    }
+
+    return { deleted: toDelete };
 }

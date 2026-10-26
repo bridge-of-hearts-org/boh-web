@@ -18,96 +18,56 @@ import { put } from "@vercel/blob/client";
 import { redirect } from "next/navigation";
 
 import Card from "@/components/Card";
-import { ChildCareFacility, Gender } from "@prisma/client";
+import { ChildCareFacility, Gender, Verification } from "@prisma/client";
 import {
     DistrictsList,
     emptyChildCareFacilityDbObject,
     ProvincesList,
-    vercelStorageUrl,
 } from "@/utils/defines";
 import Button from "@/components/Button";
 import {
     addFacility,
     createPhotoUploadToken,
+    deleteUnusedPhotos,
     resolveLatLng,
     updateFacility,
 } from "@/app/actions/data";
 import Link from "next/link";
 import { removeKeys } from "@/utils/utils";
+import { isInSriLanka } from "@/utils/maps";
 import {
-    hasCoordinates,
-    isInSriLanka,
-    isValidLatitude,
-    isValidLongitude,
-    LatLng,
-} from "@/utils/maps";
+    coordsToText,
+    parseCoordinates,
+    validateFacility,
+} from "@/utils/facilityForm";
 import {
     isValidSlug,
     PhotoContentTypes,
     photoFileName,
+    deletePhotosInBatches,
+    isBlobAlreadyExistsError,
+    photoBlobPath,
+    photoUrl,
+    StoredPhoto,
     validatePhotoFile,
 } from "@/utils/photos";
 import ImageComponent from "@/components/ImageComponent";
+import {
+    clearAgeRangesVerification,
+    clearOccupancyVerification,
+    emptyVerification,
+    findAgeRangesVerifiedDate,
+    findOccupancyVerifiedDate,
+    findVerifiedDate,
+    setVerifiedDate,
+    verifyAgeRanges,
+    verifyOccupancy,
+} from "@/utils/verification";
+import VerifiedOnInput from "./VerifiedOnInput";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
     | { newFacility: false; data: ChildCareFacility };
-
-const validate = (data: ChildCareFacility) => {
-    if (!data.slug) {
-        return "Slug is required";
-    }
-
-    if (!data.name) {
-        return "Name is required";
-    }
-
-    return "success";
-};
-
-const coordsToText = (
-    location: ChildCareFacility["location"],
-): [string, string] => {
-    if (!hasCoordinates(location)) {
-        return ["", ""];
-    }
-
-    return [String(location.latitude), String(location.longitude)];
-};
-
-const COORDINATE_PATTERN = /^-?\d+(\.\d+)?$/;
-
-/* Parses the latitude/longitude inputs. Both empty is valid and means "no coordinates". */
-const parseCoordinates = (
-    latitudeText: string,
-    longitudeText: string,
-): { coords: LatLng | null } | { error: string } => {
-    const lat = latitudeText.trim();
-    const lng = longitudeText.trim();
-
-    if (!lat && !lng) {
-        return { coords: null };
-    }
-
-    if (!lat || !lng) {
-        return {
-            error: "Enter both latitude and longitude, or leave both empty",
-        };
-    }
-
-    const latitude = COORDINATE_PATTERN.test(lat) ? Number(lat) : NaN;
-    const longitude = COORDINATE_PATTERN.test(lng) ? Number(lng) : NaN;
-
-    if (!isValidLatitude(latitude)) {
-        return { error: "Latitude must be a number between -90 and 90" };
-    }
-
-    if (!isValidLongitude(longitude)) {
-        return { error: "Longitude must be a number between -180 and 180" };
-    }
-
-    return { coords: { latitude, longitude } };
-};
 
 export default function EditForm(props: EditFormProps) {
     if (!props.newFacility && !props.data) {
@@ -134,8 +94,20 @@ export default function EditForm(props: EditFormProps) {
     const [resolveError, setResolveError] = useState("");
     const [resolveNote, setResolveNote] = useState("");
     const [uploadingPhotos, setUploadingPhotos] = useState(false);
+    /* Set for the whole of a submit, Reset or Clear, including deleting the
+        photos they leave unused, so nothing can upload or change photos
+        while a delete runs */
+    const [saving, setSaving] = useState(false);
     const [photoErrors, setPhotoErrors] = useState<string[]>([]);
+    /* Photos that were already stored and reused instead of uploaded */
+    const [photoNotes, setPhotoNotes] = useState<string[]>([]);
     const photoInputRef = useRef<HTMLInputElement>(null);
+
+    /* The facility as last saved, which Reset goes back to, and the photos
+        uploaded since then. Photos go to Blob as soon as they're picked, so
+        these say which stored photos to delete once nothing needs them */
+    const savedDataRef = useRef(data);
+    const unsavedUploadsRef = useRef<StoredPhoto[]>([]);
 
     /* Photos are stored under the slug, so it can't change while the
         facility has any or one is uploading, or they would no longer be found */
@@ -146,9 +118,29 @@ export default function EditForm(props: EditFormProps) {
     const googleUrlRef = useRef(data.location.google);
     googleUrlRef.current = formData.location.google;
 
+    const verification = formData.verification ?? emptyVerification;
+
+    const setVerification = (changes: Partial<Verification>) => {
+        setFormData({
+            ...formData,
+            verification: { ...verification, ...changes },
+        });
+    };
+
+    /* The verification keeps the counts that were confirmed, so changed counts
+        show as unverified until a new date is entered */
+    const setOccupancy = (changes: Partial<ChildCareFacility["occupancy"]>) => {
+        setFormData({
+            ...formData,
+            occupancy: { ...formData.occupancy, ...changes },
+        });
+    };
+
     /* Common styles */
+    /* One column on phones, with the label above its input. The minmax(0, ...)
+       tracks let wide inputs shrink instead of pushing the page sideways. */
     const inputRowStyle =
-        "w-full grid grid-cols-[1fr,3fr] gap-3 items-center grow";
+        "w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr),minmax(0,3fr)] gap-3 items-center grow";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
@@ -161,10 +153,107 @@ export default function EditForm(props: EditFormProps) {
         setResolveError("");
         setResolveNote("");
         setPhotoErrors([]);
+        setPhotoNotes([]);
     };
 
-    const handleClear = () => {
-        resetForm(emptyChildCareFacilityDbObject);
+    const savedPhotos = (): StoredPhoto[] =>
+        savedDataRef.current.photos.map((p) => ({
+            slug: savedDataRef.current.slug,
+            fileName: p.fileName,
+        }));
+
+    /* Delete the candidates that aren't in `keep` from storage and return
+        the photos actually deleted. The server also refuses to delete any
+        photo the saved record still lists. That check uses the record as
+        saved, so with the same facility open in two tabs, one can delete a
+        photo the other has uploaded or restored but not saved yet. With a
+        single admin, that's accepted. */
+    const deleteStoredPhotos = async (
+        candidates: StoredPhoto[],
+        keep: StoredPhoto[],
+    ): Promise<StoredPhoto[]> =>
+        deletePhotosInBatches(candidates, keep, deleteUnusedPhotos);
+
+    /* After a save: delete the photos the record had before, or that were
+        uploaded since, and that the saved facility no longer lists */
+    const deletePhotosRemovedBySave = async (saved: ChildCareFacility) => {
+        const candidates = [...savedPhotos(), ...unsavedUploadsRef.current];
+        const keep = saved.photos.map((p) => ({
+            slug: saved.slug,
+            fileName: p.fileName,
+        }));
+
+        savedDataRef.current = saved;
+        unsavedUploadsRef.current = [];
+        await deleteStoredPhotos(candidates, keep);
+    };
+
+    /* Delete the photos uploaded since the last save, unless the saved
+        record has them, and return the ones deleted. Any that couldn't be
+        deleted stay tracked, so a later save or reset tries again. */
+    const discardUnsavedUploads = async (): Promise<StoredPhoto[]> => {
+        const uploads = unsavedUploadsRef.current;
+
+        const deleted = await deleteStoredPhotos(uploads, savedPhotos());
+        const deletedPaths = new Set(
+            deleted.map((p) => `${p.slug}/${p.fileName}`),
+        );
+
+        /* Callers run this while busy, so nothing was uploaded meanwhile */
+        unsavedUploadsRef.current = uploads.filter(
+            (p) => !deletedPaths.has(`${p.slug}/${p.fileName}`),
+        );
+
+        return deleted;
+    };
+
+    /* Run a task that saves or deletes photos with the form locked */
+    const runBusy = async (task: () => Promise<void>) => {
+        if (saving) {
+            return;
+        }
+
+        setSaving(true);
+        try {
+            await task();
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleReset = () =>
+        runBusy(async () => {
+            resetForm(savedDataRef.current);
+            await discardUnsavedUploads();
+        });
+
+    const handleClear = () =>
+        runBusy(async () => {
+            resetForm(emptyChildCareFacilityDbObject);
+            await discardUnsavedUploads();
+        });
+
+    /* Adding failed, so no facility uses the uploaded photos: delete them
+        and take the deleted ones off the form, so a retry can't save
+        references to deleted files */
+    const discardUploadsAfterFailedAdd = async () => {
+        const slug = formData.slug;
+        const discarded = new Set(
+            (await discardUnsavedUploads())
+                .filter((p) => p.slug === slug)
+                .map((p) => p.fileName),
+        );
+        if (discarded.size === 0) {
+            return;
+        }
+
+        setFormData((prev) => ({
+            ...prev,
+            photos: prev.photos.filter((p) => !discarded.has(p.fileName)),
+        }));
+        setPhotoErrors([
+            `The facility wasn't saved, so ${discarded.size} uploaded photo${discarded.size === 1 ? " was" : "s were"} removed. Upload them again before submitting.`,
+        ]);
     };
 
     const handleResolveCoordinates = async () => {
@@ -223,15 +312,17 @@ export default function EditForm(props: EditFormProps) {
     };
 
     const handlePhotoUpload = async (files: File[]) => {
-        if (uploadingPhotos) {
+        if (uploadingPhotos || saving) {
             return;
         }
 
         const slug = formData.slug;
         const errors: string[] = [];
+        const notes: string[] = [];
         const knownFileNames = new Set(formData.photos.map((p) => p.fileName));
 
         setPhotoErrors([]);
+        setPhotoNotes([]);
         setUploadingPhotos(true);
 
         for (const file of files) {
@@ -254,13 +345,36 @@ export default function EditForm(props: EditFormProps) {
                     continue;
                 }
 
-                await put(`${slug}/${fileName}`, file, {
-                    access: "public",
-                    token: result.token,
-                    contentType: file.type,
-                });
+                /* Photos are named after their contents, so a photo that's
+                    already stored is reused instead of uploaded again */
+                let reused = false;
+                if ("exists" in result) {
+                    reused = true;
+                } else {
+                    try {
+                        await put(photoBlobPath(slug, fileName), file, {
+                            access: "public",
+                            token: result.token,
+                            contentType: file.type,
+                        });
+                    } catch (error) {
+                        /* Stored since the server checked */
+                        if (!isBlobAlreadyExistsError(error)) {
+                            throw error;
+                        }
+
+                        reused = true;
+                    }
+                }
+
+                if (reused) {
+                    notes.push(
+                        `${file.name}: this photo was already stored, so the stored copy was reused`,
+                    );
+                }
 
                 knownFileNames.add(fileName);
+                unsavedUploadsRef.current.push({ slug, fileName });
                 /* Use the latest form state: other fields may have been
                     edited while the upload was running */
                 setFormData((prev) => ({
@@ -274,6 +388,7 @@ export default function EditForm(props: EditFormProps) {
         }
 
         setPhotoErrors(errors);
+        setPhotoNotes(notes);
         setUploadingPhotos(false);
     };
 
@@ -288,8 +403,10 @@ export default function EditForm(props: EditFormProps) {
         setFormData({ ...formData, photos: photos });
     };
 
-    const handleSubmit = async () => {
-        const status = validate(formData);
+    const handleSubmit = () => runBusy(submitForm);
+
+    const submitForm = async () => {
+        const status = validateFacility(formData);
 
         if (status !== "success") {
             alert(status);
@@ -326,11 +443,23 @@ export default function EditForm(props: EditFormProps) {
 
         if (props.newFacility) {
             const status = await addFacility(payload);
+            if (status === "success") {
+                await deletePhotosRemovedBySave({ ...formData, ...payload });
+            } else {
+                await discardUploadsAfterFailedAdd();
+            }
             alert(status);
-            redirect("/admin");
+
+            /* On failure stay on the form so the admin's input isn't lost */
+            if (status === "success") {
+                redirect("/admin");
+            }
         } else {
             /* The fact that we are in the edit page means that the database entry exists */
             const status = await updateFacility(payload);
+            if (status === "success") {
+                await deletePhotosRemovedBySave({ ...formData, ...payload });
+            }
             alert(status);
         }
     };
@@ -375,7 +504,7 @@ export default function EditForm(props: EditFormProps) {
     };
 
     return (
-        <Card className="flex w-full flex-col items-center gap-8 p-10">
+        <Card className="flex w-full flex-col items-center gap-8 p-5 md:p-10">
             {/* Title */}
             <section className="flex flex-col items-center">
                 <div>
@@ -584,7 +713,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-3 md:flex-row md:items-center">
                                 <input
                                     id="google-maps-url"
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.location.google}
                                     onChange={(e) => {
                                         setResolveError("");
@@ -665,9 +794,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Phone numbers */}
                     <div className={inputRowStyle}>
                         <label>Phone Numbers</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newPhoneNumber}
                                 onChange={(e) =>
                                     setNewPhoneNumber(e.target.value)
@@ -702,15 +831,32 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of phone numbers */}
                     <div className={inputRowStyle}>
-                        <div></div>
-                        <div className="flex gap-3">
+                        <div className="hidden md:block"></div>
+                        <div className="flex flex-wrap gap-3">
                             {formData.contact.phone.map((phone) => (
                                 <div
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={phone}
                                 >
                                     <span>{phone}</span>
+                                    <VerifiedOnInput
+                                        label={phone}
+                                        value={findVerifiedDate(
+                                            verification.phones,
+                                            phone,
+                                        )}
+                                        onChange={(date) =>
+                                            setVerification({
+                                                phones: setVerifiedDate(
+                                                    verification.phones,
+                                                    phone,
+                                                    date,
+                                                ),
+                                            })
+                                        }
+                                    />
                                     <button
+                                        aria-label={`Remove ${phone}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setFormData({
@@ -719,6 +865,14 @@ export default function EditForm(props: EditFormProps) {
                                                     ...formData.contact,
                                                     phone: formData.contact.phone.filter(
                                                         (p) => p !== phone,
+                                                    ),
+                                                },
+                                                verification: {
+                                                    ...verification,
+                                                    phones: setVerifiedDate(
+                                                        verification.phones,
+                                                        phone,
+                                                        null,
                                                     ),
                                                 },
                                             });
@@ -734,9 +888,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Email addresses */}
                     <div className={twMerge(inputRowStyle, "pt-10")}>
                         <label>Email Addresses</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newEmailAddress}
                                 onChange={(e) =>
                                     setNewEmailAddress(e.target.value)
@@ -771,15 +925,32 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of email addresses */}
                     <div className={inputRowStyle}>
-                        <div></div>
-                        <div className="flex gap-3">
+                        <div className="hidden md:block"></div>
+                        <div className="flex flex-wrap gap-3">
                             {formData.contact.email.map((email) => (
                                 <div
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
+                                    className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={email}
                                 >
-                                    <span>{email}</span>
+                                    <span className="break-all">{email}</span>
+                                    <VerifiedOnInput
+                                        label={email}
+                                        value={findVerifiedDate(
+                                            verification.emails,
+                                            email,
+                                        )}
+                                        onChange={(date) =>
+                                            setVerification({
+                                                emails: setVerifiedDate(
+                                                    verification.emails,
+                                                    email,
+                                                    date,
+                                                ),
+                                            })
+                                        }
+                                    />
                                     <button
+                                        aria-label={`Remove ${email}`}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             setFormData({
@@ -788,6 +959,14 @@ export default function EditForm(props: EditFormProps) {
                                                     ...formData.contact,
                                                     email: formData.contact.email.filter(
                                                         (p) => p !== email,
+                                                    ),
+                                                },
+                                                verification: {
+                                                    ...verification,
+                                                    emails: setVerifiedDate(
+                                                        verification.emails,
+                                                        email,
+                                                        null,
                                                     ),
                                                 },
                                             });
@@ -885,20 +1064,16 @@ export default function EditForm(props: EditFormProps) {
                     {/* Occupancy */}
                     <div className={twMerge(inputRowStyle, "pt-8")}>
                         <label>Current Occupants</label>
-                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                        <div className="grid items-center gap-3 lg:grid-cols-3 lg:gap-10">
                             <div className="flex flex-col gap-2">
                                 <label>Male</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.male || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                male: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            male: Number(e.target.value),
                                         })
                                     }
                                 ></input>
@@ -906,16 +1081,12 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Female</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.female || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                female: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            female: Number(e.target.value),
                                         })
                                     }
                                 ></input>
@@ -923,16 +1094,12 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Total</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.occupancy.total || ""}
                                     type="number"
                                     onChange={(e) =>
-                                        setFormData({
-                                            ...formData,
-                                            occupancy: {
-                                                ...formData.occupancy,
-                                                total: Number(e.target.value),
-                                            },
+                                        setOccupancy({
+                                            total: Number(e.target.value),
                                         })
                                     }
                                 ></input>
@@ -940,14 +1107,39 @@ export default function EditForm(props: EditFormProps) {
                         </div>
                     </div>
 
+                    {/* Occupancy verification */}
+                    <div className={inputRowStyle}>
+                        <div className="hidden md:block"></div>
+                        <VerifiedOnInput
+                            label="Occupancy counts"
+                            value={findOccupancyVerifiedDate(
+                                formData.occupancy,
+                                verification,
+                            )}
+                            onChange={(date) =>
+                                setVerification({
+                                    occupancy: date
+                                        ? verifyOccupancy(
+                                              formData.occupancy,
+                                              date,
+                                          )
+                                        : clearOccupancyVerification(
+                                              formData.occupancy,
+                                              data.verification?.occupancy,
+                                          ),
+                                })
+                            }
+                        />
+                    </div>
+
                     {/* Ages */}
                     <div className={twMerge(inputRowStyle, "pt-8")}>
                         <label>Current Age Ranges</label>
-                        <div className="grid items-center gap-3 lg:grid-cols-[1fr,1fr,1fr] lg:gap-10">
+                        <div className="grid items-center gap-3 lg:grid-cols-3 lg:gap-10">
                             <div className="flex flex-col gap-2">
                                 <label>Male</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.male || ""}
                                     onChange={(e) =>
                                         setFormData({
@@ -963,7 +1155,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>Female</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.female || ""}
                                     onChange={(e) =>
                                         setFormData({
@@ -979,7 +1171,7 @@ export default function EditForm(props: EditFormProps) {
                             <div className="flex flex-col gap-2">
                                 <label>All</label>
                                 <input
-                                    className="grow"
+                                    className="min-w-0 grow"
                                     value={formData.ageRanges.all || ""}
                                     onChange={(e) =>
                                         setFormData({
@@ -993,6 +1185,31 @@ export default function EditForm(props: EditFormProps) {
                                 ></input>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Age ranges verification */}
+                    <div className={inputRowStyle}>
+                        <div className="hidden md:block"></div>
+                        <VerifiedOnInput
+                            label="Age ranges"
+                            value={findAgeRangesVerifiedDate(
+                                formData.ageRanges,
+                                verification,
+                            )}
+                            onChange={(date) =>
+                                setVerification({
+                                    ageRanges: date
+                                        ? verifyAgeRanges(
+                                              formData.ageRanges,
+                                              date,
+                                          )
+                                        : clearAgeRangesVerification(
+                                              formData.ageRanges,
+                                              data.verification?.ageRanges,
+                                          ),
+                                })
+                            }
+                        />
                     </div>
                 </section>
 
@@ -1012,7 +1229,8 @@ export default function EditForm(props: EditFormProps) {
                                 type="file"
                                 disabled={
                                     !isValidSlug(formData.slug) ||
-                                    uploadingPhotos
+                                    uploadingPhotos ||
+                                    saving
                                 }
                                 accept={Object.keys(PhotoContentTypes).join(
                                     ",",
@@ -1034,7 +1252,7 @@ export default function EditForm(props: EditFormProps) {
                                 name="Upload Photos"
                                 variant="secondary"
                                 color="black"
-                                disabled={!isValidSlug(formData.slug)}
+                                disabled={!isValidSlug(formData.slug) || saving}
                                 loading={uploadingPhotos}
                                 loadingText="Uploading"
                                 onClick={(e) => {
@@ -1058,6 +1276,15 @@ export default function EditForm(props: EditFormProps) {
                                     {error}
                                 </span>
                             ))}
+                            {photoNotes.map((note) => (
+                                <span
+                                    key={note}
+                                    role="status"
+                                    className="text-sm text-gray-700"
+                                >
+                                    {note}
+                                </span>
+                            ))}
                         </div>
                     </div>
 
@@ -1074,7 +1301,10 @@ export default function EditForm(props: EditFormProps) {
                                     className="flex flex-col items-center gap-2"
                                 >
                                     <ImageComponent
-                                        src={`${vercelStorageUrl}/${formData.slug}/${photo.fileName}`}
+                                        src={photoUrl(
+                                            formData.slug,
+                                            photo.fileName,
+                                        )}
                                         sizes="200px"
                                         width={200}
                                         height={200}
@@ -1084,7 +1314,7 @@ export default function EditForm(props: EditFormProps) {
                                     <div className="flex items-center gap-3">
                                         <button
                                             aria-label={`Move photo ${index + 1} earlier`}
-                                            disabled={index === 0}
+                                            disabled={index === 0 || saving}
                                             className="disabled:opacity-30"
                                             onClick={(e) => {
                                                 e.preventDefault();
@@ -1095,6 +1325,8 @@ export default function EditForm(props: EditFormProps) {
                                         </button>
                                         <button
                                             aria-label={`Remove photo ${index + 1}`}
+                                            disabled={saving}
+                                            className="disabled:opacity-30"
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 setFormData({
@@ -1113,7 +1345,8 @@ export default function EditForm(props: EditFormProps) {
                                             aria-label={`Move photo ${index + 1} later`}
                                             disabled={
                                                 index ===
-                                                formData.photos.length - 1
+                                                    formData.photos.length -
+                                                        1 || saving
                                             }
                                             className="disabled:opacity-30"
                                             onClick={(e) => {
@@ -1140,9 +1373,9 @@ export default function EditForm(props: EditFormProps) {
                     {/* Sources input */}
                     <div className={inputRowStyle}>
                         <label>Sources</label>
-                        <div className="flex grow gap-5">
+                        <div className="flex min-w-0 grow gap-3">
                             <input
-                                className="grow"
+                                className="min-w-0 grow"
                                 value={newSource}
                                 onChange={(e) => setNewSource(e.target.value)}
                             ></input>
@@ -1174,14 +1407,14 @@ export default function EditForm(props: EditFormProps) {
 
                     {/* Current list of sources */}
                     <div className={inputRowStyle}>
-                        <div></div>
+                        <div className="hidden md:block"></div>
                         <div className="flex flex-col items-start gap-2">
                             {formData.sources.map((source) => (
                                 <div
                                     className="flex items-center justify-center gap-2 rounded-2xl bg-gray-200 px-3 py-2"
                                     key={source}
                                 >
-                                    <span>{source}</span>
+                                    <span className="break-all">{source}</span>
                                     <button
                                         onClick={(e) => {
                                             e.preventDefault();
@@ -1233,8 +1466,8 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="black"
-                        disabled={uploadingPhotos}
-                        onClick={() => resetForm(data)}
+                        disabled={uploadingPhotos || saving}
+                        onClick={handleReset}
                     >
                         Reset
                     </Button>
@@ -1242,7 +1475,7 @@ export default function EditForm(props: EditFormProps) {
                         name="Reset"
                         variant="secondary"
                         color="red"
-                        disabled={uploadingPhotos}
+                        disabled={uploadingPhotos || saving}
                         onClick={handleClear}
                     >
                         Clear
@@ -1252,7 +1485,7 @@ export default function EditForm(props: EditFormProps) {
                         type="submit"
                         variant="primary"
                         color="green"
-                        disabled={resolvingCoords || uploadingPhotos}
+                        disabled={resolvingCoords || uploadingPhotos || saving}
                         onClick={handleSubmit}
                     >
                         Submit

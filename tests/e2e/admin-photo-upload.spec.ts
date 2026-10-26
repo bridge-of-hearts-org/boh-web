@@ -2,6 +2,7 @@ import { test, expect, Page } from "@playwright/test";
 
 import {
     contentTypeForFileName,
+    DEV_PHOTO_FOLDER,
     isValidPhotoFileName,
     isValidSlug,
     MAX_PHOTO_SIZE_BYTES,
@@ -74,6 +75,7 @@ function pngFile(name: string) {
 async function mockBlobStorage(
     page: Page,
     release: Promise<void> = Promise.resolve(),
+    alreadyStored = false,
 ): Promise<string[]> {
     const uploadedPaths: string[] = [];
     const corsHeaders = {
@@ -91,6 +93,22 @@ async function mockBlobStorage(
         const pathname = new URL(route.request().url()).pathname.slice(1);
         uploadedPaths.push(pathname);
         await release;
+        if (alreadyStored) {
+            /* What Vercel Blob answers for a path that's already taken */
+            await route.fulfill({
+                status: 400,
+                headers: corsHeaders,
+                contentType: "application/json",
+                body: JSON.stringify({
+                    error: {
+                        code: "bad_request",
+                        message: "This blob already exists",
+                    },
+                }),
+            });
+            return;
+        }
+
         await route.fulfill({
             status: 200,
             headers: corsHeaders,
@@ -106,6 +124,100 @@ async function mockBlobStorage(
     });
 
     return uploadedPaths;
+}
+
+type PhotoActions = {
+    /* What the mocked addFacility returns */
+    saveResult: string;
+    /* Calls answered by the mock instead of the server (addFacility) */
+    mocked: any[][];
+    /* deleteUnusedPhotos calls, which reach the server */
+    deletions: { args: any[]; response: string }[];
+    /* deleteUnusedPhotos calls received, including ones still held */
+    pendingDeletions: number;
+    /* deleteUnusedPhotos calls wait for this before reaching the server */
+    deletionGate: Promise<void>;
+};
+
+const isString = (value: unknown) => typeof value === "string";
+
+/* The file name at the end of an uploaded photo's path */
+const fileNameOf = (path: string) => path.split("/").pop() ?? "";
+
+/* A server action response as the client reads it: row 0 points the action
+   result at row 1. The client doesn't check the build id ("b"). */
+const mockedActionResponse = (result: unknown) =>
+    `0:{"a":"$@1","f":"","b":"e2e-mock"}\n1:${JSON.stringify(result)}\n`;
+
+/* Answer every server action call with `saveResult` without sending it to the
+   server, except the two photo actions, which are safe to run: they only
+   issue upload tokens and delete stored photos the e2e slug doesn't use (the
+   uploads are mocked, so nothing is stored). The allowlist fails closed:
+   addFacility, updateFacility or any call that can't be recognized never
+   reaches the server, so no test can create or change a facility. */
+async function routePhotoActions(page: Page): Promise<PhotoActions> {
+    const actions: PhotoActions = {
+        saveResult: "success",
+        mocked: [],
+        deletions: [],
+        pendingDeletions: 0,
+        deletionGate: Promise.resolve(),
+    };
+
+    await page.route("**/*", async (route) => {
+        const request = route.request();
+
+        if (request.method() !== "POST" || !request.headers()["next-action"]) {
+            await route.fallback();
+            return;
+        }
+
+        let args: any[] = [];
+        try {
+            args = JSON.parse(request.postData() ?? "");
+        } catch {}
+
+        /* WARNING: calls are let through by argument shape alone, not by
+           action. Any server action added later whose arguments are
+           [string, string] or [string, string[]] would reach the real
+           server from these tests, so revisit this allowlist whenever the
+           admin form gains a server action. */
+        const isUploadToken =
+            Array.isArray(args) &&
+            args.length === 2 &&
+            isString(args[0]) &&
+            isString(args[1]);
+        const isDeletion =
+            Array.isArray(args) &&
+            args.length === 2 &&
+            isString(args[0]) &&
+            Array.isArray(args[1]) &&
+            args[1].every(isString);
+
+        if (isUploadToken) {
+            await route.fallback();
+            return;
+        }
+
+        if (isDeletion) {
+            actions.pendingDeletions++;
+            await actions.deletionGate;
+            const response = await route.fetch();
+            const body = await response.text();
+            actions.deletions.push({ args: args, response: body });
+            await route.fulfill({ response: response, body: body });
+            return;
+        }
+
+        actions.mocked.push(args);
+        await route.fulfill({
+            status: 200,
+            contentType: "text/x-component",
+            body: mockedActionResponse(actions.saveResult),
+        });
+    });
+
+    return actions;
 }
 
 /* Traces record request bodies and cookies, which here include the admin
@@ -192,11 +304,16 @@ test.describe("Photo upload in the admin facility form", () => {
 
         await expect(photoItems(page)).toHaveCount(2);
         expect(uploadedPaths).toHaveLength(2);
+        /* Previews and local dev servers keep photos in the dev folder */
         for (const path of uploadedPaths) {
-            expect(path).toMatch(/^e2e-photo-upload\/[a-f0-9]{16}\.png$/);
+            expect(path).toMatch(
+                new RegExp(
+                    `^${DEV_PHOTO_FOLDER}/e2e-photo-upload/[a-f0-9]{16}\\.png$`,
+                ),
+            );
         }
 
-        const fileNames = uploadedPaths.map((p) => p.split("/")[1]);
+        const fileNames = uploadedPaths.map(fileNameOf);
         const shownOrder = () =>
             photoItems(page).evaluateAll((items) =>
                 items.map((item) => item.getAttribute("data-file-name")),
@@ -226,6 +343,84 @@ test.describe("Photo upload in the admin facility form", () => {
         await page.getByRole("button", { name: "Remove photo 1" }).click();
         await expect(photoItems(page)).toHaveCount(0);
         await expect(slugInput(page)).not.toHaveAttribute("readonly");
+    });
+
+    test("reuses a photo the server reports as already stored", async ({
+        page,
+    }) => {
+        const uploadedPaths = await mockBlobStorage(page);
+        /* Answer every server action, so nothing reaches the server. The
+            only one this test calls is createPhotoUploadToken. */
+        const tokenRequests: unknown[] = [];
+        await page.route("**/*", async (route) => {
+            const request = route.request();
+            if (
+                request.method() !== "POST" ||
+                !request.headers()["next-action"]
+            ) {
+                await route.fallback();
+                return;
+            }
+
+            tokenRequests.push(JSON.parse(request.postData() ?? "null"));
+            await route.fulfill({
+                status: 200,
+                contentType: "text/x-component",
+                body: mockedActionResponse({ exists: true }),
+            });
+        });
+        await slugInput(page).fill(slug);
+
+        await page
+            .locator("#photo-upload")
+            .setInputFiles(pngFile("stored.png"));
+
+        await expect(photoItems(page)).toHaveCount(1);
+        expect(tokenRequests).toHaveLength(1);
+        expect(uploadedPaths).toEqual([]);
+        await expect(
+            page.getByRole("alert").filter({ hasText: "stored.png" }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "stored.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
+    });
+
+    test("reuses a photo that was stored after the server checked", async ({
+        page,
+    }) => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
+        const uploadedPaths = await mockBlobStorage(
+            page,
+            Promise.resolve(),
+            true,
+        );
+        await slugInput(page).fill(slug);
+
+        await page.locator("#photo-upload").setInputFiles(pngFile("raced.png"));
+
+        await expect(photoItems(page)).toHaveCount(1);
+        expect(uploadedPaths).toHaveLength(1);
+        await expect(photoItems(page).first()).toHaveAttribute(
+            "data-file-name",
+            fileNameOf(uploadedPaths[0]),
+        );
+        await expect(
+            page.getByRole("alert").filter({ hasText: "raced.png" }),
+        ).toHaveCount(0);
+        await expect(
+            page.getByRole("status").filter({
+                hasText:
+                    "raced.png: this photo was already stored, so the stored copy was reused",
+            }),
+        ).toBeVisible();
     });
 
     test("locks the slug, Reset and Clear while a photo uploads", async ({
@@ -295,5 +490,139 @@ test.describe("Photo upload in the admin facility form", () => {
         );
         expect(adminBody).not.toContain("Unauthorized");
         expect(adminBody).toContain("vercel_blob_client_");
+    });
+
+    test.describe("deleting stored photos nothing uses", () => {
+        test.skip(
+            !hasBlobToken && !process.env.CI,
+            "Set BLOB_READ_WRITE_TOKEN to run upload tests",
+        );
+
+        let actions: PhotoActions;
+        let alerts: string[];
+
+        test.beforeEach(async ({ page }) => {
+            /* Before anything on the page can call a server action */
+            actions = await routePhotoActions(page);
+            alerts = [];
+            page.on("dialog", (dialog) => {
+                alerts.push(dialog.message());
+                dialog.accept();
+            });
+            await slugInput(page).fill(slug);
+            await page
+                .locator('label:text-is("Name") + input')
+                .fill("E2E Photo Cleanup");
+        });
+
+        test("deletes a removed photo when the facility is saved", async ({
+            page,
+        }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+
+            await page
+                .locator("#photo-upload")
+                .setInputFiles([pngFile("kept.png"), pngFile("removed.png")]);
+            await expect(photoItems(page)).toHaveCount(2);
+            const [kept, removed] = uploadedPaths.map(fileNameOf);
+
+            await page.getByRole("button", { name: "Remove photo 2" }).click();
+            await expect(photoItems(page)).toHaveCount(1);
+            expect(actions.deletions).toEqual([]);
+
+            await page.getByRole("button", { name: "Submit" }).click();
+
+            await expect.poll(() => actions.deletions.length).toBe(1);
+            expect(actions.mocked).toHaveLength(1);
+            expect(actions.mocked[0][0]).toMatchObject({
+                slug: slug,
+                photos: [{ fileName: kept, source: "" }],
+            });
+            expect(actions.deletions[0].args).toEqual([slug, [removed]]);
+            expect(actions.deletions[0].response).toContain(removed);
+            expect(actions.deletions[0].response).not.toContain(kept);
+            expect(actions.deletions[0].response).not.toContain("error");
+            await expect.poll(() => alerts).toContain("success");
+        });
+
+        test("Reset deletes the photos uploaded since the last save", async ({
+            page,
+        }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+
+            await page
+                .locator("#photo-upload")
+                .setInputFiles([pngFile("r1.png"), pngFile("r2.png")]);
+            await expect(photoItems(page)).toHaveCount(2);
+
+            /* Hold the delete to check the form stays locked until it ends */
+            let releaseDeletion = () => {};
+            actions.deletionGate = new Promise<void>((resolve) => {
+                releaseDeletion = resolve;
+            });
+
+            await page.getByRole("button", { name: "Reset" }).click();
+
+            await expect(photoItems(page)).toHaveCount(0);
+            await expect(slugInput(page)).toHaveValue("");
+            await expect.poll(() => actions.pendingDeletions).toBe(1);
+            for (const name of ["Submit", "Reset", "Clear"]) {
+                await expect(
+                    page.getByRole("button", { name: name }),
+                ).toBeDisabled();
+            }
+
+            releaseDeletion();
+            await expect.poll(() => actions.deletions.length).toBe(1);
+            for (const name of ["Submit", "Reset", "Clear"]) {
+                await expect(
+                    page.getByRole("button", { name: name }),
+                ).toBeEnabled();
+            }
+            expect(actions.deletions[0].args).toEqual([
+                slug,
+                uploadedPaths.map(fileNameOf),
+            ]);
+            expect(actions.mocked).toEqual([]);
+        });
+
+        test("Clear deletes the photos uploaded since the last save", async ({
+            page,
+        }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+
+            await page.locator("#photo-upload").setInputFiles(pngFile("a.png"));
+            await expect(photoItems(page)).toHaveCount(1);
+
+            await page.getByRole("button", { name: "Clear" }).click();
+
+            await expect(photoItems(page)).toHaveCount(0);
+            await expect.poll(() => actions.deletions.length).toBe(1);
+            expect(actions.deletions[0].args).toEqual([
+                slug,
+                [fileNameOf(uploadedPaths[0])],
+            ]);
+            expect(actions.mocked).toEqual([]);
+        });
+
+        test("a failed add deletes the uploaded photos", async ({ page }) => {
+            const uploadedPaths = await mockBlobStorage(page);
+            actions.saveResult = "E2E simulated failure";
+
+            await page
+                .locator("#photo-upload")
+                .setInputFiles([pngFile("one.png"), pngFile("two.png")]);
+            await expect(photoItems(page)).toHaveCount(2);
+
+            await page.getByRole("button", { name: "Submit" }).click();
+
+            await expect.poll(() => actions.deletions.length).toBe(1);
+            expect(actions.mocked).toHaveLength(1);
+            expect(actions.deletions[0].args).toEqual([
+                slug,
+                uploadedPaths.map(fileNameOf),
+            ]);
+            await expect.poll(() => alerts).toContain("E2E simulated failure");
+        });
     });
 });

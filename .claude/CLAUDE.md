@@ -11,9 +11,12 @@ npm run dev          # Start Next.js dev server
 npm run build        # Build for production
 npm run test:e2e     # Run Playwright tests (headless)
 npm run test:e2e:ui  # Run Playwright tests with interactive UI
+npm run test:unit    # Run Vitest unit tests
+npm run test:unit:watch  # Run Vitest unit tests in watch mode
 
 # Run a single test file
 npx playwright test tests/e2e/smoke.spec.ts
+npx vitest run tests/unit/utils/maps.test.ts
 
 # Sync facilities from a Google Sheet tab to the database
 npx tsx scripts/syncFacilities.ts "Central Province"
@@ -42,6 +45,8 @@ Facility data originates in a Google Sheet (the **Database sheet**) with one tab
 https://docs.google.com/spreadsheets/d/1JQdRIicCh6qPrdpfmJpKRxEiv_-qjTcURbqniMucSbo/edit?gid=305897832#gid=305897832
 
 `scripts/syncFacilities.ts` reads a named sheet tab via the Google Sheets API, downloads photos, upserts records into MongoDB via Prisma, and uploads images to Vercel Blob. Run it once per province tab. Credentials are in `scripts/google-api-key.json` (not committed) and the sheet ID is in `scripts/config.json`.
+
+Photos live in Vercel Blob at `<slug>/<fileName>` for production. Every other build (local dev, Vercel previews) uses the `dev/` folder instead (`dev/<slug>/<fileName>`), chosen from `VERCEL_ENV` in `next.config.ts`, so dev uploads never touch production photos. Build photo URLs and paths with `photoUrl` / `photoBlobPath` from `src/utils/photos.ts`, never by hand. The sync and cleanup scripts take `--dev` to work on the dev folder, and `npx tsx scripts/copyPhotosToDev.ts <slug>...` copies a facility's production photos into it, e.g. for the facilities the e2e tests expect to have photos.
 
 All runtime DB reads/writes go through server actions in `src/app/actions/data.ts` (`fetchAllFacilities`, `fetchFacilityBySlug`, `fetchDistinctCities`, `updateFacility`, `addFacility`).
 
@@ -72,9 +77,12 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 
 # Testing
 
-- Run `npm run test:e2e` before pushing; all tests must pass
-- Each feature PR should include a Playwright test for the new behaviour
-- Playwright CI runs automatically against Vercel previews on every PR
+- Run `npm run test:unit` and `npm run test:e2e` before pushing; all tests must pass
+- Each feature PR should include a Playwright test for the new behaviour, and unit tests for any new logic (helpers, server actions)
+- Playwright CI runs automatically against Vercel previews on every PR; unit test CI runs on every PR without a preview
+- Unit tests live in `tests/unit/` (mirroring the source paths without the leading `src/`, e.g. `tests/unit/app/actions/data.test.ts`) and Playwright tests in `tests/e2e/`. Keep testable logic in plain modules (e.g. `src/utils/`), not inside components, so it can be unit tested
+- Server action tests mock `@/utils/db` (Prisma) and `@/lib/auth` (`getServerAuth`); see `tests/unit/app/actions/data.test.ts`
+- A test for a known, still-open bug is written for the correct behaviour and marked `it.fails`, with a comment naming the issue. Once the bug is fixed the test starts failing, which is the reminder to change it to `it`
 
 # Code Style
 

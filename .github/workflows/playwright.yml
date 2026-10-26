@@ -30,6 +30,8 @@ jobs:
           VERCEL_BYPASS_TOKEN: ${{ secrets.VERCEL_BYPASS_TOKEN }}
           ADMIN_USERNAME: ${{ secrets.ADMIN_USERNAME }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          # A facility with verified fields, for the public verified badge tests
+          E2E_VERIFIED_FACILITY_SLUG: st-josephs-boys-childrens-home-kandy
 
       - name: Upload test report
         uses: actions/upload-artifact@v4

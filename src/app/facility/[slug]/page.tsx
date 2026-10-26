@@ -1,7 +1,14 @@
 import Link from "next/link";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
-import { ExternalLink, Link2, MapPin, PhoneCall, Users } from "lucide-react";
+import {
+    ExternalLink,
+    Link2,
+    MapPin,
+    Pencil,
+    PhoneCall,
+    Users,
+} from "lucide-react";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";
@@ -10,13 +17,24 @@ import LocationMap from "./LocationMap";
 import NotFound from "@/app/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
+import VerifiedBadge from "@/components/VerifiedBadge";
+import {
+    findAgeRangesVerifiedDate,
+    findOccupancyVerifiedDate,
+} from "@/utils/verification";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ImageComponent from "@/components/ImageComponent";
-import { ChildCareFacility, Gender } from "@prisma/client";
-import { vercelStorageUrl } from "@/utils/defines";
+import { Gender } from "@prisma/client";
+import { photoUrl } from "@/utils/photos";
 import { Metadata } from "next";
 import { fetchFacilityBySlug } from "@/app/actions/data";
-import { buildOpenInMapsUrl, hasCoordinates } from "@/utils/maps";
+import {
+    buildMapEmbedSrc,
+    buildOpenInMapsUrl,
+    hasCoordinates,
+} from "@/utils/maps";
+import { facilityEditPath } from "@/utils/navigation";
+import { getServerAuth } from "@/lib/auth";
 
 import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
 
@@ -48,7 +66,7 @@ export async function generateMetadata({
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
                           return {
-                              url: `${vercelStorageUrl}/${facility.slug}/${photo.fileName}`,
+                              url: photoUrl(facility.slug, photo.fileName),
                           };
                       })
                     : [],
@@ -57,30 +75,6 @@ export async function generateMetadata({
 }
 
 type FacilityPageProps = { params: Promise<{ slug: string }> };
-
-function buildMapEmbedSrc(
-    location: ChildCareFacility["location"],
-): string | null {
-    const apiKey = process.env.GOOGLE_MAPS_EMBED_API_KEY;
-    if (!apiKey) {
-        return null;
-    }
-
-    /* Prefer the stored coordinates: a name search can match an unrelated
-        place with the same name (e.g. in another country) */
-    if (hasCoordinates(location)) {
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${location.latitude},${location.longitude}&zoom=16`;
-    }
-
-    /* Otherwise fall back to the place name in the Maps URL */
-    const placeMatch = location.google.match(/\/maps\/place\/([^/@?]+)/);
-    if (placeMatch) {
-        const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, " "));
-        return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(placeName)}&zoom=16`;
-    }
-
-    return null;
-}
 
 export default async function FacilityProfilePage({
     params,
@@ -97,6 +91,18 @@ export default async function FacilityProfilePage({
     if (!data) {
         return NotFound();
     }
+
+    const session = await getServerAuth();
+    const inAdminSession = session ? true : false;
+
+    const occupancyVerifiedAt = findOccupancyVerifiedDate(
+        data.occupancy,
+        data.verification,
+    );
+    const ageRangesVerifiedAt = findAgeRangesVerifiedDate(
+        data.ageRanges,
+        data.verification,
+    );
 
     const mapEmbedSrc = buildMapEmbedSrc(data.location);
     const openInMapsUrl = buildOpenInMapsUrl(data.location);
@@ -143,9 +149,8 @@ export default async function FacilityProfilePage({
         ].filter(Boolean),
         image:
             data.photos.length > 0
-                ? data.photos.map(
-                      (photo) =>
-                          `${vercelStorageUrl}/${data.slug}/${photo.fileName}`,
+                ? data.photos.map((photo) =>
+                      photoUrl(data.slug, photo.fileName),
                   )
                 : ["public/images/facility-directory-icon-default.png"],
         knowsAbout: [
@@ -237,6 +242,22 @@ export default async function FacilityProfilePage({
                                     {data.name}
                                 </h1>
                                 <div className="text-center">{data.type}</div>
+                                {inAdminSession && (
+                                    <Link
+                                        href={facilityEditPath(data.slug)}
+                                        className="mt-4 w-full sm:w-auto"
+                                    >
+                                        <Button
+                                            name="Edit"
+                                            variant="secondary"
+                                            color="black"
+                                            className="flex w-full items-center justify-center gap-2 sm:w-auto"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                            Edit
+                                        </Button>
+                                    </Link>
+                                )}
                             </div>
 
                             {/* Location */}
@@ -357,6 +378,9 @@ export default async function FacilityProfilePage({
                                             <PhoneNumberList
                                                 numbers={data.contact.phone}
                                                 orientation="column"
+                                                verified={
+                                                    data.verification?.phones
+                                                }
                                             />
                                         </div>
                                     </div>
@@ -367,6 +391,9 @@ export default async function FacilityProfilePage({
                                         <div className="break-all">
                                             <EmailList
                                                 emails={data.contact.email}
+                                                verified={
+                                                    data.verification?.emails
+                                                }
                                             />
                                         </div>
                                     </div>
@@ -464,6 +491,15 @@ export default async function FacilityProfilePage({
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
                                             Occupancy
+                                            {occupancyVerifiedAt && (
+                                                <VerifiedBadge
+                                                    label="Occupancy counts"
+                                                    align="start"
+                                                    verifiedAt={
+                                                        occupancyVerifiedAt
+                                                    }
+                                                />
+                                            )}
                                         </div>
                                         <div className="">
                                             <div>
@@ -516,6 +552,15 @@ export default async function FacilityProfilePage({
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
                                             Ages
+                                            {ageRangesVerifiedAt && (
+                                                <VerifiedBadge
+                                                    label="Age ranges"
+                                                    align="start"
+                                                    verifiedAt={
+                                                        ageRangesVerifiedAt
+                                                    }
+                                                />
+                                            )}
                                         </div>
                                         <div className="">
                                             <div>
