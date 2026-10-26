@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { parseItemsPerPage, parsePage } from "@/utils/pagination";
+import { lastPage, parseItemsPerPage, parsePage } from "@/utils/pagination";
 
 describe("parsePage", () => {
     it.each([
@@ -26,6 +26,10 @@ describe("parsePage", () => {
     ])("falls back to page 1 for %s", (value) => {
         expect(parsePage(value)).toBe(1);
     });
+
+    it("caps a huge page number so the database skip stays small", () => {
+        expect(parsePage("1e20")).toBe(1_000_000);
+    });
 });
 
 describe("parseItemsPerPage", () => {
@@ -48,4 +52,18 @@ describe("parseItemsPerPage", () => {
     it("caps the page size at 1000", () => {
         expect(parseItemsPerPage("5000")).toBe(1000);
     });
+});
+
+describe("lastPage", () => {
+    it.each([
+        [370, 10, 37],
+        [371, 10, 38],
+        [5, 10, 1],
+        [0, 10, 1],
+    ])(
+        "%s results at %s per page end on page %s",
+        (total, perPage, expected) => {
+            expect(lastPage(total, perPage)).toBe(expected);
+        },
+    );
 });

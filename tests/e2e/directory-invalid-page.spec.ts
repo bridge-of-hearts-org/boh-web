@@ -21,4 +21,25 @@ test.describe("Directory - invalid page number", () => {
             await expect(page.getByText("Showing 11 - 20 of")).toBeVisible();
         });
     }
+
+    for (const pageParam of ["9999", "1e20"]) {
+        test(`page=${pageParam} past the end shows the last page`, async ({
+            page,
+        }) => {
+            await page.goto(`/directory?page=${pageParam}`);
+
+            await expect(page.getByText(/Showing \d+ - \d+ of/)).toBeVisible();
+            await expect(
+                page.locator('a[href^="/facility/"] h2').first(),
+            ).toBeVisible();
+
+            /* On the last page there is a "previous" button but no "next" one */
+            await expect(
+                page.locator('button[name="Go to next page"]'),
+            ).toHaveCount(0);
+            await expect(
+                page.locator('button[name="Go to the previous page"]').first(),
+            ).toBeVisible();
+        });
+    }
 });

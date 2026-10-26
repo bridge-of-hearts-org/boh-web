@@ -17,6 +17,7 @@ import {
 
 import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
+import { lastPage } from "@/utils/pagination";
 
 type FacilityCardProps = {
     name: string;
@@ -38,7 +39,7 @@ export async function FacilityCards(props: FacilityCardProps) {
         province: props.province,
     };
 
-    const [[facilities, totalCount], pins] = await Promise.all([
+    const [[firstFacilities, firstTotalCount], pins] = await Promise.all([
         fetchAllFacilities(
             activeFilters,
             props.sortBy,
@@ -47,12 +48,27 @@ export async function FacilityCards(props: FacilityCardProps) {
         ),
         fetchFacilityPins(activeFilters),
     ]);
+    let page = props.page;
+    let facilities = firstFacilities;
+    let totalCount = firstTotalCount;
+
+    /* A page past the end (e.g. a stale link after filtering) shows the last page instead */
+    const totalPages = lastPage(totalCount, props.itemsPerPage);
+    if (page > totalPages) {
+        page = totalPages;
+        [facilities, totalCount] = await fetchAllFacilities(
+            activeFilters,
+            props.sortBy,
+            page,
+            props.itemsPerPage,
+        );
+    }
 
     return (
         <>
             <div className="flex w-full flex-col gap-5">
                 <SortingBar
-                    page={props.page}
+                    page={page}
                     itemsPerPage={props.itemsPerPage}
                     totalCount={totalCount}
                 />
@@ -173,7 +189,7 @@ export async function FacilityCards(props: FacilityCardProps) {
 
                 <div className="mt-10 flex justify-center">
                     <NavigationBar
-                        currentPage={props.page}
+                        currentPage={page}
                         totalPages={Math.ceil(totalCount / props.itemsPerPage)}
                     />
                 </div>
