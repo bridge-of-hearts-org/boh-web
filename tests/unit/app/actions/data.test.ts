@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { Prisma } from "@prisma/client";
-import { BlobNotFoundError, del, head } from "@vercel/blob";
+import {
+    BlobNotFoundError,
+    BlobRequestAbortedError,
+    del,
+    head,
+} from "@vercel/blob";
 
 import {
     addFacility,
@@ -589,6 +594,29 @@ describe("createPhotoUploadToken", () => {
             abortSignal: expect.any(AbortSignal),
         });
         expect(generateToken).not.toHaveBeenCalled();
+    });
+
+    it("gives up on the stored-photo check after 5 seconds", async () => {
+        loginAsAdmin();
+        vi.useFakeTimers();
+        /* Like the SDK: the check only ends once its signal aborts */
+        headBlob.mockImplementation(
+            (_url, options) =>
+                new Promise((_resolve, reject) => {
+                    options?.abortSignal?.addEventListener("abort", () =>
+                        reject(new BlobRequestAbortedError()),
+                    );
+                }),
+        );
+
+        try {
+            const result = createPhotoUploadToken("home", FILE_NAME);
+            await vi.advanceTimersByTimeAsync(5000);
+
+            expect(await result).toEqual({ token: "client-token" });
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it("still issues a token when it can't check for a stored photo", async () => {

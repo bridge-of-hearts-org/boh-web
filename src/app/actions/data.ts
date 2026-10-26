@@ -10,6 +10,7 @@ import { config } from "dotenv";
 import { generateClientTokenFromReadWriteToken } from "@vercel/blob/client";
 import { BlobNotFoundError, del, head } from "@vercel/blob";
 import { parseItemsPerPage, parsePage } from "@/utils/pagination";
+import { abortAfter } from "@/utils/utils";
 
 import { prisma } from "@/utils/db";
 import { getServerAuth } from "@/lib/auth";
@@ -376,12 +377,13 @@ export async function createPhotoUploadToken(
         return { error: "Photo storage is not configured on this server" };
     }
 
+    /* The SDK retries a failing API for minutes; don't hold up the upload
+       that long when the check can't be made */
+    const timeout = abortAfter(PHOTO_CHECK_TIMEOUT_MS);
     try {
-        /* The SDK retries a failing API for minutes; don't hold up the
-           upload that long when the check can't be made */
         await head(photoUrl(slug, fileName), {
             token: blobToken,
-            abortSignal: AbortSignal.timeout(PHOTO_CHECK_TIMEOUT_MS),
+            abortSignal: timeout.signal,
         });
         return { exists: true };
     } catch (error) {
@@ -389,6 +391,8 @@ export async function createPhotoUploadToken(
         if (!(error instanceof BlobNotFoundError)) {
             console.log("Couldn't check whether the photo is stored", error);
         }
+    } finally {
+        timeout.cancel();
     }
 
     try {
