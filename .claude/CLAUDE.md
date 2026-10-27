@@ -83,8 +83,8 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
 - Title the release PR exactly `Release vX.Y.Z`. Its description is the changelog, with these sections in order, omitting empty ones: `## Added`, `## Changed`, `## Fixed` (each bullet links its PR and issue numbers, e.g. `- Directory listing photo carousels (#77, #5)`), and `## Known issues` (non-blocking follow-ups from the release review)
 - Merging the release PR runs `.github/workflows/release.yml`, which tags the merge commit `vX.Y.Z` and publishes a GitHub Release with the PR description as its notes (minus any Claude Code attribution footer). It fails rather than overwrite an existing tag, and fails if a PR from `dev` or one titled like a release doesn't match the exact title format
 - For a manual release, run the workflow's `workflow_dispatch` trigger with `version`, `notes` and optionally `target` (a commit SHA; defaults to the `master` head), e.g. `gh workflow run release.yml -f version=v0.1.0 -f target=c09e6f31ebfa53db39a2950b995612bb030e561d -F notes=@notes.md`
-- Only a release of the current `master` head is marked Latest. A release of an older commit is published with `--latest=false`
-- The workflow only runs once it is on `master`, so the first release that ships it (`v0.2.0`) is published automatically, and the `v0.1.0` baseline (`c09e6f3`, what was live before) is dispatched by hand afterwards, so it is not marked Latest
+- Only the highest version among all releases is marked Latest. A lower version is published with `--latest=false`
+- The workflow only runs once it is on `master`, so the first release that ships it (`v0.2.0`) is published automatically, and the `v0.1.0` baseline (`c09e6f3`, what was live before) is dispatched by hand afterwards. Since `v0.2.0` is higher, the baseline is not marked Latest
 
 # Testing
 
