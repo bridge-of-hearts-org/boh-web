@@ -171,7 +171,7 @@ jobs:
           # Only the highest version is marked Latest, so an older one (e.g.
           # the v0.1.0 baseline published after v0.2.0) doesn't take over.
           # sort -V compares numerically, so v0.10.0 > v0.9.0
-          existing=$(gh release list --limit 1000 --json tagName --jq '.[].tagName')
+          existing=$(gh release list --limit 1000 --exclude-drafts --exclude-pre-releases --json tagName --jq '.[].tagName')
           highest=$(printf '%s\n%s\n' "$existing" "$VERSION" \
             | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
           if [ "$VERSION" = "$highest" ]; then
