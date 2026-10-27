@@ -20,13 +20,18 @@ on:
         type: string
         default: ""
       notes:
-        description: "Release notes (markdown)"
+        description: "Release notes (markdown). Multi-line notes are best passed via gh workflow run release.yml -F notes=@notes.md"
         required: true
         type: string
 
 permissions:
   contents: write
   pull-requests: read
+
+# Never run two releases at once, and never cancel one halfway through
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -48,10 +53,18 @@ jobs:
           set -euo pipefail
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
           pulls=$(gh api "repos/$GH_REPO/commits/$SHA/pulls")
-          pr=$(jq -c '[.[] | select(.merged_at != null
-                  and .base.ref == "master"
-                  and (.title | test("^Release v[0-9]+\\.[0-9]+\\.[0-9]+$")))] | first // empty' <<< "$pulls")
+          merged=$(jq -c '[.[] | select(.merged_at != null and .base.ref == "master")]' <<< "$pulls")
+          pr=$(jq -c '[.[] | select(.title | test("^Release v[0-9]+\\.[0-9]+\\.[0-9]+$"))] | first // empty' <<< "$merged")
           if [ -z "$pr" ]; then
+            # A merge from dev, or a PR titled like a release, was meant to be
+            # one, so a malformed title must not silently skip the release
+            bad=$(jq -r '[.[] | select(.head.ref == "dev"
+                    or (.title | ascii_downcase | startswith("release")))] | first // empty
+                    | "#\(.number) \"\(.title)\""' <<< "$merged")
+            if [ -n "$bad" ]; then
+              echo "::error::PR $bad looks like a release PR, but its title is not exactly 'Release vX.Y.Z' (e.g. 'Release v0.2.0'), so no release was published. Publish it by running this workflow by hand (workflow_dispatch) with the version, target $SHA and notes."
+              exit 1
+            fi
             echo "No merged 'Release vX.Y.Z' PR into master for $SHA; nothing to release."
             echo "release=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -151,13 +164,27 @@ jobs:
         run: |
           set -euo pipefail
           NOTES_FILE="$RUNNER_TEMP/release-notes.md"
-          # Never move or overwrite an existing version
-          if gh api "repos/$GH_REPO/git/ref/tags/$VERSION" > /dev/null 2>&1; then
+          # Never move or overwrite an existing version. Only a 404 means the
+          # tag is free; any other API failure stops the release.
+          if tag_out=$(gh api "repos/$GH_REPO/git/ref/tags/$VERSION" 2>&1); then
             echo "::error::Tag $VERSION already exists. Pick a new version; existing tags are never overwritten."
             exit 1
+          elif ! grep -q "HTTP 404" <<< "$tag_out"; then
+            echo "::error::Could not check whether tag $VERSION exists: $tag_out"
+            exit 1
+          fi
+          # Only a release of the current master head is marked Latest, so a
+          # release of an older commit (e.g. the v0.1.0 baseline published
+          # after v0.2.0) doesn't take over
+          master_head=$(gh api "repos/$GH_REPO/commits/master" --jq .sha)
+          if [ "$TARGET" = "$master_head" ]; then
+            latest="--latest"
+          else
+            latest="--latest=false"
           fi
           gh release create "$VERSION" \
             --target "$TARGET" \
             --title "$VERSION" \
-            --notes-file "$NOTES_FILE"
-          echo "Published $VERSION at $TARGET"
+            --notes-file "$NOTES_FILE" \
+            "$latest"
+          echo "Published $VERSION at $TARGET ($latest)"
