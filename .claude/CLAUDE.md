@@ -75,6 +75,15 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
   4. Tell the user how many rounds ran and what was fixed
 - Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
 
+# Releases
+
+- Production deploys go `dev` → `master` through a release PR (head `dev`, base `master`, merge commit); Vercel deploys `master` to bridgeofhearts.lk
+- Versions and changelogs live only in GitHub Releases and their tags. There is no `CHANGELOG.md`, and `package.json` is not bumped per release
+- Versioning is semver on 0.x: bump the minor version (e.g. `v0.2.0`) when a release contains any new feature or behaviour change, and the patch version (e.g. `v0.2.1`) for a fixes-only release. `v1.0.0` is reserved for when the site is declared complete
+- Title the release PR exactly `Release vX.Y.Z`. Its description is the changelog, with these sections in order, omitting empty ones: `## Added`, `## Changed`, `## Fixed` (each bullet links its PR and issue numbers, e.g. `- Directory listing photo carousels (#77, #5)`), and `## Known issues` (non-blocking follow-ups from the release review)
+- Merging the release PR runs `.github/workflows/release.yml`, which tags the merge commit `vX.Y.Z` and publishes a GitHub Release with the PR description as its notes (minus any Claude Code attribution footer). It fails rather than overwrite an existing tag
+- For a manual release (e.g. the `v0.1.0` baseline), run the workflow's `workflow_dispatch` trigger with `version`, `notes` and optionally `target` (a commit SHA; defaults to the `master` head), e.g. `gh workflow run release.yml -f version=v0.1.0 -F notes=@notes.md`
+
 # Testing
 
 - Run `npm run test:unit` and `npm run test:e2e` before pushing; all tests must pass
