@@ -20,7 +20,12 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-    /* Everything except API routes, Next.js and Vercel internals, and files
-       with an extension (sitemap.xml, robots.txt, images, ...) */
-    matcher: "/((?!api|_next|_vercel|.*\\..*).*)",
+    matcher: [
+        /* Everything except API routes, Next.js and Vercel internals, and
+           files with an extension (sitemap.xml, robots.txt, images, ...) */
+        "/((?!api|_next|_vercel|.*\\..*).*)",
+        /* Facility slugs may contain dots, which the pattern above skips */
+        "/facility/:path*",
+        "/si/facility/:path*",
+    ],
 };

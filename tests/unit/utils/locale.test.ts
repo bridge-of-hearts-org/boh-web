@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
     adminRedirectPath,
     defaultLocale,
+    isAdminPath,
     localizedPath,
     otherLocale,
 } from "@/utils/locale";
@@ -58,5 +59,21 @@ describe("adminRedirectPath", () => {
     it("ignores English paths", () => {
         expect(adminRedirectPath("/admin")).toBeNull();
         expect(adminRedirectPath("/facility/edit/abc")).toBeNull();
+    });
+});
+
+describe("isAdminPath", () => {
+    it("matches admin pages", () => {
+        expect(isAdminPath("/admin")).toBe(true);
+        expect(isAdminPath("/admin/login")).toBe(true);
+        expect(isAdminPath("/facility/new")).toBe(true);
+        expect(isAdminPath("/facility/edit/abc")).toBe(true);
+    });
+
+    it("ignores public pages", () => {
+        expect(isAdminPath("/")).toBe(false);
+        expect(isAdminPath("/administrator")).toBe(false);
+        expect(isAdminPath("/facility/abc")).toBe(false);
+        expect(isAdminPath("/facility/new-hope-home")).toBe(false);
     });
 });

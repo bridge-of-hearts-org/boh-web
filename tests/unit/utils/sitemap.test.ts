@@ -5,7 +5,7 @@ import { localizedSitemapEntries } from "@/utils/sitemap";
 const baseUrl = "https://bridgeofhearts.lk";
 
 describe("localizedSitemapEntries", () => {
-    it("lists every language with the same alternates", () => {
+    it("lists every language with the same alternates and an English x-default", () => {
         const lastModified = new Date("2026-01-01");
         const entries = localizedSitemapEntries(baseUrl, "/directory", {
             lastModified,
@@ -14,6 +14,7 @@ describe("localizedSitemapEntries", () => {
         const languages = {
             en: `${baseUrl}/directory`,
             si: `${baseUrl}/si/directory`,
+            "x-default": `${baseUrl}/directory`,
         };
 
         expect(entries).toEqual([

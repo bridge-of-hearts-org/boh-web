@@ -52,6 +52,14 @@ test.describe("Language toggle", () => {
         await expect(hamburgerItems(page)).toHaveCount(0);
     });
 
+    test("is hidden on the English-only admin pages", async ({ page }) => {
+        await page.setViewportSize(laptopViewport);
+        await page.goto("/admin/login");
+
+        await expect(page.locator("#header")).toBeVisible();
+        await expect(page.getByTestId("language-toggle")).toHaveCount(0);
+    });
+
     test("menu links stay in Sinhala", async ({ page }) => {
         await page.setViewportSize(laptopViewport);
         await page.goto("/si/about");

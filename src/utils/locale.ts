@@ -34,6 +34,15 @@ export function otherLocale(locale: Locale): Locale {
     return locale === "en" ? "si" : "en";
 }
 
+/* Whether a path without a locale prefix is an admin page, e.g.
+   /admin/login or /facility/edit/abc */
+export function isAdminPath(path: string): boolean {
+    return adminPathPrefixes.some(
+        (adminPrefix) =>
+            path === adminPrefix || path.startsWith(`${adminPrefix}/`),
+    );
+}
+
 /* For a non-English admin path such as /si/admin/login, the English path to
    redirect to (/admin/login). Null for any other path. */
 export function adminRedirectPath(pathname: string): string | null {
@@ -49,12 +58,8 @@ export function adminRedirectPath(pathname: string): string | null {
         }
 
         const rest = pathname.slice(prefix.length);
-        const isAdminPath = adminPathPrefixes.some(
-            (adminPrefix) =>
-                rest === adminPrefix || rest.startsWith(`${adminPrefix}/`),
-        );
 
-        if (isAdminPath) {
+        if (isAdminPath(rest)) {
             return rest;
         }
     }

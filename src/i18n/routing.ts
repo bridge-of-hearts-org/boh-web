@@ -11,4 +11,7 @@ export const routing = defineRouting({
     localePrefix: "as-needed",
     localeDetection: false,
     localeCookie: false,
+    /* The sitemap lists the hreflang alternates instead, so admin and 404
+       responses don't advertise Sinhala versions */
+    alternateLinks: false,
 });

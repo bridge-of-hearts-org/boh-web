@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { usePathname } from "@/i18n/navigation";
 import {
+    isAdminPath,
     Locale,
     localeNames,
     localizedPath,
@@ -58,6 +59,13 @@ function ToggleWithoutSearchParams(props: LanguageToggleProps) {
 }
 
 export default function LanguageToggle(props: LanguageToggleProps) {
+    const pathname = usePathname();
+
+    /* Admin pages are English-only */
+    if (isAdminPath(pathname)) {
+        return null;
+    }
+
     return (
         <Suspense fallback={<ToggleWithoutSearchParams {...props} />}>
             <ToggleWithSearchParams {...props} />
