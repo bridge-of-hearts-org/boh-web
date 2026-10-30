@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { fetchAllFacilities } from "./actions/data";
 import { DirectoryFilterType, emptyFilter } from "@/utils/defines";
+import { localizedSitemapEntries } from "@/utils/sitemap";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = "https://bridgeofhearts.lk";
@@ -21,36 +22,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     /* Generate the sitemap for the facility pages */
-    const facilitySitemap = facilities.map((facility) => ({
-        url: `${baseUrl}/facility/${facility.slug}`,
-        lastModified: new Date(),
-    }));
+    const facilitySitemap = facilities.flatMap((facility) =>
+        localizedSitemapEntries(baseUrl, `/facility/${facility.slug}`, {
+            lastModified: new Date(),
+        }),
+    );
 
     return [
-        {
-            url: baseUrl,
+        ...localizedSitemapEntries(baseUrl, "/", {
             lastModified: new Date(),
             changeFrequency: "weekly",
             priority: 1,
-        },
-        {
-            url: `${baseUrl}/directory`,
+        }),
+        ...localizedSitemapEntries(baseUrl, "/directory", {
             lastModified: new Date(),
             changeFrequency: "weekly",
             priority: 0.9,
-        },
-        {
-            url: `${baseUrl}/about`,
+        }),
+        ...localizedSitemapEntries(baseUrl, "/about", {
             lastModified: new Date(),
             changeFrequency: "weekly",
             priority: 0.8,
-        },
-        {
-            url: `${baseUrl}/contact`,
+        }),
+        ...localizedSitemapEntries(baseUrl, "/contact", {
             lastModified: new Date(),
             changeFrequency: "weekly",
             priority: 0.8,
-        },
+        }),
         ...facilitySitemap,
     ];
 }

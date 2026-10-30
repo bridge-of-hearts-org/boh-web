@@ -8,6 +8,7 @@ test.use({ trace: "off" });
 
 const mobileViewport = { width: 390, height: 844 };
 const tabletViewport = { width: 768, height: 1024 };
+const smallLaptopViewport = { width: 1024, height: 768 };
 const laptopViewport = { width: 1366, height: 768 };
 
 const headerAdminLink = (page: Page) =>
@@ -86,18 +87,33 @@ test.describe("Admin-only navigation for admins", () => {
         await expect(hamburgerItems(page)).toHaveCount(0);
     });
 
-    test("on a tablet, the header with the Admin button fits the screen", async ({
-        page,
-    }) => {
+    test("on a tablet, Admin is in the hamburger menu", async ({ page }) => {
         await page.setViewportSize(tabletViewport);
         await login(page, "/about");
 
-        await expect(headerAdminLink(page)).toBeVisible();
-        const scrollWidth = await page.evaluate(
-            () => document.documentElement.scrollWidth,
-        );
-        expect(scrollWidth).toBeLessThanOrEqual(tabletViewport.width);
+        await expect(headerAdminLink(page)).toBeHidden();
+
+        await hamburgerButton(page).click();
+        await expect(
+            hamburgerItems(page).getByText("Admin", { exact: true }),
+        ).toBeVisible();
     });
+
+    for (const path of ["/about", "/si/about"]) {
+        test(`on a small laptop, the header with the Admin button fits the screen (${path})`, async ({
+            page,
+        }) => {
+            await page.setViewportSize(smallLaptopViewport);
+            await login(page, path);
+
+            await expect(headerAdminLink(page)).toBeVisible();
+            await expect(page.getByTestId("language-toggle")).toBeVisible();
+            const scrollWidth = await page.evaluate(
+                () => document.documentElement.scrollWidth,
+            );
+            expect(scrollWidth).toBeLessThanOrEqual(smallLaptopViewport.width);
+        });
+    }
 
     test("on laptop, Admin stays in the header", async ({ page }) => {
         await page.setViewportSize(laptopViewport);

@@ -32,3 +32,13 @@ export function getMobileMenuItems(inAdminSession: boolean): MenuItem[] {
 export function facilityEditPath(slug: string): string {
     return `/facility/edit/${slug}`;
 }
+
+/* A path with an optional query string, e.g. ("/directory", "page=2") gives
+   "/directory?page=2" */
+export function pathWithSearch(pathname: string, search: string): string {
+    if (!search) {
+        return pathname;
+    }
+
+    return `${pathname}?${search}`;
+}

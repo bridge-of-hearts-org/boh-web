@@ -7,7 +7,7 @@ import {
     MarkerF,
     InfoWindowF,
 } from "@react-google-maps/api";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ChevronDown, ChevronUp, Map as MapIcon } from "lucide-react";
 
 import Button from "@/components/Button";

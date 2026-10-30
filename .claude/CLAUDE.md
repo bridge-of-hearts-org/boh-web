@@ -39,6 +39,18 @@ Next.js 15 App Router, Tailwind CSS, Prisma + MongoDB, Vercel hosting. Images se
 - `/facility/new` and `/facility/edit/[slug]` — Admin: add/edit a facility
 - `/admin` — Admin dashboard (requires NextAuth session); `/admin/login` — login page
 
+Page files live under `src/app/[locale]/(pages)/` (e.g. `/directory` is `src/app/[locale]/(pages)/directory/page.tsx`). The `(pages)` group keeps `loading.tsx` away from the `[locale]/[...rest]` catch-all, so unknown paths return a 404 status.
+
+## Languages
+
+Public pages are served in English at `/...` and in Sinhala at `/si/...` via `next-intl`. The URL alone decides the language (no cookie or browser detection), and `/en/...` redirects to the unprefixed path. Admin pages are English-only: `src/middleware.ts` redirects `/si/admin`, `/si/facility/new` and `/si/facility/edit/...` to the unprefixed paths. When adding an admin route, add its prefix to `adminPathPrefixes` in `src/utils/locale.ts`, which drives both that redirect and hiding the language toggle. The middleware matcher skips paths containing a dot (except under `/facility/`), so a new public route whose URLs can contain dots needs its own matcher entry.
+
+- `src/i18n/` — `next-intl` routing config, request config, and locale-aware navigation
+- `src/utils/locale.ts` — supported locales and path helpers (`localizedPath`, `isAdminPath`)
+- `messages/<locale>.json` — UI strings
+- On public pages, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`, not `next/link` / `next/navigation`, so links keep the current language. Links to admin pages use the plain Next.js ones
+- All Sinhala text, including UI strings and facility data, must be approved by the user before it is committed
+
 ## Data Flow
 
 Facility data originates in a Google Sheet (the **Database sheet**) with one tab per province:

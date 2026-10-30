@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+import { useRouter } from "@/i18n/navigation";
 
 import Button from "@/components/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";

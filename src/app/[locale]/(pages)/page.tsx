@@ -1,14 +1,14 @@
 import { Metadata } from "next";
 
 import React from "react";
-import Button from "../components/Button";
-import Link from "next/link";
+import Button from "@/components/Button";
+import { Link } from "@/i18n/navigation";
 import ImageComponent from "@/components/ImageComponent";
 
-import HeroSectionImage from "../../public/images/hero-section-photo.jpg";
-import StatFacilityDroneImage from "../../public/images/facility-drone-image.jpg";
-import StatDonationBoxesImage from "../../public/images/donation-boxes.jpg";
-import StatSmilingChildrenImage from "../../public/images/smiling-children-2.jpg";
+import HeroSectionImage from "../../../../public/images/hero-section-photo.jpg";
+import StatFacilityDroneImage from "../../../../public/images/facility-drone-image.jpg";
+import StatDonationBoxesImage from "../../../../public/images/donation-boxes.jpg";
+import StatSmilingChildrenImage from "../../../../public/images/smiling-children-2.jpg";
 import Card from "@/components/Card";
 
 export const metadata: Metadata = {

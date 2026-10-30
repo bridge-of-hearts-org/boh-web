@@ -1,8 +1,8 @@
 "use client";
 
 import ImageComponent from "@/components/ImageComponent";
-import emailIcon from "../../../public/images/email-icon.png";
-import Link from "next/link";
+import emailIcon from "../../../../../public/images/email-icon.png";
+import { Link } from "@/i18n/navigation";
 
 export default function Contact() {
     return (

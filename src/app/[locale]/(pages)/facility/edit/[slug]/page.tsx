@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import NotFound from "@/app/not-found";
+import NotFound from "@/app/[locale]/not-found";
 import { getServerAuth } from "@/lib/auth";
 import { fetchFacilityBySlug } from "@/app/actions/data";
 import EditForm from "../../EditForm";

@@ -1,9 +1,11 @@
-import Link from "next/link";
+import NextLink from "next/link";
 import Button from "./Button";
 import HamburgerMenu from "./HamburgerMenu";
 import ImageComponent from "./ImageComponent";
+import LanguageToggle from "./LanguageToggle";
 
 import MenuLogo from "../../public/images/logo-dark-middle.png";
+import { Link } from "@/i18n/navigation";
 import { getServerAuth } from "@/lib/auth";
 import { adminMenuItem, mainMenuItems } from "@/utils/navigation";
 
@@ -31,11 +33,12 @@ export default async function MenuBar() {
                 </Link>
             </div>
 
-            {/* Below md the hamburger menu carries this link instead */}
+            {/* Below lg the hamburger menu carries this link instead. Admin
+                pages are English-only, so this link has no locale prefix. */}
             {inAdminSession && (
-                <Link
+                <NextLink
                     href={adminMenuItem.href}
-                    className="hidden flex-grow justify-end px-2 md:flex lg:px-10"
+                    className="hidden flex-grow justify-end px-10 lg:flex"
                 >
                     <Button
                         name={adminMenuItem.label}
@@ -44,10 +47,10 @@ export default async function MenuBar() {
                     >
                         {adminMenuItem.label}
                     </Button>
-                </Link>
+                </NextLink>
             )}
 
-            <nav className="mr-4 hidden gap-3 text-white md:flex">
+            <nav className="mr-4 hidden gap-3 text-white lg:flex">
                 {mainMenuItems.map((item) => (
                     <Link key={item.href} href={item.href}>
                         <Button
@@ -59,8 +62,12 @@ export default async function MenuBar() {
                         </Button>
                     </Link>
                 ))}
+                <LanguageToggle
+                    separatorClassName="mx-1 h-6 w-px self-center bg-white/40"
+                    className="flex items-center rounded-full border border-white/60 px-4 py-2 font-semibold text-white transition-all duration-100 hover:bg-white/10"
+                />
             </nav>
-            <div className="md:hidden">
+            <div className="lg:hidden">
                 <HamburgerMenu inAdminSession={inAdminSession} />
             </div>
         </div>

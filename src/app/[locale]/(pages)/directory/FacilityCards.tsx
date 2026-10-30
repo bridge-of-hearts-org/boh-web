@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { MapPin, Phone } from "lucide-react";
 
 import Card from "@/components/Card";
@@ -7,11 +7,11 @@ import PhoneNumberList from "@/components/PhoneNumberList";
 import Button from "@/components/Button";
 import NavigationBar from "./NavigationBar";
 import SortingBar from "./SortingBar";
-import { fetchAllFacilities, fetchFacilityPins } from "../actions/data";
+import { fetchAllFacilities, fetchFacilityPins } from "@/app/actions/data";
 import { DirectoryFilterType, District, Province } from "@/utils/defines";
 import { lastPage } from "@/utils/pagination";
 
-import DefaultFacilityIconImage from "../../../public/images/facility-directory-icon-default.png";
+import DefaultFacilityIconImage from "@/../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
 import ListingPhotoCarousel from "./ListingPhotoCarousel";
 

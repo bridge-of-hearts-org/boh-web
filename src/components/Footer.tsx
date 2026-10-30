@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import ImageComponent from "./ImageComponent";
 
 import BohLogo from "../../public/images/logo-dark-narrow.png";
