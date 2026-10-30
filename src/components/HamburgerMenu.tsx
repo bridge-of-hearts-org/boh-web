@@ -69,6 +69,7 @@ export default function HamburgerMenu({
                             </div>
                         ))}
                         <LanguageToggle
+                            separatorClassName="block h-px w-full bg-white/30"
                             className={`block ${menuItemStyle}`}
                             onClick={() => setMenuVisible(false)}
                         />

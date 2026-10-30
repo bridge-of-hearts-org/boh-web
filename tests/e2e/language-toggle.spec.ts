@@ -21,6 +21,11 @@ test.describe("Language toggle", () => {
         await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
         await expect(headerToggle(page)).toHaveText("සිංහල");
+        await expect(
+            page
+                .locator("#header nav")
+                .getByTestId("language-toggle-separator"),
+        ).toBeVisible();
         await headerToggle(page).click();
         await expect(page).toHaveURL(
             (url) =>
@@ -46,6 +51,9 @@ test.describe("Language toggle", () => {
 
         await expect(headerToggle(page)).toBeHidden();
         await hamburgerButton(page).click();
+        await expect(
+            hamburgerItems(page).getByTestId("language-toggle-separator"),
+        ).toBeVisible();
         await hamburgerItems(page).getByTestId("language-toggle").click();
 
         await expect(page).toHaveURL((url) => url.pathname === "/si/about");
@@ -58,6 +66,9 @@ test.describe("Language toggle", () => {
 
         await expect(page.locator("#header")).toBeVisible();
         await expect(page.getByTestId("language-toggle")).toHaveCount(0);
+        await expect(page.getByTestId("language-toggle-separator")).toHaveCount(
+            0,
+        );
     });
 
     test("menu links stay in Sinhala", async ({ page }) => {

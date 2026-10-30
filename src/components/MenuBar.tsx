@@ -62,7 +62,10 @@ export default async function MenuBar() {
                         </Button>
                     </Link>
                 ))}
-                <LanguageToggle className="flex items-center rounded-full border border-white/60 px-4 py-2 font-semibold text-white transition-all duration-100 hover:bg-white/10" />
+                <LanguageToggle
+                    separatorClassName="mx-1 h-6 w-px self-center bg-white/40"
+                    className="flex items-center rounded-full border border-white/60 px-4 py-2 font-semibold text-white transition-all duration-100 hover:bg-white/10"
+                />
             </nav>
             <div className="lg:hidden">
                 <HamburgerMenu inAdminSession={inAdminSession} />

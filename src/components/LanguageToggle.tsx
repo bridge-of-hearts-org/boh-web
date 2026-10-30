@@ -58,7 +58,12 @@ function ToggleWithoutSearchParams(props: LanguageToggleProps) {
     return <ToggleLink href={usePathname()} {...props} />;
 }
 
-export default function LanguageToggle(props: LanguageToggleProps) {
+/* separatorClassName styles a divider shown before the toggle, which sets
+   it apart from the menu items and is hidden along with it */
+export default function LanguageToggle({
+    separatorClassName,
+    ...props
+}: LanguageToggleProps & { separatorClassName?: string }) {
     const pathname = usePathname();
 
     /* Admin pages are English-only */
@@ -67,8 +72,17 @@ export default function LanguageToggle(props: LanguageToggleProps) {
     }
 
     return (
-        <Suspense fallback={<ToggleWithoutSearchParams {...props} />}>
-            <ToggleWithSearchParams {...props} />
-        </Suspense>
+        <>
+            {separatorClassName && (
+                <span
+                    aria-hidden="true"
+                    data-testid="language-toggle-separator"
+                    className={separatorClassName}
+                ></span>
+            )}
+            <Suspense fallback={<ToggleWithoutSearchParams {...props} />}>
+                <ToggleWithSearchParams {...props} />
+            </Suspense>
+        </>
     );
 }
