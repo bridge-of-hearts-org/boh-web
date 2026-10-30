@@ -1,8 +1,8 @@
 import ImageComponent from "@/components/ImageComponent";
-import VolunteerIcon from "../../../public/images/volunteer-hands-icon.png";
-import ChildrenIcon from "../../../public/images/children-icon.png";
-import DonationIcon from "../../../public/images/donation-icon.png";
-import Link from "next/link";
+import VolunteerIcon from "@/../public/images/volunteer-hands-icon.png";
+import ChildrenIcon from "@/../public/images/children-icon.png";
+import DonationIcon from "@/../public/images/donation-icon.png";
+import { Link } from "@/i18n/navigation";
 
 export default function About() {
     return (

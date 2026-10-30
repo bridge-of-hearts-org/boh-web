@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 import { getServerAuth } from "@/lib/auth";
 import AdminActions from "./AdminActions";
-import { fetchAllFacilities } from "../actions/data";
+import { fetchAllFacilities } from "@/app/actions/data";
 import { DirectoryFilterType, emptyFilter } from "@/utils/defines";
 import Link from "next/link";
 

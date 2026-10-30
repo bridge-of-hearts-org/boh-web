@@ -1,12 +1,10 @@
-"use client";
-
 import Button from "@/components/Button";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
-export default function ErrorPage() {
+export default function NotFound() {
     return (
         <div className="mt-10 flex flex-col items-center justify-center gap-10">
-            <h2 className="text-2xl font-semibold">Something went wrong!</h2>
+            <h2 className="text-2xl font-semibold">Page Not Found</h2>
             <Link href="/">
                 <Button name="Return Home" variant="secondary" color="black">
                     Return Home

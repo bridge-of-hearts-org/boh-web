@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Form from "next/form";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+
+import { useRouter } from "@/i18n/navigation";
 
 import Card from "@/components/Card";
 import Button from "@/components/Button";

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import NextLink from "next/link";
+import { Link } from "@/i18n/navigation";
 import Script from "next/script";
 import { twMerge } from "tailwind-merge";
 import {
@@ -14,7 +15,7 @@ import Card from "@/components/Card";
 import Button from "@/components/Button";
 import ImageCarousel from "./ImageCarousel";
 import LocationMap from "./LocationMap";
-import NotFound from "@/app/not-found";
+import NotFound from "@/app/[locale]/not-found";
 import PhoneNumberList from "@/components/PhoneNumberList";
 import EmailList from "@/components/EmailList";
 import VerifiedBadge from "@/components/VerifiedBadge";
@@ -36,7 +37,7 @@ import {
 import { facilityEditPath } from "@/utils/navigation";
 import { getServerAuth } from "@/lib/auth";
 
-import DefaultFacilityIconImage from "../../../../public/images/facility-directory-icon-default.png";
+import DefaultFacilityIconImage from "../../../../../../public/images/facility-directory-icon-default.png";
 
 export async function generateMetadata({
     params,
@@ -242,8 +243,10 @@ export default async function FacilityProfilePage({
                                     {data.name}
                                 </h1>
                                 <div className="text-center">{data.type}</div>
+                                {/* Admin pages are English-only, so this link
+                                    has no locale prefix */}
                                 {inAdminSession && (
-                                    <Link
+                                    <NextLink
                                         href={facilityEditPath(data.slug)}
                                         className="mt-4 w-full sm:w-auto"
                                     >
@@ -256,7 +259,7 @@ export default async function FacilityProfilePage({
                                             <Pencil className="h-4 w-4" />
                                             Edit
                                         </Button>
-                                    </Link>
+                                    </NextLink>
                                 )}
                             </div>
 

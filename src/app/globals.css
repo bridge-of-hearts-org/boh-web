@@ -4,7 +4,7 @@
 
 @layer base {
     body {
-        font-family: "Encode Sans", system-ui, sans-serif;
+        font-family: "Encode Sans", var(--font-sinhala), system-ui, sans-serif;
     }
 }
 

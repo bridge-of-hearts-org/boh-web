@@ -3,8 +3,14 @@ module.exports = {
     content: ["./src/**/*.{js,ts,jsx,tsx}"],
     theme: {
         fontFamily: {
-            "encode-sans": ["Encode Sans", "sans-serif"],
-            "encode-sans-sc": ["Encode Sans SC", "sans-serif"],
+            /* Sinhala text falls back to Noto Sans Sinhala, loaded in
+               [locale]/layout.tsx */
+            "encode-sans": ["Encode Sans", "var(--font-sinhala)", "sans-serif"],
+            "encode-sans-sc": [
+                "Encode Sans SC",
+                "var(--font-sinhala)",
+                "sans-serif",
+            ],
         },
         extend: {
             colors: {
