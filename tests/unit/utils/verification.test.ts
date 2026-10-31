@@ -55,6 +55,9 @@ describe("formatVerifiedDate", () => {
 
     it("formats the date in Sinhala on Sinhala pages", () => {
         expect(formatVerifiedDate(march12, "si")).toBe("2026 මාර්තු 12");
+        expect(formatVerifiedDate(new Date("2025-12-01"), "si")).toBe(
+            "2025 දෙසැම්බර් 1",
+        );
     });
 });
 
