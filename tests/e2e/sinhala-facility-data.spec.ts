@@ -24,8 +24,10 @@ test.describe("Sinhala facility data", () => {
     }) => {
         const slug = await getExistingSlug(page);
         await page.goto(`/facility/${slug}`);
+        /* textContent, not innerText: the search needs the stored name,
+           and innerText collapses repeated spaces, which some names have */
         const englishName = (
-            await page.locator("h1").first().innerText()
+            (await page.locator("h1").first().textContent()) ?? ""
         ).trim();
 
         await page.goto(
