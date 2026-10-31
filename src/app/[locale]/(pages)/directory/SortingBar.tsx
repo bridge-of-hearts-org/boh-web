@@ -61,13 +61,16 @@ export default function SortingBar(props: SortingBarProps) {
                         ),
                     })}
                 </div>
-                <div>
-                    <div className="flex items-center gap-5 text-sm">
-                        {isPending && (
-                            <Loader className="h-4 w-4 animate-spin text-gray-400" />
-                        )}
+                {/* Each label stays with its dropdown, and the pairs wrap
+                    onto separate lines when the labels are too long to fit */}
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm">
+                    {isPending && (
+                        <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                    )}
+                    <div className="flex items-center gap-3">
                         <label htmlFor="sortBy">{t("sortBy")}</label>
                         <select
+                            id="sortBy"
                             name="sortBy"
                             value={sortBy}
                             disabled={isPending}
@@ -78,10 +81,13 @@ export default function SortingBar(props: SortingBarProps) {
                             <option value="name">{t("name")}</option>
                             <option value="city">{t("city")}</option>
                         </select>
+                    </div>
+                    <div className="flex items-center gap-3">
                         <label htmlFor="itemsPerPage">
                             {t("itemsPerPage")}
                         </label>
                         <select
+                            id="itemsPerPage"
                             name="itemsPerPage"
                             value={itemsPerPage}
                             disabled={isPending}
