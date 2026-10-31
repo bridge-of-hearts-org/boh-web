@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
     adminRedirectPath,
+    canChooseSort,
     defaultLocale,
+    effectiveSortBy,
     isAdminPath,
     localizedPath,
     otherLocale,
@@ -75,5 +77,19 @@ describe("isAdminPath", () => {
         expect(isAdminPath("/administrator")).toBe(false);
         expect(isAdminPath("/facility/abc")).toBe(false);
         expect(isAdminPath("/facility/new-hope-home")).toBe(false);
+    });
+});
+
+describe("effectiveSortBy", () => {
+    it("uses the sort from the URL on English pages", () => {
+        expect(canChooseSort("en")).toBe(true);
+        expect(effectiveSortBy("en", "city")).toBe("city");
+        expect(effectiveSortBy("en", undefined)).toBe("name");
+    });
+
+    it("always uses the default sort on Sinhala pages", () => {
+        expect(canChooseSort("si")).toBe(false);
+        expect(effectiveSortBy("si", "city")).toBe("name");
+        expect(effectiveSortBy("si", undefined)).toBe("name");
     });
 });

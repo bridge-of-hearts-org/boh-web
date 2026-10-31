@@ -28,6 +28,7 @@ import ImageComponent from "@/components/ImageComponent";
 import { Gender } from "@prisma/client";
 import { photoUrl } from "@/utils/photos";
 import { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { fetchFacilityBySlug } from "@/app/actions/data";
 import {
     buildMapEmbedSrc,
@@ -36,6 +37,8 @@ import {
 } from "@/utils/maps";
 import { facilityEditPath } from "@/utils/navigation";
 import { getServerAuth } from "@/lib/auth";
+import { translatedValue } from "@/utils/i18n";
+import { Locale, localizedPath } from "@/utils/locale";
 
 import DefaultFacilityIconImage from "../../../../../../public/images/facility-directory-icon-default.png";
 
@@ -46,23 +49,33 @@ export async function generateMetadata({
         throw new Error("Missing params for FacilityProfilePage.");
     }
 
-    const { slug } = await params;
+    const { slug, locale } = await params;
+    const t = await getTranslations({ locale, namespace: "Facility" });
     let facility = await fetchFacilityBySlug(slug);
 
     if (!facility) {
         return {
-            title: "Facility Not Found | Bridge of Hearts",
-            description: "This facility does not exist in our directory.",
+            title: t("notFoundTitle"),
+            description: t("notFoundDescription"),
         };
     }
 
+    const placeholders = {
+        name: facility.name,
+        city: facility.location.city,
+    };
+
     return {
         title: `${facility.name} | Bridge of Hearts`,
-        description: `Get details about ${facility.name}, a Child Development Center (Children's Home) in ${facility.location.city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.`,
+        description: t("metaDescription", placeholders),
         openGraph: {
             title: `${facility.name}`,
-            description: `Get details about ${facility.name}, located in ${facility.location.city}, Sri Lanka.`,
-            url: `https://bridgeofhearts.lk/facility/${facility.slug}`,
+            description: t("ogDescription", placeholders),
+            /* The page in its own language, so shared links preview in it */
+            url: `https://bridgeofhearts.lk${localizedPath(
+                locale as Locale,
+                `/facility/${facility.slug}`,
+            )}`,
             images:
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
@@ -75,7 +88,9 @@ export async function generateMetadata({
     };
 }
 
-type FacilityPageProps = { params: Promise<{ slug: string }> };
+type FacilityPageProps = {
+    params: Promise<{ slug: string; locale: string }>;
+};
 
 export default async function FacilityProfilePage({
     params,
@@ -86,12 +101,26 @@ export default async function FacilityProfilePage({
 
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
-    const { slug } = await params;
+    const { slug, locale } = await params;
     const data = await fetchFacilityBySlug(slug);
 
     if (!data) {
-        return NotFound();
+        return <NotFound />;
     }
+
+    const t = await getTranslations({ locale, namespace: "Facility" });
+    const tNav = await getTranslations({ locale, namespace: "Nav" });
+    const tCard = await getTranslations({ locale, namespace: "FacilityCard" });
+    const tMap = await getTranslations({ locale, namespace: "Map" });
+    const tVerified = await getTranslations({ locale, namespace: "Verified" });
+    const tProvinces = await getTranslations({
+        locale,
+        namespace: "Provinces",
+    });
+    const tDistricts = await getTranslations({
+        locale,
+        namespace: "Districts",
+    });
 
     const session = await getServerAuth();
     const inAdminSession = session ? true : false;
@@ -200,11 +229,11 @@ export default async function FacilityProfilePage({
                 <Breadcrumbs
                     hierarchy={[
                         {
-                            text: "Home",
+                            text: tNav("home"),
                             link: "/",
                         },
                         {
-                            text: "Directory",
+                            text: tNav("directory"),
                             link: "/directory",
                         },
                         {
@@ -223,7 +252,7 @@ export default async function FacilityProfilePage({
                                     sizes="200px"
                                     placeholder="blur"
                                     width={200}
-                                    alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
+                                    alt={tCard("placeholderAlt")}
                                     className="rounded-none"
                                 />
                             </div>
@@ -268,14 +297,16 @@ export default async function FacilityProfilePage({
                                 {/* Header */}
                                 <div className={infoTableHeaderStyles}>
                                     <MapPin />
-                                    <h2 className="font-semibold">Location</h2>
+                                    <h2 className="font-semibold">
+                                        {t("location")}
+                                    </h2>
                                 </div>
 
                                 {/* Table */}
                                 <div className={infoTableStyles}>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Address
+                                            {t("address")}
                                         </div>
                                         <div className="">
                                             {data.location.address}
@@ -283,7 +314,7 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            City
+                                            {t("city")}
                                         </div>
                                         <div className="">
                                             {data.location.city}
@@ -291,7 +322,7 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Divisional Secretariat
+                                            {t("divisionalSecretariat")}
                                         </div>
                                         <div className="">
                                             {
@@ -302,18 +333,24 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            District
+                                            {t("district")}
                                         </div>
                                         <div className="">
-                                            {data.location.district}
+                                            {translatedValue(
+                                                tDistricts,
+                                                data.location.district,
+                                            )}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Province
+                                            {t("province")}
                                         </div>
                                         <div className="">
-                                            {data.location.province}
+                                            {translatedValue(
+                                                tProvinces,
+                                                data.location.province,
+                                            )}
                                         </div>
                                     </div>
                                     {/* Map */}
@@ -337,7 +374,7 @@ export default async function FacilityProfilePage({
                                                 />
                                             ) : (
                                                 <iframe
-                                                    title="Facility location map"
+                                                    title={tMap("iframeTitle")}
                                                     width="100%"
                                                     height="300"
                                                     className="rounded-3xl border-0"
@@ -352,7 +389,7 @@ export default async function FacilityProfilePage({
                                     ) : (
                                         <div className={infoTableRowStyles}>
                                             <div className="font-semibold">
-                                                Google Maps
+                                                {t("googleMaps")}
                                             </div>
                                             <div className="">
                                                 {openInMapsLink ??
@@ -368,14 +405,16 @@ export default async function FacilityProfilePage({
                                 {/* Header */}
                                 <div className={infoTableHeaderStyles}>
                                     <PhoneCall />
-                                    <h2 className="font-semibold">Contact</h2>
+                                    <h2 className="font-semibold">
+                                        {t("contact")}
+                                    </h2>
                                 </div>
 
                                 {/* Table */}
                                 <div className={infoTableStyles}>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Phone
+                                            {t("phone")}
                                         </div>
                                         <div className="">
                                             <PhoneNumberList
@@ -389,7 +428,7 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Email
+                                            {t("email")}
                                         </div>
                                         <div className="break-all">
                                             <EmailList
@@ -402,7 +441,7 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Website
+                                            {t("website")}
                                         </div>
                                         <div className="">
                                             {data.contact.website ? (
@@ -467,7 +506,9 @@ export default async function FacilityProfilePage({
                                 {/* Header */}
                                 <div className={infoTableHeaderStyles}>
                                     <Users />
-                                    <h1 className="font-semibold">Residents</h1>
+                                    <h1 className="font-semibold">
+                                        {t("residents")}
+                                    </h1>
                                 </div>
 
                                 {/* Table */}
@@ -479,24 +520,26 @@ export default async function FacilityProfilePage({
                                 >
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Genders
+                                            {t("genders")}
                                         </div>
                                         <div className="">
                                             {data.genders == Gender.male
-                                                ? "Male"
+                                                ? t("male")
                                                 : data.genders == Gender.female
-                                                  ? "Female"
+                                                  ? t("female")
                                                   : data.genders == Gender.both
-                                                    ? "Male / Female"
+                                                    ? t("both")
                                                     : noInfoElement}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Occupancy
+                                            {t("occupancy")}
                                             {occupancyVerifiedAt && (
                                                 <VerifiedBadge
-                                                    label="Occupancy counts"
+                                                    label={tVerified(
+                                                        "occupancy",
+                                                    )}
                                                     align="start"
                                                     verifiedAt={
                                                         occupancyVerifiedAt
@@ -508,7 +551,7 @@ export default async function FacilityProfilePage({
                                             <div>
                                                 <div className="grid grid-cols-2">
                                                     <div className="italic">
-                                                        Male
+                                                        {t("rowMale")}
                                                     </div>
                                                     <div>
                                                         {data.occupancy.male
@@ -525,7 +568,7 @@ export default async function FacilityProfilePage({
                                             <div>
                                                 <div className="grid grid-cols-2">
                                                     <div className="italic">
-                                                        Female
+                                                        {t("rowFemale")}
                                                     </div>
                                                     <div>
                                                         {data.occupancy.female
@@ -541,7 +584,7 @@ export default async function FacilityProfilePage({
                                             </div>
                                             <div>
                                                 <div className="grid grid-cols-2 font-semibold">
-                                                    <div>Total</div>
+                                                    <div>{t("total")}</div>
                                                     <div>
                                                         {data.occupancy.total
                                                             ? data.occupancy
@@ -554,10 +597,12 @@ export default async function FacilityProfilePage({
                                     </div>
                                     <div className={infoTableRowStyles}>
                                         <div className="font-semibold">
-                                            Ages
+                                            {t("ages")}
                                             {ageRangesVerifiedAt && (
                                                 <VerifiedBadge
-                                                    label="Age ranges"
+                                                    label={tVerified(
+                                                        "ageRanges",
+                                                    )}
                                                     align="start"
                                                     verifiedAt={
                                                         ageRangesVerifiedAt
@@ -569,7 +614,7 @@ export default async function FacilityProfilePage({
                                             <div>
                                                 <div className="grid grid-cols-2">
                                                     <div className="italic">
-                                                        Male
+                                                        {t("rowMale")}
                                                     </div>
                                                     <div>
                                                         {data.ageRanges.male
@@ -586,7 +631,7 @@ export default async function FacilityProfilePage({
                                             <div>
                                                 <div className="grid grid-cols-2">
                                                     <div className="italic">
-                                                        Female
+                                                        {t("rowFemale")}
                                                     </div>
                                                     <div>
                                                         {data.ageRanges.female
@@ -606,7 +651,7 @@ export default async function FacilityProfilePage({
                                             </div>
                                             <div>
                                                 <div className="grid grid-cols-2 font-semibold">
-                                                    <div>All</div>
+                                                    <div>{t("all")}</div>
                                                     <div>
                                                         {data.ageRanges.all
                                                             ? data.ageRanges.all
@@ -624,7 +669,9 @@ export default async function FacilityProfilePage({
                                 {/* Header */}
                                 <div className={infoTableHeaderStyles}>
                                     <Link2 />
-                                    <h1 className="font-semibold">Sources</h1>
+                                    <h1 className="font-semibold">
+                                        {t("sources")}
+                                    </h1>
                                 </div>
 
                                 {/* Table */}
@@ -656,15 +703,16 @@ export default async function FacilityProfilePage({
                         </div>
 
                         <p className="text-center text-xs italic">
-                            Please contact us at{" "}
-                            <a
-                                href="mailto:bridgeofheartslk@gmail.com"
-                                className="boh-link"
-                            >
-                                bridgeofheartslk@gmail.com
-                            </a>{" "}
-                            if there are any data discrepancies or if you have
-                            more up-to-date information
+                            {t.rich("contactUs", {
+                                email: () => (
+                                    <a
+                                        href="mailto:bridgeofheartslk@gmail.com"
+                                        className="boh-link"
+                                    >
+                                        bridgeofheartslk@gmail.com
+                                    </a>
+                                ),
+                            })}
                         </p>
 
                         {/* Buttons */}

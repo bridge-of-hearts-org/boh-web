@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Form from "next/form";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 
@@ -28,6 +29,9 @@ export default function FilterCard({
     cities: string[];
     managedByOptions: string[];
 }) {
+    const t = useTranslations("Filters");
+    const tProvinces = useTranslations("Provinces");
+    const tDistricts = useTranslations("Districts");
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -106,14 +110,14 @@ export default function FilterCard({
 
     return (
         <Card className="h-auto w-full xl:w-full">
-            <h1 className="pb-5 text-xl font-semibold">Filters</h1>
+            <h1 className="pb-5 text-xl font-semibold">{t("heading")}</h1>
             <Form
                 action={handleFilterSubmit}
                 onSubmit={() => setIsApplying(true)}
                 className="flex flex-col gap-5 py-3"
             >
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="name">Name</label>
+                    <label htmlFor="name">{t("name")}</label>
                     <AutocompleteInput
                         id="name"
                         name="name"
@@ -128,7 +132,7 @@ export default function FilterCard({
                     />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="city">City</label>
+                    <label htmlFor="city">{t("city")}</label>
                     <AutocompleteInput
                         id="city"
                         name="city"
@@ -138,7 +142,7 @@ export default function FilterCard({
                     />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="managedBy">Managed By</label>
+                    <label htmlFor="managedBy">{t("managedBy")}</label>
                     <AutocompleteInput
                         id="managedBy"
                         name="managedBy"
@@ -153,7 +157,7 @@ export default function FilterCard({
                     />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <label htmlFor="province">Province</label>
+                    <label htmlFor="province">{t("province")}</label>
                     <select
                         id="province"
                         name="province"
@@ -169,7 +173,7 @@ export default function FilterCard({
                         {ProvincesList.map((province) => {
                             return (
                                 <option key={province} value={province}>
-                                    {province}
+                                    {tProvinces(province)}
                                 </option>
                             );
                         })}
@@ -184,7 +188,7 @@ export default function FilterCard({
                                 : "text-gray-400"
                         }
                     >
-                        District
+                        {t("district")}
                     </label>
                     <select
                         id="district"
@@ -204,7 +208,7 @@ export default function FilterCard({
                                 (district) => {
                                     return (
                                         <option key={district} value={district}>
-                                            {district}
+                                            {tDistricts(district)}
                                         </option>
                                     );
                                 },

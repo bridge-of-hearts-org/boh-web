@@ -1,5 +1,187 @@
 {
     "LanguageToggle": {
         "label": "Change language"
+    },
+    "Metadata": {
+        "description": "Find and support Child Development Centres (Children's Homes) in Sri Lanka. Our directory provides up-to-date contact details, locations, and resident information. Filter by name, city, district, and province. Continuously updated to ensure accurate data.",
+        "keywords": "childcare facilities Sri Lanka, children's homes Sri Lanka, child development centres Sri Lanka, orphanages Sri Lanka",
+        "ogTitle": "Bridge of Hearts - A Directory of Child Development Centres in Sri Lanka",
+        "ogDescription": "Find and support Child Development Centres (Children's Homes) across Sri Lanka.",
+        "twitterDescription": "Discover childcare facilities in Sri Lanka and help those in need."
+    },
+    "Nav": {
+        "home": "Home",
+        "directory": "Directory",
+        "about": "About",
+        "contact": "Contact"
+    },
+    "Footer": {
+        "aiImages": "Some images displayed on this website are AI-generated.",
+        "disclaimer": "While we strive to provide accurate and up-to-date information, we cannot guarantee the completeness or accuracy of the data presented. The Bridge of Hearts project is not liable for any incorrect or outdated information. Visitors are encouraged to verify details independently.",
+        "logoAlt": "Bridge of Hearts Logo",
+        "instagramAlt": "Instagram Logo",
+        "facebookAlt": "Facebook Logo"
+    },
+    "NotFound": {
+        "title": "Page Not Found"
+    },
+    "Error": {
+        "title": "Something went wrong!"
+    },
+    "Provinces": {
+        "Central": "Central",
+        "Eastern": "Eastern",
+        "North Central": "North Central",
+        "North Western": "North Western",
+        "Northern": "Northern",
+        "Sabaragamuwa": "Sabaragamuwa",
+        "Southern": "Southern",
+        "Uva": "Uva",
+        "Western": "Western"
+    },
+    "Districts": {
+        "Ampara": "Ampara",
+        "Anuradhapura": "Anuradhapura",
+        "Badulla": "Badulla",
+        "Batticaloa": "Batticaloa",
+        "Colombo": "Colombo",
+        "Galle": "Galle",
+        "Gampaha": "Gampaha",
+        "Hambantota": "Hambantota",
+        "Jaffna": "Jaffna",
+        "Kalutara": "Kalutara",
+        "Kandy": "Kandy",
+        "Kegalle": "Kegalle",
+        "Kilinochchi": "Kilinochchi",
+        "Kurunegala": "Kurunegala",
+        "Mannar": "Mannar",
+        "Matale": "Matale",
+        "Matara": "Matara",
+        "Monaragala": "Monaragala",
+        "Mullaitivu": "Mullaitivu",
+        "Nuwara Eliya": "Nuwara Eliya",
+        "Polonnaruwa": "Polonnaruwa",
+        "Puttalam": "Puttalam",
+        "Ratnapura": "Ratnapura",
+        "Trincomalee": "Trincomalee",
+        "Vavuniya": "Vavuniya"
+    },
+    "Home": {
+        "metaTitle": "Bridge of Hearts | Find Children's Homes in Sri Lanka",
+        "metaDescription": "Welcome to Bridge of Hearts, an online directory for Child Development Centres (Children's Homes) in Sri Lanka.",
+        "headingSmall": "Welcome to the",
+        "headingLarge": "Bridge of Hearts Project",
+        "subheading": "An online directory for Child Development Centres in Sri Lanka.",
+        "p1": "Every child deserves love, care, and a chance for a brighter future. Yet, in Sri Lanka, more than <b>10,000 children</b> live in over <b>370 Child Development Centres</b> commonly known as children's homes seeking stability and support.",
+        "p2": "At <b>Bridge of Hearts</b>, we believe in the power of connection. Our mission is to provide a trusted, up-to-date resource that shines a light on these homes, making it easier for donors to find and support the children who need it most.",
+        "p3": "With most child care facilities relying on external donations, your generosity can make a life-changing impact. Whether you give, volunteer, or spread the word you become part of a movement that bridges hearts and strengthens communities.",
+        "p4": "Together, let's bring hope, one child at a time.",
+        "stat1": "There are more than <b>370</b> child care facilities in Sri Lanka",
+        "stat2": "<b>60%</b> of child care facilities run on external donations",
+        "stat3": "<b>71%</b> of the children are between ages <b>5-14</b>",
+        "heroAlt": "Three children smiling happily at the camera",
+        "aerialAlt": "An aerial view of a children's home, with a playground in front of it, where children are playing",
+        "donationsAlt": "Three boxes of donations, with clothes, food and stationery supplies",
+        "uniformsAlt": "Children in school uniforms smiling at the camera"
+    },
+    "About": {
+        "heading": "About Us",
+        "p1": "<b>Bridge of Hearts</b> is a volunteer-driven initiative dedicated to creating a brighter future for children in Sri Lanka. Our platform connects donors with children's homes across the island, ensuring that donations and resources are distributed equitably to the places that need them the most.",
+        "p2": "We started this project with a simple vision: to bridge the gap between generosity and need. By providing a transparent and comprehensive directory of children's homes, we aim to empower donors to make informed decisions and support the facilities that are often overlooked.",
+        "p3": "It is our intention to continuously expand our reach by adding new children's homes to the directory. Soon, we will have information on all <b>370+ facilities</b> across the island, ensuring that no home, big or small, is left behind.",
+        "p4": "Together, we're working to change the landscape of child care donations in Sri Lanka. While the most well-known facilities receive the majority of support, our platform ensures that every child—no matter where they live—has the opportunity to thrive. We are <b>actively expanding</b> our reach to include data from all 9 provinces, starting with the Western and Central Provinces, so that no child is left behind.",
+        "handsAlt": "Three hands holding each other",
+        "childrenAlt": "Children",
+        "donationAlt": "Food donation"
+    },
+    "Contact": {
+        "heading": "Contact Us",
+        "intro": "We'd love to hear from you! If you have any questions or feedback, feel free to reach out to us.",
+        "email": "Email:",
+        "help": "If you have up-to-date information about any children's home listed on our website or know of a facility that should be included, please let us know. Your contributions help us keep our directory accurate and helps future donors find the information they need to support the children.",
+        "envelopeAlt": "Envelope with a letter inside that has an @ symbol"
+    },
+    "ExploreDirectory": {
+        "link": "Explore our directory of Child Development Centres (Children's Homes) in Sri Lanka."
+    },
+    "Directory": {
+        "metaTitle": "Directory | Bridge of Hearts",
+        "metaDescription": "Browse a list of Child Development Centres (Children's Homes) in Sri Lanka. Filter by name, city, district, and province",
+        "heading": "Child Development Centres",
+        "subheading": "Find information about Children's Homes across Sri Lanka"
+    },
+    "Filters": {
+        "heading": "Filters",
+        "name": "Name",
+        "city": "City",
+        "managedBy": "Managed By",
+        "province": "Province",
+        "district": "District"
+    },
+    "Sorting": {
+        "showing": "Showing {start} - {end} of <b>{total}</b> {total, plural, one {facility} other {facilities}}",
+        "total": "<b>{total}</b> {total, plural, one {facility} other {facilities}}",
+        "sortBy": "Sort By",
+        "name": "Name",
+        "city": "City",
+        "itemsPerPage": "Items Per Page"
+    },
+    "Pagination": {
+        "page": "Page",
+        "ofTotal": "of <b>{total}</b>"
+    },
+    "FacilityCard": {
+        "district": "{district} District",
+        "province": "{province} Province",
+        "placeholderAlt": "Illustration of a cozy house with a red roof, surrounded by trees and sunlight",
+        "photoAlt": "Photo {i} of {count} taken at {name}",
+        "photoAltSingle": "A picture taken at {name}"
+    },
+    "Map": {
+        "loading": "Loading map…",
+        "unavailable": "The map is currently unavailable.",
+        "loadError": "The map could not be loaded. Please try again later.",
+        "iframeTitle": "Facility location map"
+    },
+    "Facility": {
+        "location": "Location",
+        "address": "Address",
+        "city": "City",
+        "divisionalSecretariat": "Divisional Secretariat",
+        "district": "District",
+        "province": "Province",
+        "googleMaps": "Google Maps",
+        "contact": "Contact",
+        "phone": "Phone",
+        "email": "Email",
+        "website": "Website",
+        "residents": "Residents",
+        "genders": "Genders",
+        "male": "Male",
+        "female": "Female",
+        "both": "Male / Female",
+        "occupancy": "Occupancy",
+        "ages": "Ages",
+        "rowMale": "Male",
+        "rowFemale": "Female",
+        "total": "Total",
+        "all": "All",
+        "sources": "Sources",
+        "contactUs": "Please contact us at <email></email> if there are any data discrepancies or if you have more up-to-date information",
+        "photoAlt": "A picture taken at the children's home facility",
+        "photoAltN": "Photo {i} of {count} taken at the children's home facility",
+        "photoSource": "Source: {source}",
+        "metaDescription": "Get details about {name}, a Child Development Center (Children's Home) in {city}, Sri Lanka. Visit Bridge of Hearts for a directory of facilities across the country.",
+        "ogDescription": "Get details about {name}, located in {city}, Sri Lanka.",
+        "notFoundTitle": "Facility Not Found | Bridge of Hearts",
+        "notFoundDescription": "This facility does not exist in our directory."
+    },
+    "Verified": {
+        "popover": "Verified by directly contacting the facility on {date}.",
+        "label": "{label} verified",
+        "phone": "Phone number {number}",
+        "email": "Email {email}",
+        "occupancy": "Occupancy counts",
+        "ageRanges": "Age ranges"
     }
 }

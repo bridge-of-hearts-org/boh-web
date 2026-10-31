@@ -3,7 +3,9 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { twMerge } from "tailwind-merge";
+import { useLocale, useTranslations } from "next-intl";
 
+import { Locale } from "@/utils/locale";
 import { formatVerifiedDate } from "@/utils/verification";
 
 type PropsType = {
@@ -17,6 +19,8 @@ type PropsType = {
 
 /* A filled green badge check that opens a note saying when the value was verified */
 export default function VerifiedBadge(props: PropsType) {
+    const t = useTranslations("Verified");
+    const locale = useLocale() as Locale;
     const [open, setOpen] = useState(false);
     const wrapperRef = useRef<HTMLSpanElement>(null);
     const popoverId = useId();
@@ -65,7 +69,7 @@ export default function VerifiedBadge(props: PropsType) {
             <button
                 type="button"
                 className="-my-1.5 rounded-full p-1.5 text-green-600 hover:bg-green-50"
-                aria-label={`${props.label} verified`}
+                aria-label={t("label", { label: props.label })}
                 aria-expanded={open}
                 aria-controls={popoverId}
                 onClick={() => setOpen(!open)}
@@ -87,8 +91,9 @@ export default function VerifiedBadge(props: PropsType) {
                     props.align === "start" ? "left-0" : "right-0",
                 )}
             >
-                Verified by directly contacting the facility on{" "}
-                {formatVerifiedDate(props.verifiedAt)}.
+                {t("popover", {
+                    date: formatVerifiedDate(props.verifiedAt, locale),
+                })}
             </span>
         </span>
     );

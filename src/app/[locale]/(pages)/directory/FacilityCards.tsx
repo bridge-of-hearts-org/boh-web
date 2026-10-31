@@ -1,5 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { MapPin, Phone } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 
 import Card from "@/components/Card";
 import ImageComponent from "@/components/ImageComponent";
@@ -10,6 +11,7 @@ import SortingBar from "./SortingBar";
 import { fetchAllFacilities, fetchFacilityPins } from "@/app/actions/data";
 import { DirectoryFilterType, District, Province } from "@/utils/defines";
 import { lastPage } from "@/utils/pagination";
+import { translatedValue } from "@/utils/i18n";
 
 import DefaultFacilityIconImage from "@/../public/images/facility-directory-icon-default.png";
 import MapWidget from "./MapWidget";
@@ -27,6 +29,9 @@ type FacilityCardProps = {
 };
 
 export async function FacilityCards(props: FacilityCardProps) {
+    const t = await getTranslations("FacilityCard");
+    const tProvinces = await getTranslations("Provinces");
+    const tDistricts = await getTranslations("Districts");
     const activeFilters: DirectoryFilterType = {
         name: props.name,
         city: props.city,
@@ -95,7 +100,7 @@ export async function FacilityCards(props: FacilityCardProps) {
                                                 sizes="180px"
                                                 placeholder="blur"
                                                 width={180}
-                                                alt="Illustration of a cozy house with a red roof, surrounded by trees and sunlight"
+                                                alt={t("placeholderAlt")}
                                                 className="rounded-none"
                                                 loading={
                                                     idx < 3 ? "eager" : "lazy"
@@ -158,12 +163,20 @@ export async function FacilityCards(props: FacilityCardProps) {
                                             {facility.location.city}
                                         </h3>
                                         <p className="flex gap-2 text-right text-sm">
-                                            {facility.location.district}{" "}
-                                            District
+                                            {t("district", {
+                                                district: translatedValue(
+                                                    tDistricts,
+                                                    facility.location.district,
+                                                ),
+                                            })}
                                         </p>
                                         <p className="flex gap-2 text-right text-sm">
-                                            {facility.location.province}{" "}
-                                            Province
+                                            {t("province", {
+                                                province: translatedValue(
+                                                    tProvinces,
+                                                    facility.location.province,
+                                                ),
+                                            })}
                                         </p>
                                     </div>
                                     <Link href={`/facility/${facility.slug}`}>
