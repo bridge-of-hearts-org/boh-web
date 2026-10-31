@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 import { Loader } from "lucide-react";
@@ -17,6 +18,7 @@ type SortingBarProps = {
 };
 
 export default function SortingBar(props: SortingBarProps) {
+    const t = useTranslations("Sorting");
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -50,21 +52,25 @@ export default function SortingBar(props: SortingBarProps) {
         <Card>
             <div className="flex flex-wrap items-center justify-center text-nowrap px-2 md:justify-between">
                 <div className="pb-5 md:pb-0">
-                    {numPages > 1 && (
-                        <span>
-                            {`Showing ${displayStart} - ${displayEnd} of `}
-                        </span>
-                    )}
-                    <span className="font-semibold">{`${props.totalCount} `}</span>
-                    <span>{`${props.totalCount == 1 ? "facility" : "facilities"}`}</span>
+                    {t.rich(numPages > 1 ? "showing" : "total", {
+                        start: displayStart,
+                        end: displayEnd,
+                        total: props.totalCount,
+                        b: (chunks) => (
+                            <span className="font-semibold">{chunks}</span>
+                        ),
+                    })}
                 </div>
-                <div>
-                    <div className="flex items-center gap-5 text-sm">
-                        {isPending && (
-                            <Loader className="h-4 w-4 animate-spin text-gray-400" />
-                        )}
-                        <label htmlFor="sortBy">Sort By</label>
+                {/* Each label stays with its dropdown, and the pairs wrap
+                    onto separate lines when the labels are too long to fit */}
+                <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm">
+                    {isPending && (
+                        <Loader className="h-4 w-4 animate-spin text-gray-400" />
+                    )}
+                    <div className="flex items-center gap-3">
+                        <label htmlFor="sortBy">{t("sortBy")}</label>
                         <select
+                            id="sortBy"
                             name="sortBy"
                             value={sortBy}
                             disabled={isPending}
@@ -72,11 +78,16 @@ export default function SortingBar(props: SortingBarProps) {
                                 navigate(e.target.value, itemsPerPage)
                             }
                         >
-                            <option value="name">Name</option>
-                            <option value="city">City</option>
+                            <option value="name">{t("name")}</option>
+                            <option value="city">{t("city")}</option>
                         </select>
-                        <label htmlFor="itemsPerPage">Items Per Page</label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <label htmlFor="itemsPerPage">
+                            {t("itemsPerPage")}
+                        </label>
                         <select
+                            id="itemsPerPage"
                             name="itemsPerPage"
                             value={itemsPerPage}
                             disabled={isPending}

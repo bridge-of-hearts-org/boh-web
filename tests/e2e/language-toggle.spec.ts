@@ -75,10 +75,7 @@ test.describe("Language toggle", () => {
         await page.setViewportSize(laptopViewport);
         await page.goto("/si/about");
 
-        await page
-            .locator("#header nav")
-            .getByRole("link", { name: "Contact" })
-            .click();
+        await page.locator('#header nav a[href="/si/contact"]').click();
         await expect(page).toHaveURL((url) => url.pathname === "/si/contact");
     });
 });

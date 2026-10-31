@@ -8,12 +8,10 @@ import {
     InfoWindowF,
 } from "@react-google-maps/api";
 
+import { useTranslations } from "next-intl";
+
 import MapMessage from "@/components/MapMessage";
-import {
-    MAPS_API_KEY,
-    MAP_LOAD_ERROR_TEXT,
-    useMapsAuthFailed,
-} from "@/utils/googleMaps";
+import { MAPS_API_KEY, useMapsAuthFailed } from "@/utils/googleMaps";
 
 /* Start loading a little before the map scrolls into view */
 const LOAD_MARGIN = "200px";
@@ -35,6 +33,7 @@ function LoadedMap({
     mapsUrl,
     fallbackEmbedSrc,
 }: LocationMapProps) {
+    const t = useTranslations("Map");
     const [isInfoOpen, setIsInfoOpen] = useState(false);
     const authFailed = useMapsAuthFailed();
     /* A stable object, since GoogleMap re-centres whenever `center` changes */
@@ -51,7 +50,7 @@ function LoadedMap({
         if (fallbackEmbedSrc) {
             return (
                 <iframe
-                    title="Facility location map"
+                    title={t("iframeTitle")}
                     width="100%"
                     height="100%"
                     className="border-0"
@@ -62,11 +61,11 @@ function LoadedMap({
             );
         }
 
-        return <MapMessage text={MAP_LOAD_ERROR_TEXT} />;
+        return <MapMessage text={t("loadError")} />;
     }
 
     if (!isLoaded) {
-        return <MapMessage text="Loading map…" pulse />;
+        return <MapMessage text={t("loading")} pulse />;
     }
 
     return (
@@ -115,6 +114,7 @@ function LoadedMap({
 /* Each Maps JavaScript API load is billed, so the map only loads once it
    (nearly) scrolls into view */
 export default function LocationMap(props: LocationMapProps) {
+    const t = useTranslations("Map");
     const containerRef = useRef<HTMLDivElement>(null);
     const [isNearView, setIsNearView] = useState(false);
 
@@ -149,7 +149,7 @@ export default function LocationMap(props: LocationMapProps) {
             {isNearView ? (
                 <LoadedMap {...props} />
             ) : (
-                <MapMessage text="Loading map…" />
+                <MapMessage text={t("loading")} />
             )}
         </div>
     );

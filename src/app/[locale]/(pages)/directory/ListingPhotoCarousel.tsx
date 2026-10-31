@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -21,6 +22,7 @@ export default function ListingPhotoCarousel({
     name,
     photoFileNames,
 }: ListingPhotoCarouselProps) {
+    const t = useTranslations("FacilityCard");
     const [index, setIndex] = useState(0);
     const touchStart = useRef<{ x: number; y: number } | null>(null);
     const count = photoFileNames.length;
@@ -67,8 +69,8 @@ export default function ListingPhotoCarousel({
                     height={180}
                     alt={
                         count > 1
-                            ? `Photo ${index + 1} of ${count} taken at ${name}`
-                            : `A picture taken at ${name}`
+                            ? t("photoAlt", { i: index + 1, count, name })
+                            : t("photoAltSingle", { name })
                     }
                     className="h-[180px] w-[180px] object-cover"
                 />

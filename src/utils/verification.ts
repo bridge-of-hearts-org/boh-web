@@ -3,6 +3,7 @@
    Each verification is tied to the value that was confirmed, so a value that
    changes afterwards isn't shown as verified. */
 
+import { Locale, sinhalaMonths } from "@/utils/locale";
 import {
     ChildCareFacility,
     Verification,
@@ -50,9 +51,16 @@ export function toDateInputValue(date: Date | null | undefined): string {
     return isValidDate(date) ? new Date(date).toISOString().slice(0, 10) : "";
 }
 
-/* Dates are stored as midnight UTC, so they're shown in UTC to keep the same day */
-export function formatVerifiedDate(date: Date): string {
-    return new Date(date).toLocaleDateString("en-GB", {
+/* Dates are stored as midnight UTC, so they're shown in UTC to keep the same
+   day, e.g. "12 March 2026" or "2026 මාර්තු 12" */
+export function formatVerifiedDate(date: Date, locale: Locale = "en"): string {
+    const d = new Date(date);
+
+    if (locale === "si") {
+        return `${d.getUTCFullYear()} ${sinhalaMonths[d.getUTCMonth()]} ${d.getUTCDate()}`;
+    }
+
+    return d.toLocaleDateString("en-GB", {
         day: "numeric",
         month: "long",
         year: "numeric",

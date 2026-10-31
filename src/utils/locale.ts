@@ -9,6 +9,24 @@ export const localeNames: Record<Locale, string> = {
     si: "සිංහල",
 };
 
+/* Sinhala month names, spelled out because runtimes disagree: some format
+   Sinhala dates with these names, others with the traditional ones
+   (e.g. මැදින් for March), which would differ between server and browser */
+export const sinhalaMonths = [
+    "ජනවාරි",
+    "පෙබරවාරි",
+    "මාර්තු",
+    "අප්‍රේල්",
+    "මැයි",
+    "ජූනි",
+    "ජූලි",
+    "අගෝස්තු",
+    "සැප්තැම්බර්",
+    "ඔක්තෝබර්",
+    "නොවැම්බර්",
+    "දෙසැම්බර්",
+];
+
 /* Admin pages are English-only. These path prefixes are matched after the
    locale prefix is removed. */
 const adminPathPrefixes = ["/admin", "/facility/new", "/facility/edit"];

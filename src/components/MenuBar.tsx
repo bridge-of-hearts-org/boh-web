@@ -1,4 +1,5 @@
 import NextLink from "next/link";
+import { getTranslations } from "next-intl/server";
 import Button from "./Button";
 import HamburgerMenu from "./HamburgerMenu";
 import ImageComponent from "./ImageComponent";
@@ -12,6 +13,8 @@ import { adminMenuItem, mainMenuItems } from "@/utils/navigation";
 export default async function MenuBar() {
     const session = await getServerAuth();
     const inAdminSession = session ? true : false;
+    const t = await getTranslations("Nav");
+    const tFooter = await getTranslations("Footer");
 
     return (
         <div
@@ -27,7 +30,7 @@ export default async function MenuBar() {
                         height={50}
                         placeholder="blur"
                         loading="eager"
-                        alt="Bridge of Hearts Logo"
+                        alt={tFooter("logoAlt")}
                         className="h-[50px] w-[220px] rounded-none object-contain"
                     />
                 </Link>
@@ -58,7 +61,7 @@ export default async function MenuBar() {
                             variant="secondary"
                             color="transparent"
                         >
-                            {item.label}
+                            {item.messageKey ? t(item.messageKey) : item.label}
                         </Button>
                     </Link>
                 ))}
