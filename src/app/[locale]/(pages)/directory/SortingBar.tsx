@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 import { Loader } from "lucide-react";
@@ -19,6 +19,9 @@ type SortingBarProps = {
 
 export default function SortingBar(props: SortingBarProps) {
     const t = useTranslations("Sorting");
+    /* Sorting by name is hard to follow in Sinhala, where few people know
+       the full alphabetical order, so Sinhala pages keep the default sort */
+    const showSort = useLocale() !== "si";
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();
@@ -67,21 +70,23 @@ export default function SortingBar(props: SortingBarProps) {
                     {isPending && (
                         <Loader className="h-4 w-4 animate-spin text-gray-400" />
                     )}
-                    <div className="flex items-center gap-3">
-                        <label htmlFor="sortBy">{t("sortBy")}</label>
-                        <select
-                            id="sortBy"
-                            name="sortBy"
-                            value={sortBy}
-                            disabled={isPending}
-                            onChange={(e) =>
-                                navigate(e.target.value, itemsPerPage)
-                            }
-                        >
-                            <option value="name">{t("name")}</option>
-                            <option value="city">{t("city")}</option>
-                        </select>
-                    </div>
+                    {showSort && (
+                        <div className="flex items-center gap-3">
+                            <label htmlFor="sortBy">{t("sortBy")}</label>
+                            <select
+                                id="sortBy"
+                                name="sortBy"
+                                value={sortBy}
+                                disabled={isPending}
+                                onChange={(e) =>
+                                    navigate(e.target.value, itemsPerPage)
+                                }
+                            >
+                                <option value="name">{t("name")}</option>
+                                <option value="city">{t("city")}</option>
+                            </select>
+                        </div>
+                    )}
                     <div className="flex items-center gap-3">
                         <label htmlFor="itemsPerPage">
                             {t("itemsPerPage")}
