@@ -32,19 +32,8 @@ export default async function HomePage({ params }: HomePageProps) {
     const { locale } = await params;
     const t = await getTranslations({ locale, namespace: "Home" });
 
-    /* Sinhala puts the brand name before "welcome", so the large line comes
-       first there */
-    const headingSmall = (
-        <h1 className="text-center font-encode-sans-sc text-xl font-semibold">
-            {t("headingSmall")}
-        </h1>
-    );
-    const headingLarge = (
-        <h1 className="mb-4 text-center font-encode-sans-sc text-3xl font-semibold">
-            {t("headingLarge")}
-        </h1>
-    );
-    const largeFirst = locale === "si";
+    /* Sinhala has no separate "welcome" line; its subheading says it */
+    const headingSmall = t("headingSmall");
 
     /* A language may leave out a paragraph that doesn't translate well */
     const paragraphs = (["p1", "p2", "p3", "p4"] as const).filter(
@@ -68,8 +57,14 @@ export default async function HomePage({ params }: HomePageProps) {
                 <div className="flex flex-col justify-center gap-5">
                     <div className="flex flex-col items-center gap-5 text-center text-lg">
                         <div>
-                            {largeFirst ? headingLarge : headingSmall}
-                            {largeFirst ? headingSmall : headingLarge}
+                            {headingSmall !== "" && (
+                                <h1 className="text-center font-encode-sans-sc text-xl font-semibold">
+                                    {headingSmall}
+                                </h1>
+                            )}
+                            <h1 className="mb-4 text-center font-encode-sans-sc text-3xl font-semibold">
+                                {t("headingLarge")}
+                            </h1>
                             <h2 className="mb-2 text-center text-xl font-semibold">
                                 {t("subheading")}
                             </h2>
