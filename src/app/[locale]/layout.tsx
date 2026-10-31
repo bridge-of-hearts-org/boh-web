@@ -13,6 +13,7 @@ import "../globals.css";
 import MenuBar from "@/components/MenuBar";
 import Footer from "@/components/Footer";
 import { routing } from "@/i18n/routing";
+import { Locale, localizedPath } from "@/utils/locale";
 
 /* Import and configure the fonts */
 const encodeSans = Encode_Sans({ subsets: ["latin"] });
@@ -43,7 +44,7 @@ export async function generateMetadata({
         openGraph: {
             title: t("ogTitle"),
             description: t("ogDescription"),
-            url: "https://www.bridgeofhearts.lk",
+            url: `https://www.bridgeofhearts.lk${localizedPath(locale as Locale, "/")}`,
             siteName: "Bridge of Hearts",
             images: [
                 {

@@ -38,6 +38,7 @@ import {
 import { facilityEditPath } from "@/utils/navigation";
 import { getServerAuth } from "@/lib/auth";
 import { translatedValue } from "@/utils/i18n";
+import { Locale, localizedPath } from "@/utils/locale";
 
 import DefaultFacilityIconImage from "../../../../../../public/images/facility-directory-icon-default.png";
 
@@ -70,7 +71,11 @@ export async function generateMetadata({
         openGraph: {
             title: `${facility.name}`,
             description: t("ogDescription", placeholders),
-            url: `https://bridgeofhearts.lk/facility/${facility.slug}`,
+            /* The page in its own language, so shared links preview in it */
+            url: `https://bridgeofhearts.lk${localizedPath(
+                locale as Locale,
+                `/facility/${facility.slug}`,
+            )}`,
             images:
                 facility.photos.length > 0
                     ? facility.photos.map((photo) => {
