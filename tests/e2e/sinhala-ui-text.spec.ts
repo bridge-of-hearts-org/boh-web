@@ -88,7 +88,7 @@ test.describe("Sinhala UI text", () => {
         ).toBeVisible();
         await expect(page.getByText("ලිපිනය", { exact: true })).toBeVisible();
         await expect(
-            page.getByRole("heading", { name: "සම්බන්ධතා" }),
+            page.getByRole("heading", { name: "සම්බන්ධ වන්න" }),
         ).toBeVisible();
     });
 });
