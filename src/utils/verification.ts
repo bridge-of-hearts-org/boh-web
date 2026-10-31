@@ -3,6 +3,7 @@
    Each verification is tied to the value that was confirmed, so a value that
    changes afterwards isn't shown as verified. */
 
+import { dateLocales, Locale } from "@/utils/locale";
 import {
     ChildCareFacility,
     Verification,
@@ -51,8 +52,8 @@ export function toDateInputValue(date: Date | null | undefined): string {
 }
 
 /* Dates are stored as midnight UTC, so they're shown in UTC to keep the same day */
-export function formatVerifiedDate(date: Date): string {
-    return new Date(date).toLocaleDateString("en-GB", {
+export function formatVerifiedDate(date: Date, locale: Locale = "en"): string {
+    return new Date(date).toLocaleDateString(dateLocales[locale], {
         day: "numeric",
         month: "long",
         year: "numeric",

@@ -7,17 +7,14 @@ import {
     MarkerF,
     InfoWindowF,
 } from "@react-google-maps/api";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { ChevronDown, ChevronUp, Map as MapIcon } from "lucide-react";
 
 import Button from "@/components/Button";
 import MapMessage from "@/components/MapMessage";
 import { FacilityPin } from "@/utils/defines";
-import {
-    MAPS_API_KEY,
-    MAP_LOAD_ERROR_TEXT,
-    useMapsAuthFailed,
-} from "@/utils/googleMaps";
+import { MAPS_API_KEY, useMapsAuthFailed } from "@/utils/googleMaps";
 
 const SRI_LANKA_CENTER = { lat: 7.87, lng: 80.77 };
 const SESSION_KEY = "directoryMapExpanded";
@@ -94,6 +91,7 @@ function FacilityMap({
     pins: FacilityPin[];
     isVisible: boolean;
 }) {
+    const t = useTranslations("Map");
     const [map, setMap] = useState<google.maps.Map | null>(null);
     const [selectedPin, setSelectedPin] = useState<FacilityPin | null>(null);
     const fittedPinsKey = useRef<string | null>(null);
@@ -127,11 +125,11 @@ function FacilityMap({
             : null;
 
     if (loadError || authFailed) {
-        return <MapMessage text={MAP_LOAD_ERROR_TEXT} />;
+        return <MapMessage text={t("loadError")} />;
     }
 
     if (!isLoaded) {
-        return <MapMessage text="Loading map…" pulse />;
+        return <MapMessage text={t("loading")} pulse />;
     }
 
     return (
@@ -196,6 +194,7 @@ function FacilityMap({
 }
 
 export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
+    const t = useTranslations("Map");
     const [isExpanded, setIsExpanded] = useState(false);
     const [hasOpened, setHasOpened] = useState(false);
 
@@ -242,7 +241,7 @@ export default function MapWidget({ pins }: { pins: FacilityPin[] }) {
                     {MAPS_API_KEY ? (
                         <FacilityMap pins={pins} isVisible={isExpanded} />
                     ) : (
-                        <MapMessage text="The map is currently unavailable." />
+                        <MapMessage text={t("unavailable")} />
                     )}
                 </div>
             )}

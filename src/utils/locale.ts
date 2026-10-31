@@ -9,6 +9,12 @@ export const localeNames: Record<Locale, string> = {
     si: "සිංහල",
 };
 
+/* The locale used to format dates, e.g. "5 March 2026" / "2026 මාර්තු 5" */
+export const dateLocales: Record<Locale, string> = {
+    en: "en-GB",
+    si: "si-LK",
+};
+
 /* Admin pages are English-only. These path prefixes are matched after the
    locale prefix is removed. */
 const adminPathPrefixes = ["/admin", "/facility/new", "/facility/edit"];

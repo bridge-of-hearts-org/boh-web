@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { PhotoEntry } from "@prisma/client";
 import { photoUrl } from "@/utils/photos";
 import { stepIndex, swipeStep } from "@/utils/carousel";
+import { useTranslations } from "next-intl";
+
 import ImageComponent from "@/components/ImageComponent";
 
 type ImageCarouselProps = {
@@ -16,6 +18,7 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
     /* The index of the enlarged photo, or null when none is enlarged */
     const [enlargedIndex, setEnlargedIndex] = useState<number | null>(null);
     const touchStart = useRef<{ x: number; y: number } | null>(null);
+    const t = useTranslations("Facility");
     const count = photos.length;
 
     const closeEnlargedImage = () => {
@@ -68,7 +71,7 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                         onClick={() => {
                             setEnlargedIndex(idx);
                         }}
-                        alt="A picture taken at the children's home facility"
+                        alt={t("photoAlt")}
                         priority // Mark as priority since the carousel is at the top of the page
                         loading="eager"
                         className="h-[220px] w-[220px] cursor-pointer object-cover"
@@ -151,11 +154,16 @@ export default function ImageCarousel({ slug, photos }: ImageCarouselProps) {
                             sizes="(max-width: 1024px) 90vw, (max-width: 1768px) 70vw, 50vw"
                             width={1024}
                             height={768}
-                            alt={`Photo ${enlargedIndex + 1} of ${count} taken at the children's home facility`}
+                            alt={t("photoAltN", {
+                                i: enlargedIndex + 1,
+                                count,
+                            })}
                             /* Photos uploaded from the admin form have no source */
                             title={
                                 enlargedPhoto.source
-                                    ? `Source: ${enlargedPhoto.source}`
+                                    ? t("photoSource", {
+                                          source: enlargedPhoto.source,
+                                      })
                                     : undefined
                             }
                             className="h-[60vh] w-[80vw] max-w-4xl overflow-hidden rounded-3xl object-contain"

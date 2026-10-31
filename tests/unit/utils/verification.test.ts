@@ -52,6 +52,10 @@ describe("formatVerifiedDate", () => {
     it("shows the stored day in a readable format", () => {
         expect(formatVerifiedDate(march12)).toBe("12 March 2026");
     });
+
+    it("formats the date in Sinhala on Sinhala pages", () => {
+        expect(formatVerifiedDate(march12, "si")).toBe("2026 මාර්තු 12");
+    });
 });
 
 describe("findVerifiedDate and setVerifiedDate", () => {

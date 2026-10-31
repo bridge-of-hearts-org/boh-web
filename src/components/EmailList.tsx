@@ -1,4 +1,5 @@
 import { VerifiedValue } from "@prisma/client";
+import { useTranslations } from "next-intl";
 
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { findVerifiedDate } from "@/utils/verification";
@@ -10,6 +11,8 @@ type PropsType = {
 };
 
 export default function EmailList(props: PropsType) {
+    const t = useTranslations("Verified");
+
     return (
         <span>
             {props.emails.length == 0 && "-"}
@@ -31,7 +34,7 @@ export default function EmailList(props: PropsType) {
                                 </a>
                                 {verifiedAt && (
                                     <VerifiedBadge
-                                        label={`Email ${email}`}
+                                        label={t("email", { email })}
                                         verifiedAt={verifiedAt}
                                     />
                                 )}

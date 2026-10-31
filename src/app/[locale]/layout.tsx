@@ -7,6 +7,7 @@ import {
 import { notFound } from "next/navigation";
 import { Analytics } from "@vercel/analytics/react";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 import "../globals.css";
 import MenuBar from "@/components/MenuBar";
@@ -26,46 +27,45 @@ const notoSansSinhala = Noto_Sans_Sinhala({
 });
 
 /* Set the HTML metadata */
-export const metadata: Metadata = {
-    title: "Bridge of Hearts",
-    description:
-        "Find and support Child Development Centres (Children's Homes) in Sri Lanka. " +
-        "Our directory provides up-to-date contact details, locations, and resident information. " +
-        "Filter by name, city, district, and province. Continuously updated to ensure accurate data.",
-    keywords: [
-        "childcare facilities Sri Lanka",
-        "children's homes Sri Lanka",
-        "child development centres Sri Lanka",
-        "orphanages Sri Lanka ",
-    ],
-    metadataBase: new URL("https://www.bridgeofhearts.lk"),
-    openGraph: {
-        title: "Bridge of Hearts - A Directory of Child Development Centres in Sri Lanka",
-        description:
-            "Find and support Child Development Centres (Children's Homes) across Sri Lanka.",
-        url: "https://www.bridgeofhearts.lk",
-        siteName: "Bridge of Hearts",
-        images: [
-            {
-                url: "/images/opengraph-cover.png",
-                width: 1200,
-                height: 630,
-                alt: "Bridge of Hearts - A Directory of Child Development Centres in Sri Lanka",
-            },
-        ],
-        type: "website",
-    },
-    twitter: {
-        card: "summary_large_image",
+export async function generateMetadata({
+    params,
+}: {
+    params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+    const { locale } = await params;
+    const t = await getTranslations({ locale, namespace: "Metadata" });
+
+    return {
         title: "Bridge of Hearts",
-        description:
-            "Discover childcare facilities in Sri Lanka and help those in need.",
-        images: ["/images/opengraph-cover.png"],
-    },
-    verification: {
-        google: "33b9UH7TVkrujRctk-PNmohRVd_n8XuKUwa3Y6AAztM",
-    },
-};
+        description: t("description"),
+        keywords: t("keywords").split(", "),
+        metadataBase: new URL("https://www.bridgeofhearts.lk"),
+        openGraph: {
+            title: t("ogTitle"),
+            description: t("ogDescription"),
+            url: "https://www.bridgeofhearts.lk",
+            siteName: "Bridge of Hearts",
+            images: [
+                {
+                    url: "/images/opengraph-cover.png",
+                    width: 1200,
+                    height: 630,
+                    alt: t("ogTitle"),
+                },
+            ],
+            type: "website",
+        },
+        twitter: {
+            card: "summary_large_image",
+            title: "Bridge of Hearts",
+            description: t("twitterDescription"),
+            images: ["/images/opengraph-cover.png"],
+        },
+        verification: {
+            google: "33b9UH7TVkrujRctk-PNmohRVd_n8XuKUwa3Y6AAztM",
+        },
+    };
+}
 
 export default async function LocaleLayout({
     children,

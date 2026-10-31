@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter as useNextRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Menu } from "lucide-react";
 import Button from "./Button";
@@ -16,6 +17,7 @@ type HamburgerMenuProps = {
 export default function HamburgerMenu({
     inAdminSession = false,
 }: HamburgerMenuProps) {
+    const t = useTranslations("Nav");
     const router = useRouter();
     const nextRouter = useNextRouter();
     const [menuVisible, setMenuVisible] = useState(false);
@@ -65,7 +67,9 @@ export default function HamburgerMenu({
                                 className={menuItemStyle}
                                 onClick={() => handleMenuItemClick(item.href)}
                             >
-                                {item.label}
+                                {item.messageKey
+                                    ? t(item.messageKey)
+                                    : item.label}
                             </div>
                         ))}
                         <LanguageToggle

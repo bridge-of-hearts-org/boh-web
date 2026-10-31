@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { useRouter } from "@/i18n/navigation";
 
@@ -14,6 +15,7 @@ type NavigationProps = {
 };
 
 export default function NavigationBar(props: NavigationProps) {
+    const t = useTranslations("Pagination");
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -41,7 +43,7 @@ export default function NavigationBar(props: NavigationProps) {
                 </Button>
             )}
             <div className="flex items-center gap-3">
-                <span>Page</span>
+                <span>{t("page")}</span>
                 <Form action={() => {}}>
                     <div className="flex items-center gap-5 text-sm">
                         <select
@@ -64,7 +66,12 @@ export default function NavigationBar(props: NavigationProps) {
                     </div>
                 </Form>
                 <span>
-                    of <span className="font-bold">{props.totalPages}</span>
+                    {t.rich("ofTotal", {
+                        total: props.totalPages,
+                        b: (chunks) => (
+                            <span className="font-bold">{chunks}</span>
+                        ),
+                    })}
                 </span>
             </div>
             {currentPage < props.totalPages && (
