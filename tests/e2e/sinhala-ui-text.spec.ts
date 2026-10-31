@@ -41,9 +41,29 @@ test.describe("Sinhala UI text", () => {
             "මධ්‍යම පළාත",
         );
 
-        /* Sorting by name is left out on Sinhala pages */
-        await expect(page.locator("select#sortBy")).toHaveCount(0);
+        /* Sorting by name is left out on Sinhala pages. The facility list
+           streams in after the filters, so wait for it before checking. */
         await expect(page.locator("select#itemsPerPage")).toBeVisible();
+        await expect(page.locator("select#sortBy")).toHaveCount(0);
+    });
+
+    test("Sinhala pages ignore a sort carried over from an English link", async ({
+        page,
+    }) => {
+        const facilityOrder = async (path: string) => {
+            await page.goto(path);
+            const links = page.locator('a[href^="/si/facility/"]');
+            await expect(links.first()).toBeVisible({ timeout: 10000 });
+            const hrefs = await links.evaluateAll((elements) =>
+                elements.map((e) => e.getAttribute("href")),
+            );
+            return [...new Set(hrefs)];
+        };
+
+        const defaultOrder = await facilityOrder("/si/directory");
+        const withCitySort = await facilityOrder("/si/directory?sortBy=city");
+
+        expect(withCitySort).toEqual(defaultOrder);
     });
 
     test("English pages keep their English text", async ({ page }) => {

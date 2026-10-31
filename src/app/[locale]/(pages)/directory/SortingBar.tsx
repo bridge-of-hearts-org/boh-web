@@ -10,6 +10,7 @@ import { Loader } from "lucide-react";
 import Card from "@/components/Card";
 import { defaultSortBy } from "@/utils/defines";
 import { parsePage } from "@/utils/pagination";
+import { canChooseSort, Locale } from "@/utils/locale";
 
 type SortingBarProps = {
     page: number;
@@ -19,9 +20,7 @@ type SortingBarProps = {
 
 export default function SortingBar(props: SortingBarProps) {
     const t = useTranslations("Sorting");
-    /* Sorting by name is hard to follow in Sinhala, where few people know
-       the full alphabetical order, so Sinhala pages keep the default sort */
-    const showSort = useLocale() !== "si";
+    const showSort = canChooseSort(useLocale() as Locale);
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isPending, startTransition] = useTransition();

@@ -1,3 +1,5 @@
+import { defaultSortBy } from "./defines";
+
 /* Supported languages. English is the default and has no URL prefix */
 export const locales = ["en", "si"] as const;
 export type Locale = (typeof locales)[number];
@@ -83,4 +85,21 @@ export function adminRedirectPath(pathname: string): string | null {
     }
 
     return null;
+}
+
+/* Sorting by name is hard to follow in Sinhala, where few people know the
+   full alphabetical order, so Sinhala pages have no sort control */
+export function canChooseSort(locale: Locale): boolean {
+    return locale !== "si";
+}
+
+/* The directory's sort order: the one in the URL where the page offers a
+   choice, otherwise the default, so a sort carried over from an English link
+   doesn't stick on a page that can't change it */
+export function effectiveSortBy(locale: Locale, sortBy?: string): string {
+    if (canChooseSort(locale) && sortBy) {
+        return sortBy;
+    }
+
+    return defaultSortBy;
 }

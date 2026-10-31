@@ -1,5 +1,6 @@
 import FilterCard from "./FilterCard";
-import { District, Province, defaultSortBy } from "@/utils/defines";
+import { District, Province } from "@/utils/defines";
+import { effectiveSortBy, Locale } from "@/utils/locale";
 import { parseItemsPerPage, parsePage } from "@/utils/pagination";
 import { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
@@ -87,7 +88,10 @@ export default async function DirectoryPage(props: {
                         district={(searchParams.district as District) || ""}
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}
-                        sortBy={searchParams.sortBy || defaultSortBy}
+                        sortBy={effectiveSortBy(
+                            locale as Locale,
+                            searchParams.sortBy,
+                        )}
                         itemsPerPage={parseItemsPerPage(
                             searchParams.itemsPerPage,
                         )}
