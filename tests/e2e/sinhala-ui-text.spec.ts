@@ -40,6 +40,10 @@ test.describe("Sinhala UI text", () => {
         await expect(province.locator('option[value="Central"]')).toHaveText(
             "මධ්‍යම පළාත",
         );
+
+        /* Sorting by name is left out on Sinhala pages */
+        await expect(page.locator("select#sortBy")).toHaveCount(0);
+        await expect(page.locator("select#itemsPerPage")).toBeVisible();
     });
 
     test("English pages keep their English text", async ({ page }) => {
@@ -52,6 +56,7 @@ test.describe("Sinhala UI text", () => {
         await expect(
             page.locator("select#province").locator('option[value="Central"]'),
         ).toHaveText("Central");
+        await expect(page.locator("select#sortBy")).toBeVisible();
     });
 
     test("facility page labels are in Sinhala", async ({ page }) => {
