@@ -1,6 +1,6 @@
 import { Link } from "@/i18n/navigation";
 import { MapPin, Phone } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import Card from "@/components/Card";
 import ImageComponent from "@/components/ImageComponent";
@@ -32,6 +32,7 @@ export async function FacilityCards(props: FacilityCardProps) {
     const t = await getTranslations("FacilityCard");
     const tProvinces = await getTranslations("Provinces");
     const tDistricts = await getTranslations("Districts");
+    const locale = await getLocale();
     const activeFilters: DirectoryFilterType = {
         name: props.name,
         city: props.city,
@@ -46,8 +47,9 @@ export async function FacilityCards(props: FacilityCardProps) {
             props.sortBy,
             props.page,
             props.itemsPerPage,
+            locale,
         ),
-        fetchFacilityPins(activeFilters),
+        fetchFacilityPins(activeFilters, locale),
     ]);
     let page = props.page;
     let facilities = firstFacilities;
@@ -62,6 +64,7 @@ export async function FacilityCards(props: FacilityCardProps) {
             props.sortBy,
             page,
             props.itemsPerPage,
+            locale,
         );
     }
 

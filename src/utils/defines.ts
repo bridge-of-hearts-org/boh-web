@@ -130,6 +130,7 @@ export const emptyChildCareFacilityDbObject: ChildCareFacility = {
     sources: [],
     photos: [],
     verification: null,
+    translations: null,
 };
 
 /* ----------- Default Values ----------- */

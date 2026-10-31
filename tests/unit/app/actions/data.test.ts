@@ -65,6 +65,43 @@ vi.mock("@vercel/blob", async (importOriginal) => ({
 }));
 
 const UNAUTHORIZED = "Unauthorized: admin login required";
+
+/* A search filter matches the English value or the Sinhala translation */
+function anyLanguage(
+    field: string,
+    english: Record<string, unknown>,
+    search: string,
+) {
+    return {
+        OR: [
+            english,
+            {
+                translations: {
+                    is: {
+                        si: {
+                            is: {
+                                [field]: {
+                                    contains: search,
+                                    mode: "insensitive",
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        ],
+    };
+}
+
+const sinhalaTranslations = {
+    si: {
+        name: "සිංහල නම",
+        description: null,
+        address: "සිංහල ලිපිනය",
+        city: "මහනුවර",
+        managedBy: "",
+    },
+};
 const facilityDb = vi.mocked(prisma.childCareFacility);
 
 const ADMIN_SESSION = { user: { role: "admin" }, expires: "" };
@@ -121,21 +158,35 @@ describe("fetchAllFacilities", () => {
         [
             "name",
             "Sacred",
-            { name: { contains: "Sacred", mode: "insensitive" } },
+            anyLanguage(
+                "name",
+                { name: { contains: "Sacred", mode: "insensitive" } },
+                "Sacred",
+            ),
         ],
         [
             "city",
-            "Kandy",
-            {
-                location: {
-                    is: { city: { contains: "Kandy", mode: "insensitive" } },
+            "මහනුවර",
+            anyLanguage(
+                "city",
+                {
+                    location: {
+                        is: {
+                            city: { contains: "මහනුවර", mode: "insensitive" },
+                        },
+                    },
                 },
-            },
+                "මහනුවර",
+            ),
         ],
         [
             "managedBy",
             "Sisters",
-            { managedBy: { contains: "Sisters", mode: "insensitive" } },
+            anyLanguage(
+                "managedBy",
+                { managedBy: { contains: "Sisters", mode: "insensitive" } },
+                "Sisters",
+            ),
         ],
         [
             "district",
@@ -201,7 +252,11 @@ describe("fetchAllFacilities", () => {
         expect(findManyArgs().where?.AND).toHaveLength(3);
         expect(findManyArgs().where?.AND).toEqual(
             expect.arrayContaining([
-                { name: { contains: "Home", mode: "insensitive" } },
+                anyLanguage(
+                    "name",
+                    { name: { contains: "Home", mode: "insensitive" } },
+                    "Home",
+                ),
                 {
                     location: {
                         is: {
@@ -260,6 +315,59 @@ describe("fetchAllFacilities", () => {
         expect(findManyArgs()).toMatchObject({ take: 10, skip: 10 });
     });
 
+    it("returns Sinhala text where translated, English elsewhere", async () => {
+        const facility = {
+            ...emptyChildCareFacilityDbObject,
+            name: "Home",
+            managedBy: "Sisters",
+            description: "About",
+            location: {
+                ...emptyChildCareFacilityDbObject.location,
+                address: "1 Main St",
+                city: "Kandy",
+            },
+            translations: sinhalaTranslations,
+        };
+        facilityDb.findMany.mockResolvedValue([facility]);
+
+        const [[result]] = await fetchAllFacilities(
+            emptyFilter,
+            "name",
+            1,
+            10,
+            "si",
+        );
+
+        expect(result).toMatchObject({
+            name: "සිංහල නම",
+            managedBy: "Sisters",
+            description: "About",
+            location: { address: "සිංහල ලිපිනය", city: "මහනුවර" },
+        });
+    });
+
+    it.each([undefined, "en", "fr"])(
+        "returns the facilities as stored for locale %s",
+        async (locale) => {
+            const facility = {
+                ...emptyChildCareFacilityDbObject,
+                name: "Home",
+                translations: sinhalaTranslations,
+            };
+            facilityDb.findMany.mockResolvedValue([facility]);
+
+            const [[result]] = await fetchAllFacilities(
+                emptyFilter,
+                "name",
+                1,
+                10,
+                locale,
+            );
+
+            expect(result).toEqual(facility);
+        },
+    );
+
     it("returns an empty result when the query fails", async () => {
         facilityDb.findMany.mockRejectedValue(new Error("connection lost"));
 
@@ -291,7 +399,13 @@ describe("fetchFacilityPins", () => {
 
         const args = facilityDb.findMany.mock.calls[0][0]!;
         expect(args.where).toEqual({
-            AND: [{ name: { contains: "Home", mode: "insensitive" } }],
+            AND: [
+                anyLanguage(
+                    "name",
+                    { name: { contains: "Home", mode: "insensitive" } },
+                    "Home",
+                ),
+            ],
         });
         expect(args).not.toHaveProperty("take");
         expect(args).not.toHaveProperty("skip");
@@ -325,6 +439,20 @@ describe("fetchFacilityPins", () => {
         ]);
     });
 
+    it("names Sinhala pins in Sinhala where translated", async () => {
+        facilityDb.findMany.mockResolvedValue([
+            { ...pinRow("a", 7.29, 80.63), translations: sinhalaTranslations },
+            pinRow("b", 6.93, 79.86),
+        ] as never);
+
+        const pins = await fetchFacilityPins(emptyFilter, "si");
+
+        expect(pins.map((p) => [p.name, p.city])).toEqual([
+            ["සිංහල නම", "මහනුවර"],
+            ["b", "Kandy"],
+        ]);
+    });
+
     it("leaves out facilities without coordinates", async () => {
         facilityDb.findMany.mockResolvedValue([
             pinRow("none", null, null, "https://www.google.com/maps/place/A"),
@@ -353,6 +481,15 @@ describe("fetchDistinctCities", () => {
         expect(await fetchDistinctCities()).toEqual(["Colombo", "Kandy"]);
     });
 
+    it("lists Sinhala city names where translated", async () => {
+        facilityDb.findMany.mockResolvedValue([
+            { location: { city: "Kandy" }, translations: sinhalaTranslations },
+            { location: { city: "Colombo" }, translations: null },
+        ] as never);
+
+        expect(await fetchDistinctCities("si")).toEqual(["Colombo", "මහනුවර"]);
+    });
+
     it("returns no cities when the query fails", async () => {
         facilityDb.findMany.mockRejectedValue(new Error("connection lost"));
 
@@ -373,6 +510,16 @@ describe("fetchFacilityNames", () => {
             "banana",
             "Cherry",
         ]);
+    });
+
+    it("lists Sinhala names where translated", async () => {
+        facilityDb.findMany.mockResolvedValue([
+            { name: "Home", translations: sinhalaTranslations },
+            { name: "Other", translations: null },
+        ] as never);
+
+        expect(await fetchFacilityNames("si")).toEqual(["Other", "සිංහල නම"]);
+        expect(await fetchFacilityNames()).toEqual(["Home", "Other"]);
     });
 
     it("returns no names when the query fails", async () => {
@@ -398,6 +545,22 @@ describe("fetchDistinctManagedBy", () => {
         ]);
     });
 
+    it("lists Sinhala values where translated, English otherwise", async () => {
+        facilityDb.findMany.mockResolvedValue([
+            {
+                managedBy: "Sisters",
+                translations: { si: { managedBy: " සහෝදරියන් " } },
+            },
+            /* An empty translation falls back to English */
+            { managedBy: "Probation", translations: sinhalaTranslations },
+        ] as never);
+
+        expect(await fetchDistinctManagedBy("si")).toEqual([
+            "Probation",
+            "සහෝදරියන්",
+        ]);
+    });
+
     it("returns no values when the query fails", async () => {
         facilityDb.findMany.mockRejectedValue(new Error("connection lost"));
 
@@ -413,6 +576,30 @@ describe("fetchFacilityBySlug", () => {
         expect(await fetchFacilityBySlug("home")).toBe(facility);
         expect(facilityDb.findUnique).toHaveBeenCalledWith({
             where: { slug: "home" },
+        });
+    });
+
+    it("returns the stored facility, translations included, without a locale", async () => {
+        const facility = {
+            ...emptyChildCareFacilityDbObject,
+            name: "Home",
+            translations: sinhalaTranslations,
+        };
+        facilityDb.findUnique.mockResolvedValue(facility);
+
+        expect(await fetchFacilityBySlug("home")).toEqual(facility);
+    });
+
+    it("returns Sinhala text for the Sinhala page", async () => {
+        facilityDb.findUnique.mockResolvedValue({
+            ...emptyChildCareFacilityDbObject,
+            name: "Home",
+            translations: sinhalaTranslations,
+        });
+
+        expect(await fetchFacilityBySlug("home", "si")).toMatchObject({
+            name: "සිංහල නම",
+            translations: sinhalaTranslations,
         });
     });
 
