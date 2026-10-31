@@ -44,9 +44,9 @@ export default async function DirectoryPage(props: {
     const tNav = await getTranslations({ locale, namespace: "Nav" });
     const currentPage = parsePage(searchParams.page);
     const [names, cities, managedByOptions] = await Promise.all([
-        fetchFacilityNames(),
-        fetchDistinctCities(),
-        fetchDistinctManagedBy(),
+        fetchFacilityNames(locale),
+        fetchDistinctCities(locale),
+        fetchDistinctManagedBy(locale),
     ]);
 
     return (

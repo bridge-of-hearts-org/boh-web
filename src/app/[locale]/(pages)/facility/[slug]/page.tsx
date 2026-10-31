@@ -38,6 +38,7 @@ import {
 import { facilityEditPath } from "@/utils/navigation";
 import { getServerAuth } from "@/lib/auth";
 import { translatedValue } from "@/utils/i18n";
+import { localizeFacility, parseLocale } from "@/utils/facilityTranslations";
 import { Locale, localizedPath } from "@/utils/locale";
 
 import DefaultFacilityIconImage from "../../../../../../public/images/facility-directory-icon-default.png";
@@ -51,7 +52,7 @@ export async function generateMetadata({
 
     const { slug, locale } = await params;
     const t = await getTranslations({ locale, namespace: "Facility" });
-    let facility = await fetchFacilityBySlug(slug);
+    let facility = await fetchFacilityBySlug(slug, locale);
 
     if (!facility) {
         return {
@@ -102,11 +103,13 @@ export default async function FacilityProfilePage({
     /* NextJS requirement: params should be awaited before accessing 
         https://nextjs.org/docs/messages/sync-dynamic-apis*/
     const { slug, locale } = await params;
-    const data = await fetchFacilityBySlug(slug);
+    const english = await fetchFacilityBySlug(slug);
 
-    if (!data) {
+    if (!english) {
         return <NotFound />;
     }
+
+    const data = localizeFacility(english, parseLocale(locale));
 
     const t = await getTranslations({ locale, namespace: "Facility" });
     const tNav = await getTranslations({ locale, namespace: "Nav" });
@@ -150,22 +153,23 @@ export default async function FacilityProfilePage({
               }
             : null;
 
-    // Construct JSON-LD structured data
+    /* Construct JSON-LD structured data. It stays in English, like its
+        description, on every page. */
     const jsonLdData = {
         "@context": "https://schema.org",
         "@type": ["Organization", "ResidentialFacility"],
-        parentOrganization: data.managedBy
+        parentOrganization: english.managedBy
             ? {
                   "@type": "Organization",
-                  name: data.managedBy,
+                  name: english.managedBy,
               }
             : undefined,
-        name: data.name,
-        description: `A Child Development Center (Children's Home) located in ${data.location.city}, ${data.location.district}, Sri Lanka.`,
+        name: english.name,
+        description: `A Child Development Center (Children's Home) located in ${english.location.city}, ${data.location.district}, Sri Lanka.`,
         address: {
             "@type": "PostalAddress",
-            streetAddress: data.location.address || "",
-            addressLocality: data.location.city,
+            streetAddress: english.location.address || "",
+            addressLocality: english.location.city,
             addressRegion: data.location.district,
             addressCountry: "Sri Lanka",
         },

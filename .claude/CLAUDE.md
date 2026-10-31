@@ -50,6 +50,7 @@ Public pages are served in English at `/...` and in Sinhala at `/si/...` via `ne
 - `messages/<locale>.json` — UI strings
 - On public pages, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`, not `next/link` / `next/navigation`, so links keep the current language. Links to admin pages use the plain Next.js ones
 - All Sinhala text, including UI strings and facility data, must be approved by the user before it is committed
+- Facility text in Sinhala lives in the optional `translations.si` field (`name`, `description`, `address`, `city`, `managedBy`). The read server actions take the page's locale and return each field in that language, falling back to English per field (`src/utils/facilityTranslations.ts`). `fetchFacilityBySlug` without a locale returns the stored record, as the admin edit form needs. Directory name, city and managed-by searches match either language. The sync script reads the Sinhala text from `<English column> (Sinhala)` columns, e.g. `Name (Sinhala)`
 
 ## Data Flow
 

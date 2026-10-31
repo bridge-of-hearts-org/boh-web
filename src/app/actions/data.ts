@@ -34,6 +34,13 @@ import {
 } from "@/utils/photos";
 import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
+import {
+    localizeFacility,
+    parseLocale,
+    TranslatedField,
+    translatedField,
+    translatedLocales,
+} from "@/utils/facilityTranslations";
 
 /* Server actions are public POST endpoints, so every write action must check
    for an admin session itself instead of relying on the page being gated */
@@ -52,40 +59,79 @@ type FilteredFacilityResponse = Promise<
     [data: ChildCareFacility[], totalCount: number]
 >;
 
+/* Matches the search text in the English value or in any translation, so
+   a search works in either language whichever page it's made on */
+function matchAnyLanguage(
+    field: TranslatedField,
+    english: Prisma.ChildCareFacilityWhereInput,
+    search: string,
+): Prisma.ChildCareFacilityWhereInput {
+    const condition = { contains: search, mode: "insensitive" as const };
+
+    return {
+        OR: [
+            english,
+            ...translatedLocales.map((locale) => ({
+                translations: {
+                    is: { [locale]: { is: { [field]: condition } } },
+                },
+            })),
+        ],
+    };
+}
+
 function buildFilter(
     filterValues: DirectoryFilterType,
 ): Prisma.ChildCareFacilityWhereInput[] {
     const filters: Prisma.ChildCareFacilityWhereInput[] = [];
 
     if (filterValues.name) {
-        filters.push({
-            name: {
-                contains: filterValues.name,
-                mode: "insensitive",
-            },
-        });
-    }
-
-    if (filterValues.city) {
-        filters.push({
-            location: {
-                is: {
-                    city: {
-                        contains: filterValues.city,
+        filters.push(
+            matchAnyLanguage(
+                "name",
+                {
+                    name: {
+                        contains: filterValues.name,
                         mode: "insensitive",
                     },
                 },
-            },
-        });
+                filterValues.name,
+            ),
+        );
+    }
+
+    if (filterValues.city) {
+        filters.push(
+            matchAnyLanguage(
+                "city",
+                {
+                    location: {
+                        is: {
+                            city: {
+                                contains: filterValues.city,
+                                mode: "insensitive",
+                            },
+                        },
+                    },
+                },
+                filterValues.city,
+            ),
+        );
     }
 
     if (filterValues.managedBy) {
-        filters.push({
-            managedBy: {
-                contains: filterValues.managedBy,
-                mode: "insensitive",
-            },
-        });
+        filters.push(
+            matchAnyLanguage(
+                "managedBy",
+                {
+                    managedBy: {
+                        contains: filterValues.managedBy,
+                        mode: "insensitive",
+                    },
+                },
+                filterValues.managedBy,
+            ),
+        );
     }
 
     if (filterValues.district) {
@@ -117,11 +163,14 @@ function buildFilter(
     return filters;
 }
 
+/* The read actions below return facility text in the given language,
+   falling back to English per field where a translation is missing */
 export async function fetchAllFacilities(
     filterValues: DirectoryFilterType,
     sortBy: string,
     page: number,
     itemsPerPage: number,
+    locale?: string,
 ): FilteredFacilityResponse {
     /* Reload .env */
     if (process.env.NODE_ENV === "development") {
@@ -167,7 +216,12 @@ export async function fetchAllFacilities(
             }),
         ]);
 
-        return [facilities, totalCount];
+        const language = parseLocale(locale);
+
+        return [
+            facilities.map((facility) => localizeFacility(facility, language)),
+            totalCount,
+        ];
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
@@ -179,7 +233,10 @@ export async function fetchAllFacilities(
 /* Map pins for every facility matching the filter, not just the current page */
 export async function fetchFacilityPins(
     filterValues: DirectoryFilterType,
+    locale?: string,
 ): Promise<FacilityPin[]> {
+    const language = parseLocale(locale);
+
     try {
         const facilities = await prisma.childCareFacility.findMany({
             where: {
@@ -188,6 +245,7 @@ export async function fetchFacilityPins(
             select: {
                 name: true,
                 slug: true,
+                translations: true,
                 location: {
                     select: {
                         city: true,
@@ -207,9 +265,19 @@ export async function fetchFacilityPins(
 
             return [
                 {
-                    name: f.name,
+                    name: translatedField(
+                        f.translations,
+                        language,
+                        "name",
+                        f.name,
+                    ),
                     slug: f.slug,
-                    city: f.location.city,
+                    city: translatedField(
+                        f.translations,
+                        language,
+                        "city",
+                        f.location.city,
+                    ),
                     lat: f.location.latitude,
                     lng: f.location.longitude,
                     mapsUrl,
@@ -224,23 +292,37 @@ export async function fetchFacilityPins(
     }
 }
 
-export async function fetchDistinctCities(): Promise<string[]> {
+export async function fetchDistinctCities(locale?: string): Promise<string[]> {
+    const language = parseLocale(locale);
+
     try {
         const rows = await prisma.childCareFacility.findMany({
-            select: { location: { select: { city: true } } },
+            select: {
+                location: { select: { city: true } },
+                translations: true,
+            },
         });
-        return [...new Set(rows.map((r) => r.location.city))].sort();
+        const cities = rows.map((r) =>
+            translatedField(r.translations, language, "city", r.location.city),
+        );
+        return [...new Set(cities)].sort();
     } catch {
         return [];
     }
 }
 
-export async function fetchFacilityNames(): Promise<string[]> {
+export async function fetchFacilityNames(locale?: string): Promise<string[]> {
+    const language = parseLocale(locale);
+
     try {
         const rows = await prisma.childCareFacility.findMany({
-            select: { name: true },
+            select: { name: true, translations: true },
         });
-        return rows.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+        return rows
+            .map((r) =>
+                translatedField(r.translations, language, "name", r.name),
+            )
+            .sort((a, b) => a.localeCompare(b));
     } catch (error) {
         if (error instanceof Error) {
             console.log("Error: ", error.stack);
@@ -249,13 +331,24 @@ export async function fetchFacilityNames(): Promise<string[]> {
     }
 }
 
-export async function fetchDistinctManagedBy(): Promise<string[]> {
+export async function fetchDistinctManagedBy(
+    locale?: string,
+): Promise<string[]> {
+    const language = parseLocale(locale);
+
     try {
         const rows = await prisma.childCareFacility.findMany({
-            select: { managedBy: true },
+            select: { managedBy: true, translations: true },
         });
         const values = rows
-            .map((r) => r.managedBy.trim())
+            .map((r) =>
+                translatedField(
+                    r.translations,
+                    language,
+                    "managedBy",
+                    r.managedBy,
+                ).trim(),
+            )
             .filter((m) => m !== "");
         return [...new Set(values)].sort((a, b) => a.localeCompare(b));
     } catch (error) {
@@ -266,7 +359,9 @@ export async function fetchDistinctManagedBy(): Promise<string[]> {
     }
 }
 
-export async function fetchFacilityBySlug(slug: string) {
+/* Without a locale this returns the facility as stored, in English with its
+   translations, as the admin edit form needs it */
+export async function fetchFacilityBySlug(slug: string, locale?: string) {
     let data = null;
 
     try {
@@ -275,7 +370,7 @@ export async function fetchFacilityBySlug(slug: string) {
         });
     } catch {}
 
-    return data;
+    return data ? localizeFacility(data, parseLocale(locale)) : null;
 }
 
 export async function updateFacility(
