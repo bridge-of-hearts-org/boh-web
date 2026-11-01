@@ -9,6 +9,7 @@ import {
     CircleX,
     ExternalLink,
     Images,
+    Languages,
     Link2,
     MapPin,
     PhoneCall,
@@ -64,6 +65,7 @@ import {
     verifyOccupancy,
 } from "@/utils/verification";
 import VerifiedOnInput from "./VerifiedOnInput";
+import { TranslatedField } from "@/utils/facilityTranslations";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
@@ -135,6 +137,57 @@ export default function EditForm(props: EditFormProps) {
             occupancy: { ...formData.occupancy, ...changes },
         });
     };
+
+    /* A Sinhala value as typed. Empty ones are dropped when the facility is
+        saved, so the public page falls back to English. */
+    const sinhala = (field: TranslatedField) =>
+        formData.translations?.si?.[field] ?? "";
+
+    const setSinhala = (field: TranslatedField, value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            translations: {
+                ...prev.translations,
+                si: {
+                    name: null,
+                    description: null,
+                    address: null,
+                    city: null,
+                    managedBy: null,
+                    ...prev.translations?.si,
+                    [field]: value,
+                },
+            },
+        }));
+    };
+
+    /* The Sinhala inputs, each shown with its English value as a placeholder,
+        which the public page uses while the input is empty */
+    const sinhalaInputs: {
+        field: TranslatedField;
+        label: string;
+        english: string;
+        multiline?: boolean;
+    }[] = [
+        { field: "name", label: "Name", english: formData.name },
+        {
+            field: "managedBy",
+            label: "Managed By",
+            english: formData.managedBy,
+        },
+        {
+            field: "description",
+            label: "Description",
+            english: formData.description,
+            multiline: true,
+        },
+        {
+            field: "address",
+            label: "Address",
+            english: formData.location.address,
+        },
+        { field: "city", label: "City", english: formData.location.city },
+    ];
 
     /* Common styles */
     /* One column on phones, with the label above its input. The minmax(0, ...)
@@ -782,6 +835,48 @@ export default function EditForm(props: EditFormProps) {
                             onChange={(e) => setLongitudeText(e.target.value)}
                         ></input>
                     </div>
+                </section>
+
+                {/* Sinhala */}
+                <section className={sectionStyle}>
+                    <div className={sectionHeaderStyles}>
+                        <Languages />
+                        <h2 className="font-semibold">Sinhala</h2>
+                    </div>
+                    <p className="w-full text-sm text-gray-600">
+                        Shown on the Sinhala pages. Leave a field empty to show
+                        the English value instead.
+                    </p>
+
+                    {sinhalaInputs.map(
+                        ({ field, label, english, multiline }) => {
+                            const inputProps = {
+                                id: `si-${field}`,
+                                lang: "si",
+                                className: "grow",
+                                placeholder: english,
+                                value: sinhala(field),
+                                onChange: (
+                                    e: React.ChangeEvent<
+                                        HTMLInputElement | HTMLTextAreaElement
+                                    >,
+                                ) => setSinhala(field, e.target.value),
+                            };
+
+                            return (
+                                <div key={field} className={inputRowStyle}>
+                                    <label htmlFor={`si-${field}`}>
+                                        {label} (Sinhala)
+                                    </label>
+                                    {multiline ? (
+                                        <textarea {...inputProps}></textarea>
+                                    ) : (
+                                        <input {...inputProps}></input>
+                                    )}
+                                </div>
+                            );
+                        },
+                    )}
                 </section>
 
                 {/* Contact Info */}

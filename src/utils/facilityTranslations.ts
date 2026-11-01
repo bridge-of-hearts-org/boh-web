@@ -103,15 +103,31 @@ export function translationColumn(
 export function parseSheetTranslations(
     row: Record<string, string>,
 ): FacilityTranslations | null | undefined {
-    const fields = Object.keys(sheetFieldColumns) as TranslatedField[];
     const hasColumns = translatedLocales.some((locale) =>
-        fields.some((field) => translationColumn(locale, field) in row),
+        translatedFields.some(
+            (field) => translationColumn(locale, field) in row,
+        ),
     );
 
     if (!hasColumns) {
         return undefined;
     }
 
+    return buildTranslations(
+        (locale, field) => row[translationColumn(locale, field)],
+    );
+}
+
+export const translatedFields = Object.keys(
+    sheetFieldColumns,
+) as TranslatedField[];
+
+/* Builds the translations from the value read for each language and field.
+   Values are trimmed, empty ones left out, and a language with no values at
+   all is dropped, so the English fallback applies. Null when nothing is left. */
+function buildTranslations(
+    read: (locale: TranslatedLocale, field: TranslatedField) => unknown,
+): FacilityTranslations | null {
     const translations: FacilityTranslations = { si: null };
     let any = false;
 
@@ -125,10 +141,11 @@ export function parseSheetTranslations(
         };
         let anyField = false;
 
-        for (const field of fields) {
-            const cell = row[translationColumn(locale, field)]?.trim();
-            if (cell) {
-                entry[field] = cell;
+        for (const field of translatedFields) {
+            const value = read(locale, field);
+            const text = typeof value === "string" ? value.trim() : "";
+            if (text) {
+                entry[field] = text;
                 anyField = true;
             }
         }
@@ -140,4 +157,23 @@ export function parseSheetTranslations(
     }
 
     return any ? translations : null;
+}
+
+/* The translations an admin form sent, ready to save. Server actions are
+   public endpoints, so anything that isn't a string is ignored. */
+export function normalizeTranslations(
+    translations: unknown,
+): FacilityTranslations | null {
+    const entries =
+        translations && typeof translations === "object"
+            ? (translations as Record<string, unknown>)
+            : {};
+
+    return buildTranslations((locale, field) => {
+        const entry = entries[locale];
+
+        return entry && typeof entry === "object"
+            ? (entry as Record<string, unknown>)[field]
+            : undefined;
+    });
 }
