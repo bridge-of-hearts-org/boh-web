@@ -667,6 +667,53 @@ describe.each([
         });
     });
 
+    it("saves trimmed Sinhala values and leaves empty ones out", async () => {
+        loginAsAdmin();
+
+        expect(
+            await action({
+                ...input,
+                translations: {
+                    si: {
+                        name: " සිංහල නම ",
+                        description: "",
+                        address: null,
+                        city: "මහනුවර",
+                        managedBy: "  ",
+                    },
+                },
+            }),
+        ).toBe("success");
+        expect(facilityDb[query].mock.calls[0][0].data.translations).toEqual({
+            si: {
+                name: "සිංහල නම",
+                description: null,
+                address: null,
+                city: "මහනුවර",
+                managedBy: null,
+            },
+        });
+    });
+
+    it("clears the translations when every Sinhala value is empty", async () => {
+        loginAsAdmin();
+
+        await action({
+            ...input,
+            translations: {
+                si: {
+                    name: "",
+                    description: "",
+                    address: "",
+                    city: " ",
+                    managedBy: "",
+                },
+            },
+        });
+
+        expect(facilityDb[query].mock.calls[0][0].data.translations).toBeNull();
+    });
+
     it("returns the error message when the write fails", async () => {
         loginAsAdmin();
         facilityDb[query].mockRejectedValue(

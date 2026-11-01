@@ -36,6 +36,7 @@ import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
 import {
     localizeFacility,
+    normalizeTranslations,
     parseLocale,
     TranslatedField,
     translatedField,
@@ -388,6 +389,7 @@ export async function updateFacility(
             data: {
                 ...data,
                 verification: normalizeVerification(data),
+                translations: normalizeTranslations(data.translations),
             },
         });
     } catch (error) {
@@ -410,6 +412,7 @@ export async function addFacility(
             data: {
                 ...data,
                 verification: normalizeVerification(data),
+                translations: normalizeTranslations(data.translations),
             },
         });
     } catch (error) {
