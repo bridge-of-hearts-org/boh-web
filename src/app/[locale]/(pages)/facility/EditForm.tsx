@@ -207,10 +207,11 @@ export default function EditForm(props: EditFormProps) {
        tracks let wide inputs shrink instead of pushing the page sideways. */
     const inputRowStyle =
         "w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr),minmax(0,3fr)] gap-3 items-center grow";
-    /* A field with its Sinhala input. On phones, where each label sits
-       above its input, a box keeps the pair together. */
+    /* A field with its Sinhala input, boxed together. The box is an outline
+       drawn outside the rows, so their inputs stay lined up with the other
+       fields' and the form gets no wider. */
     const translatedGroupStyle =
-        "w-full flex flex-col gap-3 rounded-xl border border-gray-200 p-3 md:border-0 md:p-0";
+        "w-full flex flex-col gap-3 my-2 rounded-xl outline outline-1 outline-gray-200 outline-offset-[12px]";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
