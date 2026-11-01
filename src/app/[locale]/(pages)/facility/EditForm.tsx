@@ -187,10 +187,10 @@ export default function EditForm(props: EditFormProps) {
             <div className={inputRowStyle}>
                 <label
                     htmlFor={`si-${field}`}
-                    className="flex items-center gap-2 text-sm text-gray-600 md:pl-4"
+                    className="flex items-center gap-1.5 text-xs text-gray-600 md:pl-4"
                     title="Shown on the Sinhala pages. Leave it empty to show the English value."
                 >
-                    <Languages size={16} aria-hidden="true" />
+                    <Languages size={14} aria-hidden="true" />
                     Sinhala
                 </label>
                 {multiline ? (
