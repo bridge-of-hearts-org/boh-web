@@ -174,6 +174,7 @@ export default function EditForm(props: EditFormProps) {
             id: `si-${field}`,
             lang: "si",
             "aria-label": `${label} (Sinhala)`,
+            "aria-describedby": "sinhala-hint",
             className: "grow",
             placeholder: english,
             value: sinhala(field),
@@ -584,6 +585,20 @@ export default function EditForm(props: EditFormProps) {
             >
                 {/* Basic Info */}
                 <section className="flex flex-col items-center gap-5">
+                    {/* Explains the Sinhala rows, on phones too, where the
+                        labels' tooltip can't be seen */}
+                    <p
+                        id="sinhala-hint"
+                        className="flex w-full items-center gap-2 text-sm text-gray-600"
+                    >
+                        <Languages
+                            size={16}
+                            aria-hidden="true"
+                            className="shrink-0"
+                        />
+                        Sinhala fields are shown on the Sinhala pages. Leave one
+                        empty to show the English value.
+                    </p>
                     <div className={inputRowStyle}>
                         <label>Database Slug</label>
                         <input
