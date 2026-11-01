@@ -161,33 +161,45 @@ export default function EditForm(props: EditFormProps) {
         }));
     };
 
-    /* The Sinhala inputs, each shown with its English value as a placeholder,
-        which the public page uses while the input is empty */
-    const sinhalaInputs: {
-        field: TranslatedField;
-        label: string;
-        english: string;
-        multiline?: boolean;
-    }[] = [
-        { field: "name", label: "Name", english: formData.name },
-        {
-            field: "managedBy",
-            label: "Managed By",
-            english: formData.managedBy,
-        },
-        {
-            field: "description",
-            label: "Description",
-            english: formData.description,
-            multiline: true,
-        },
-        {
-            field: "address",
-            label: "Address",
-            english: formData.location.address,
-        },
-        { field: "city", label: "City", english: formData.location.city },
-    ];
+    /* A Sinhala input, placed right under its English counterpart and
+        marked with the languages icon. It shows the English value as its
+        placeholder: that's what the Sinhala page shows while it's empty. */
+    const sinhalaRow = (
+        field: TranslatedField,
+        label: string,
+        english: string,
+        multiline = false,
+    ) => {
+        const inputProps = {
+            id: `si-${field}`,
+            lang: "si",
+            "aria-label": `${label} (Sinhala)`,
+            className: "grow",
+            placeholder: english,
+            value: sinhala(field),
+            onChange: (
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+            ) => setSinhala(field, e.target.value),
+        };
+
+        return (
+            <div className={inputRowStyle}>
+                <label
+                    htmlFor={`si-${field}`}
+                    className="flex items-center gap-2 text-sm text-gray-600 md:pl-4"
+                    title="Shown on the Sinhala pages. Leave it empty to show the English value."
+                >
+                    <Languages size={16} aria-hidden="true" />
+                    Sinhala
+                </label>
+                {multiline ? (
+                    <textarea {...inputProps}></textarea>
+                ) : (
+                    <input {...inputProps}></input>
+                )}
+            </div>
+        );
+    };
 
     /* Common styles */
     /* One column on phones, with the label above its input. The minmax(0, ...)
@@ -604,6 +616,7 @@ export default function EditForm(props: EditFormProps) {
                             }
                         ></input>
                     </div>
+                    {sinhalaRow("name", "Name", formData.name)}
                     <div className={inputRowStyle}>
                         <label>Type</label>
                         <select
@@ -638,6 +651,7 @@ export default function EditForm(props: EditFormProps) {
                             }
                         ></input>
                     </div>
+                    {sinhalaRow("managedBy", "Managed By", formData.managedBy)}
                     <div className={inputRowStyle}>
                         <label>Description</label>
                         <textarea
@@ -651,6 +665,12 @@ export default function EditForm(props: EditFormProps) {
                             }
                         ></textarea>
                     </div>
+                    {sinhalaRow(
+                        "description",
+                        "Description",
+                        formData.description,
+                        true,
+                    )}
                 </section>
 
                 {/* Location */}
@@ -677,6 +697,11 @@ export default function EditForm(props: EditFormProps) {
                             }
                         ></input>
                     </div>
+                    {sinhalaRow(
+                        "address",
+                        "Address",
+                        formData.location.address,
+                    )}
 
                     <div className={inputRowStyle}>
                         <label>City</label>
@@ -694,6 +719,7 @@ export default function EditForm(props: EditFormProps) {
                             className="grow"
                         ></input>
                     </div>
+                    {sinhalaRow("city", "City", formData.location.city)}
 
                     <div className={inputRowStyle}>
                         <label>Divisional Secretariat</label>
@@ -835,48 +861,6 @@ export default function EditForm(props: EditFormProps) {
                             onChange={(e) => setLongitudeText(e.target.value)}
                         ></input>
                     </div>
-                </section>
-
-                {/* Sinhala */}
-                <section className={sectionStyle}>
-                    <div className={sectionHeaderStyles}>
-                        <Languages />
-                        <h2 className="font-semibold">Sinhala</h2>
-                    </div>
-                    <p className="w-full text-sm text-gray-600">
-                        Shown on the Sinhala pages. Leave a field empty to show
-                        the English value instead.
-                    </p>
-
-                    {sinhalaInputs.map(
-                        ({ field, label, english, multiline }) => {
-                            const inputProps = {
-                                id: `si-${field}`,
-                                lang: "si",
-                                className: "grow",
-                                placeholder: english,
-                                value: sinhala(field),
-                                onChange: (
-                                    e: React.ChangeEvent<
-                                        HTMLInputElement | HTMLTextAreaElement
-                                    >,
-                                ) => setSinhala(field, e.target.value),
-                            };
-
-                            return (
-                                <div key={field} className={inputRowStyle}>
-                                    <label htmlFor={`si-${field}`}>
-                                        {label} (Sinhala)
-                                    </label>
-                                    {multiline ? (
-                                        <textarea {...inputProps}></textarea>
-                                    ) : (
-                                        <input {...inputProps}></input>
-                                    )}
-                                </div>
-                            );
-                        },
-                    )}
                 </section>
 
                 {/* Contact Info */}
