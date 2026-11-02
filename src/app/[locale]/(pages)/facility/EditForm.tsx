@@ -9,6 +9,7 @@ import {
     CircleX,
     ExternalLink,
     Images,
+    Languages,
     Link2,
     MapPin,
     PhoneCall,
@@ -64,6 +65,7 @@ import {
     verifyOccupancy,
 } from "@/utils/verification";
 import VerifiedOnInput from "./VerifiedOnInput";
+import { TranslatedField } from "@/utils/facilityTranslations";
 
 type EditFormProps =
     | { newFacility: true; data?: never }
@@ -136,11 +138,80 @@ export default function EditForm(props: EditFormProps) {
         });
     };
 
+    /* A Sinhala value as typed. Empty ones are dropped when the facility is
+        saved, so the public page falls back to English. */
+    const sinhala = (field: TranslatedField) =>
+        formData.translations?.si?.[field] ?? "";
+
+    const setSinhala = (field: TranslatedField, value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            translations: {
+                ...prev.translations,
+                si: {
+                    name: null,
+                    description: null,
+                    address: null,
+                    city: null,
+                    managedBy: null,
+                    ...prev.translations?.si,
+                    [field]: value,
+                },
+            },
+        }));
+    };
+
+    /* A Sinhala input, placed right under its English counterpart and
+        marked with the languages icon. It shows the English value as its
+        placeholder: that's what the Sinhala page shows while it's empty. */
+    const sinhalaRow = (
+        field: TranslatedField,
+        label: string,
+        english: string,
+        multiline = false,
+    ) => {
+        const inputProps = {
+            id: `si-${field}`,
+            lang: "si",
+            "aria-label": `${label} (Sinhala)`,
+            "aria-describedby": "sinhala-hint",
+            className: "grow",
+            placeholder: english,
+            value: sinhala(field),
+            onChange: (
+                e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+            ) => setSinhala(field, e.target.value),
+        };
+
+        return (
+            <div className={inputRowStyle}>
+                <label
+                    htmlFor={`si-${field}`}
+                    className="flex items-center gap-1.5 text-xs text-gray-600 md:pl-4"
+                    title="Shown on the Sinhala pages. Leave it empty to show the English value."
+                >
+                    <Languages size={14} aria-hidden="true" />
+                    Sinhala
+                </label>
+                {multiline ? (
+                    <textarea {...inputProps}></textarea>
+                ) : (
+                    <input {...inputProps}></input>
+                )}
+            </div>
+        );
+    };
+
     /* Common styles */
     /* One column on phones, with the label above its input. The minmax(0, ...)
        tracks let wide inputs shrink instead of pushing the page sideways. */
     const inputRowStyle =
         "w-full grid grid-cols-1 md:grid-cols-[minmax(0,1fr),minmax(0,3fr)] gap-3 items-center grow";
+    /* A field with its Sinhala input, boxed together. The box is an outline
+       drawn outside the rows, so their inputs stay lined up with the other
+       fields' and the form gets no wider. */
+    const translatedGroupStyle =
+        "w-full flex flex-col gap-3 my-2 rounded-xl outline outline-1 outline-gray-200 outline-offset-[12px]";
     const sectionStyle = "flex flex-col items-center gap-5 pt-5";
     const sectionHeaderStyles =
         "flex items-center justify-start gap-2 pl-5 md:text-xl text-lg";
@@ -519,6 +590,20 @@ export default function EditForm(props: EditFormProps) {
             >
                 {/* Basic Info */}
                 <section className="flex flex-col items-center gap-5">
+                    {/* Explains the Sinhala rows, on phones too, where the
+                        labels' tooltip can't be seen */}
+                    <p
+                        id="sinhala-hint"
+                        className="flex w-full items-center gap-2 text-sm text-gray-600"
+                    >
+                        <Languages
+                            size={16}
+                            aria-hidden="true"
+                            className="shrink-0"
+                        />
+                        Sinhala fields are shown on the Sinhala pages. Leave one
+                        empty to show the English value.
+                    </p>
                     <div className={inputRowStyle}>
                         <label>Database Slug</label>
                         <input
@@ -538,18 +623,21 @@ export default function EditForm(props: EditFormProps) {
                             }
                         ></input>
                     </div>
-                    <div className={inputRowStyle}>
-                        <label>Name</label>
-                        <input
-                            className="grow"
-                            value={formData.name}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    name: e.target.value,
-                                })
-                            }
-                        ></input>
+                    <div className={translatedGroupStyle}>
+                        <div className={inputRowStyle}>
+                            <label>Name</label>
+                            <input
+                                className="grow"
+                                value={formData.name}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        name: e.target.value,
+                                    })
+                                }
+                            ></input>
+                        </div>
+                        {sinhalaRow("name", "Name", formData.name)}
                     </div>
                     <div className={inputRowStyle}>
                         <label>Type</label>
@@ -572,31 +660,46 @@ export default function EditForm(props: EditFormProps) {
                             </option>
                         </select>
                     </div>
-                    <div className={inputRowStyle}>
-                        <label>Managed By</label>
-                        <input
-                            className="grow"
-                            value={formData.managedBy}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    managedBy: e.target.value,
-                                })
-                            }
-                        ></input>
+                    <div className={translatedGroupStyle}>
+                        <div className={inputRowStyle}>
+                            <label>Managed By</label>
+                            <input
+                                className="grow"
+                                value={formData.managedBy}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        managedBy: e.target.value,
+                                    })
+                                }
+                            ></input>
+                        </div>
+                        {sinhalaRow(
+                            "managedBy",
+                            "Managed By",
+                            formData.managedBy,
+                        )}
                     </div>
-                    <div className={inputRowStyle}>
-                        <label>Description</label>
-                        <textarea
-                            className="grow"
-                            value={formData.description}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    description: e.target.value,
-                                })
-                            }
-                        ></textarea>
+                    <div className={translatedGroupStyle}>
+                        <div className={inputRowStyle}>
+                            <label>Description</label>
+                            <textarea
+                                className="grow"
+                                value={formData.description}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        description: e.target.value,
+                                    })
+                                }
+                            ></textarea>
+                        </div>
+                        {sinhalaRow(
+                            "description",
+                            "Description",
+                            formData.description,
+                            true,
+                        )}
                     </div>
                 </section>
 
@@ -608,38 +711,48 @@ export default function EditForm(props: EditFormProps) {
                         <h2 className="font-semibold">Location</h2>
                     </div>
 
-                    <div className={inputRowStyle}>
-                        <label>Address</label>
-                        <input
-                            className="grow"
-                            value={formData.location.address}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    location: {
-                                        ...formData.location,
-                                        address: e.target.value,
-                                    },
-                                })
-                            }
-                        ></input>
+                    <div className={translatedGroupStyle}>
+                        <div className={inputRowStyle}>
+                            <label>Address</label>
+                            <input
+                                className="grow"
+                                value={formData.location.address}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        location: {
+                                            ...formData.location,
+                                            address: e.target.value,
+                                        },
+                                    })
+                                }
+                            ></input>
+                        </div>
+                        {sinhalaRow(
+                            "address",
+                            "Address",
+                            formData.location.address,
+                        )}
                     </div>
 
-                    <div className={inputRowStyle}>
-                        <label>City</label>
-                        <input
-                            value={formData.location.city}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    location: {
-                                        ...formData.location,
-                                        city: e.target.value,
-                                    },
-                                })
-                            }
-                            className="grow"
-                        ></input>
+                    <div className={translatedGroupStyle}>
+                        <div className={inputRowStyle}>
+                            <label>City</label>
+                            <input
+                                value={formData.location.city}
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        location: {
+                                            ...formData.location,
+                                            city: e.target.value,
+                                        },
+                                    })
+                                }
+                                className="grow"
+                            ></input>
+                        </div>
+                        {sinhalaRow("city", "City", formData.location.city)}
                     </div>
 
                     <div className={inputRowStyle}>

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
     localizeFacility,
+    normalizeTranslations,
     parseLocale,
     parseSheetTranslations,
     translatedField,
@@ -147,5 +148,49 @@ describe("parseSheetTranslations", () => {
 
     it("keeps the saved translations when the sheet has no Sinhala columns", () => {
         expect(parseSheetTranslations({ Name: "Home" })).toBeUndefined();
+    });
+});
+
+describe("normalizeTranslations", () => {
+    it("trims the values and leaves empty ones out", () => {
+        expect(
+            normalizeTranslations({
+                si: {
+                    ...emptyEntry,
+                    name: " සිංහල නම ",
+                    city: "",
+                    address: "   ",
+                },
+            }),
+        ).toEqual({ si: { ...emptyEntry, name: "සිංහල නම" } });
+    });
+
+    it("clears the translations when every value is empty", () => {
+        expect(
+            normalizeTranslations({ si: { ...emptyEntry, name: " " } }),
+        ).toBeNull();
+    });
+
+    it.each([
+        ["null", null],
+        ["undefined", undefined],
+        ["a string", "සිංහල"],
+        ["a Sinhala entry that isn't an object", { si: "සිංහල" }],
+    ])("treats %s as no translations", (_, value) => {
+        expect(normalizeTranslations(value)).toBeNull();
+    });
+
+    it("ignores values that aren't strings, and unknown languages and fields", () => {
+        expect(
+            normalizeTranslations({
+                si: {
+                    name: 42,
+                    city: ["මහනුවර"],
+                    managedBy: "සහෝදරියන්",
+                    x: "y",
+                },
+                fr: { name: "Maison" },
+            }),
+        ).toEqual({ si: { ...emptyEntry, managedBy: "සහෝදරියන්" } });
     });
 });
