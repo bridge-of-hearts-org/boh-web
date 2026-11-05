@@ -38,6 +38,7 @@ describe("emptyFilter", () => {
             name: "",
             city: "",
             managedBy: "",
+            divisionalSecretariat: "",
             district: "",
             province: "",
         });

@@ -65,6 +65,8 @@ import {
     verifyOccupancy,
 } from "@/utils/verification";
 import VerifiedOnInput from "./VerifiedOnInput";
+import AutocompleteInput from "@/components/AutocompleteInput";
+import { divisionalSecretariatsIn } from "@/utils/divisionalSecretariats";
 import { TranslatedField } from "@/utils/facilityTranslations";
 
 type EditFormProps =
@@ -756,23 +758,6 @@ export default function EditForm(props: EditFormProps) {
                     </div>
 
                     <div className={inputRowStyle}>
-                        <label>Divisional Secretariat</label>
-                        <input
-                            value={formData.location.divisionalSecretariat}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    location: {
-                                        ...formData.location,
-                                        divisionalSecretariat: e.target.value,
-                                    },
-                                })
-                            }
-                            className="grow"
-                        ></input>
-                    </div>
-
-                    <div className={inputRowStyle}>
                         <label>District</label>
                         <select
                             className="grow"
@@ -818,6 +803,31 @@ export default function EditForm(props: EditFormProps) {
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className={inputRowStyle}>
+                        <label htmlFor="divisional-secretariat">
+                            Divisional Secretariat
+                        </label>
+                        {/* Only names from the list are saved. The
+                            suggestions are narrowed to the district. */}
+                        <AutocompleteInput
+                            id="divisional-secretariat"
+                            name="divisionalSecretariat"
+                            value={formData.location.divisionalSecretariat}
+                            options={divisionalSecretariatsIn(
+                                formData.location.district,
+                            ).map((ds) => ds.en)}
+                            onChange={(divisionalSecretariat) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    location: {
+                                        ...prev.location,
+                                        divisionalSecretariat,
+                                    },
+                                }))
+                            }
+                        />
                     </div>
 
                     <div className={inputRowStyle}>

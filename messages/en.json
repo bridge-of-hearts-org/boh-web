@@ -116,7 +116,8 @@
         "city": "City",
         "managedBy": "Managed By",
         "province": "Province",
-        "district": "District"
+        "district": "District",
+        "divisionalSecretariat": "Divisional Secretariat"
     },
     "Sorting": {
         "showing": "Showing {start} - {end} of <b>{total}</b> {total, plural, one {facility} other {facilities}}",

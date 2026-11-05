@@ -21,6 +21,7 @@ type FacilityCardProps = {
     name: string;
     city: string;
     managedBy: string;
+    divisionalSecretariat: string;
     district: District;
     province: Province;
     page: number;
@@ -37,6 +38,7 @@ export async function FacilityCards(props: FacilityCardProps) {
         name: props.name,
         city: props.city,
         managedBy: props.managedBy,
+        divisionalSecretariat: props.divisionalSecretariat,
         district: props.district,
         province: props.province,
     };

@@ -72,7 +72,7 @@ describe("parseRow", () => {
         City: " Kandy ",
         District: " Kandy ",
         Province: " Central ",
-        "Divisional Secretariat": " Kandy Four Gravets ",
+        "Divisional Secretariat": " gangawata  korale ",
         "Google Maps": "",
         "Accepted Genders": "Female",
         "Phone Numbers": "0812345678, 0771234567",
@@ -111,7 +111,7 @@ describe("parseRow", () => {
                 city: "Kandy",
                 district: "Kandy",
                 province: "Central",
-                divisionalSecretariat: "Kandy Four Gravets",
+                divisionalSecretariat: "Gangawata Korale",
                 google: "",
                 latitude: null,
                 longitude: null,
@@ -174,6 +174,22 @@ describe("parseRow", () => {
                 managedBy: null,
             },
         });
+    });
+
+    it("keeps a divisional secretariat that isn't in the list, with a warning", async () => {
+        const result = await parseRow({
+            ...row,
+            "Divisional Secretariat": " Kandy Four Gravets ",
+        });
+
+        expect(result?.location.divisionalSecretariat).toBe(
+            "Kandy Four Gravets",
+        );
+        expect(result?.warnings).toEqual([
+            expect.stringContaining(
+                "isn't a divisional secretariat in Kandy District",
+            ),
+        ]);
     });
 
     it("keeps an explicit facility type", async () => {

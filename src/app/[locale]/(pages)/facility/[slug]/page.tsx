@@ -39,6 +39,7 @@ import { facilityEditPath } from "@/utils/navigation";
 import { getServerAuth } from "@/lib/auth";
 import { translatedValue } from "@/utils/i18n";
 import { localizeFacility, parseLocale } from "@/utils/facilityTranslations";
+import { localizedDivisionalSecretariat } from "@/utils/divisionalSecretariats";
 import { Locale, localizedPath } from "@/utils/locale";
 
 import DefaultFacilityIconImage from "../../../../../../public/images/facility-directory-icon-default.png";
@@ -329,10 +330,11 @@ export default async function FacilityProfilePage({
                                             {t("divisionalSecretariat")}
                                         </div>
                                         <div className="">
-                                            {
+                                            {localizedDivisionalSecretariat(
                                                 data.location
-                                                    .divisionalSecretariat
-                                            }
+                                                    .divisionalSecretariat,
+                                                parseLocale(locale),
+                                            )}
                                         </div>
                                     </div>
                                     <div className={infoTableRowStyles}>

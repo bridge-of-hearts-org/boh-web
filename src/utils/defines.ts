@@ -71,6 +71,7 @@ export type DirectoryFilterType = {
     name: string;
     city: string;
     managedBy: string;
+    divisionalSecretariat: string;
     district: District | "";
     province: Province | "";
 };
@@ -89,6 +90,7 @@ export const emptyFilter: DirectoryFilterType = {
     name: "",
     city: "",
     managedBy: "",
+    divisionalSecretariat: "",
     district: "",
     province: "",
 };

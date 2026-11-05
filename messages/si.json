@@ -116,7 +116,8 @@
         "city": "නගරය",
         "managedBy": "කළමනාකරණය",
         "province": "පළාත",
-        "district": "දිස්ත්‍රික්කය"
+        "district": "දිස්ත්‍රික්කය",
+        "divisionalSecretariat": "ප්‍රාදේශීය ලේකම් කොට්ඨාෂය"
     },
     "Sorting": {
         "showing": "මධ්‍යස්ථාන <b>{total}</b> න් {start} - {end} දක්වා",

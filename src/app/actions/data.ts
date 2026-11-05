@@ -35,6 +35,11 @@ import {
 import { normalizeVerification } from "@/utils/verification";
 import { describeFacilityWriteError } from "@/utils/dbErrors";
 import {
+    checkDivisionalSecretariat,
+    divisionalSecretariatsMatching,
+    localizedDivisionalSecretariat,
+} from "@/utils/divisionalSecretariats";
+import {
     localizeFacility,
     normalizeTranslations,
     parseLocale,
@@ -133,6 +138,32 @@ function buildFilter(
                 filterValues.managedBy,
             ),
         );
+    }
+
+    if (filterValues.divisionalSecretariat) {
+        /* The stored English name, matched by its English or Sinhala name,
+            or by the stored text for a value that isn't in the list */
+        filters.push({
+            location: {
+                is: {
+                    OR: [
+                        {
+                            divisionalSecretariat: {
+                                contains: filterValues.divisionalSecretariat,
+                                mode: "insensitive",
+                            },
+                        },
+                        {
+                            divisionalSecretariat: {
+                                in: divisionalSecretariatsMatching(
+                                    filterValues.divisionalSecretariat,
+                                ),
+                            },
+                        },
+                    ],
+                },
+            },
+        });
     }
 
     if (filterValues.district) {
@@ -312,6 +343,32 @@ export async function fetchDistinctCities(locale?: string): Promise<string[]> {
     }
 }
 
+export async function fetchDistinctDivisionalSecretariats(
+    locale?: string,
+): Promise<string[]> {
+    const language = parseLocale(locale);
+
+    try {
+        const rows = await prisma.childCareFacility.findMany({
+            select: { location: { select: { divisionalSecretariat: true } } },
+        });
+        const values = rows
+            .map((r) =>
+                localizedDivisionalSecretariat(
+                    r.location.divisionalSecretariat.trim(),
+                    language,
+                ),
+            )
+            .filter((value) => value !== "");
+        return [...new Set(values)].sort((a, b) => a.localeCompare(b));
+    } catch (error) {
+        if (error instanceof Error) {
+            console.log("Error: ", error.stack);
+        }
+        return [];
+    }
+}
+
 export async function fetchFacilityNames(locale?: string): Promise<string[]> {
     const language = parseLocale(locale);
 
@@ -381,6 +438,16 @@ export async function updateFacility(
         return UNAUTHORIZED;
     }
 
+    /* Only divisional secretariats from the list are stored, by their
+        English name */
+    const divisionalSecretariat = checkDivisionalSecretariat(
+        String(data.location?.divisionalSecretariat ?? ""),
+        String(data.location?.district ?? ""),
+    );
+    if ("error" in divisionalSecretariat) {
+        return divisionalSecretariat.error;
+    }
+
     try {
         await prisma.childCareFacility.update({
             where: {
@@ -388,6 +455,10 @@ export async function updateFacility(
             },
             data: {
                 ...data,
+                location: {
+                    ...data.location,
+                    divisionalSecretariat: divisionalSecretariat.name,
+                },
                 verification: normalizeVerification(data),
                 translations: normalizeTranslations(data.translations),
             },
@@ -407,10 +478,24 @@ export async function addFacility(
         return UNAUTHORIZED;
     }
 
+    /* Only divisional secretariats from the list are stored, by their
+        English name */
+    const divisionalSecretariat = checkDivisionalSecretariat(
+        String(data.location?.divisionalSecretariat ?? ""),
+        String(data.location?.district ?? ""),
+    );
+    if ("error" in divisionalSecretariat) {
+        return divisionalSecretariat.error;
+    }
+
     try {
         await prisma.childCareFacility.create({
             data: {
                 ...data,
+                location: {
+                    ...data.location,
+                    divisionalSecretariat: divisionalSecretariat.name,
+                },
                 verification: normalizeVerification(data),
                 translations: normalizeTranslations(data.translations),
             },

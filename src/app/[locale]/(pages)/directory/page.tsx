@@ -9,6 +9,7 @@ import { FacilityCards, FacilityCardsSkeleton } from "./FacilityCards";
 import { Suspense } from "react";
 import {
     fetchDistinctCities,
+    fetchDistinctDivisionalSecretariats,
     fetchDistinctManagedBy,
     fetchFacilityNames,
 } from "@/app/actions/data";
@@ -31,6 +32,7 @@ export default async function DirectoryPage(props: {
         name?: string;
         city?: string;
         managedBy?: string;
+        divisionalSecretariat?: string;
         district?: District | "";
         province?: Province | "";
         sortBy?: string;
@@ -43,11 +45,13 @@ export default async function DirectoryPage(props: {
     const t = await getTranslations({ locale, namespace: "Directory" });
     const tNav = await getTranslations({ locale, namespace: "Nav" });
     const currentPage = parsePage(searchParams.page);
-    const [names, cities, managedByOptions] = await Promise.all([
-        fetchFacilityNames(locale),
-        fetchDistinctCities(locale),
-        fetchDistinctManagedBy(locale),
-    ]);
+    const [names, cities, managedByOptions, divisionalSecretariats] =
+        await Promise.all([
+            fetchFacilityNames(locale),
+            fetchDistinctCities(locale),
+            fetchDistinctManagedBy(locale),
+            fetchDistinctDivisionalSecretariats(locale),
+        ]);
 
     return (
         <div className="flex flex-col gap-5">
@@ -79,12 +83,16 @@ export default async function DirectoryPage(props: {
                     names={names}
                     cities={cities}
                     managedByOptions={managedByOptions}
+                    divisionalSecretariats={divisionalSecretariats}
                 />
                 <Suspense fallback={<FacilityCardsSkeleton />}>
                     <FacilityCards
                         name={searchParams.name || ""}
                         city={searchParams.city || ""}
                         managedBy={searchParams.managedBy || ""}
+                        divisionalSecretariat={
+                            searchParams.divisionalSecretariat || ""
+                        }
                         district={(searchParams.district as District) || ""}
                         province={(searchParams.province as Province) || ""}
                         page={currentPage}

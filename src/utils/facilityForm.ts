@@ -1,6 +1,7 @@
 /* Validation and parsing for the admin facility form (EditForm) */
 
 import { ChildCareFacility } from "@prisma/client";
+import { checkDivisionalSecretariat } from "@/utils/divisionalSecretariats";
 import {
     hasCoordinates,
     isValidLatitude,
@@ -15,6 +16,14 @@ export const validateFacility = (data: ChildCareFacility) => {
 
     if (!data.name) {
         return "Name is required";
+    }
+
+    const divisionalSecretariat = checkDivisionalSecretariat(
+        data.location.divisionalSecretariat,
+        data.location.district,
+    );
+    if ("error" in divisionalSecretariat) {
+        return divisionalSecretariat.error;
     }
 
     return "success";

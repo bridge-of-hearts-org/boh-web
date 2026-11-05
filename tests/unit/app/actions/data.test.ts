@@ -14,6 +14,7 @@ import {
     deleteUnusedPhotos,
     fetchAllFacilities,
     fetchDistinctCities,
+    fetchDistinctDivisionalSecretariats,
     fetchDistinctManagedBy,
     fetchFacilityBySlug,
     fetchFacilityNames,
@@ -208,6 +209,39 @@ describe("fetchAllFacilities", () => {
         expect(findManyArgs().where).toEqual({ AND: [clause] });
         expect(facilityDb.count).toHaveBeenCalledWith({
             where: { AND: [clause] },
+        });
+    });
+
+    it("filters by divisional secretariat, by the stored text or a listed name", async () => {
+        await fetchAllFacilities(
+            { ...emptyFilter, divisionalSecretariat: "kolonnaw" },
+            "name",
+            1,
+            10,
+        );
+
+        expect(findManyArgs().where).toEqual({
+            AND: [
+                {
+                    location: {
+                        is: {
+                            OR: [
+                                {
+                                    divisionalSecretariat: {
+                                        contains: "kolonnaw",
+                                        mode: "insensitive",
+                                    },
+                                },
+                                {
+                                    divisionalSecretariat: {
+                                        in: ["Kolonnawa"],
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
         });
     });
 
@@ -497,6 +531,28 @@ describe("fetchDistinctCities", () => {
     });
 });
 
+describe("fetchDistinctDivisionalSecretariats", () => {
+    it("returns each trimmed, non-empty value once, sorted", async () => {
+        facilityDb.findMany.mockResolvedValue([
+            { location: { divisionalSecretariat: " Kolonnawa " } },
+            { location: { divisionalSecretariat: "" } },
+            { location: { divisionalSecretariat: "Dehiwala" } },
+            { location: { divisionalSecretariat: "Kolonnawa" } },
+        ] as never);
+
+        expect(await fetchDistinctDivisionalSecretariats()).toEqual([
+            "Dehiwala",
+            "Kolonnawa",
+        ]);
+    });
+
+    it("returns no values when the query fails", async () => {
+        facilityDb.findMany.mockRejectedValue(new Error("connection lost"));
+
+        expect(await fetchDistinctDivisionalSecretariats()).toEqual([]);
+    });
+});
+
 describe("fetchFacilityNames", () => {
     it("sorts names alphabetically, ignoring case", async () => {
         facilityDb.findMany.mockResolvedValue([
@@ -712,6 +768,41 @@ describe.each([
         });
 
         expect(facilityDb[query].mock.calls[0][0].data.translations).toBeNull();
+    });
+
+    it("saves the official spelling of a divisional secretariat", async () => {
+        loginAsAdmin();
+
+        await action({
+            ...input,
+            location: {
+                ...input.location,
+                district: "Colombo",
+                divisionalSecretariat: " kolonnawa ",
+            },
+        });
+
+        expect(facilityDb[query].mock.calls[0][0].data).toMatchObject({
+            location: { divisionalSecretariat: "Kolonnawa" },
+        });
+    });
+
+    it("refuses a divisional secretariat that isn't in the list", async () => {
+        loginAsAdmin();
+
+        expect(
+            await action({
+                ...input,
+                location: {
+                    ...input.location,
+                    district: "Kandy",
+                    divisionalSecretariat: "Kolonnawa",
+                },
+            }),
+        ).toBe(
+            '"Kolonnawa" isn\'t a divisional secretariat in Kandy District. Choose one from the list.',
+        );
+        expect(facilityDb[query]).not.toHaveBeenCalled();
     });
 
     it("returns the error message when the write fails", async () => {

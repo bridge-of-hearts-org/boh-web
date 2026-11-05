@@ -23,6 +23,7 @@ import {
     verifyOccupancy,
 } from "../src/utils/verification";
 import { parseSheetTranslations } from "../src/utils/facilityTranslations";
+import { checkDivisionalSecretariat } from "../src/utils/divisionalSecretariats";
 
 // --- Image helpers ---
 
@@ -246,6 +247,21 @@ export async function parseRow(row: Record<string, string>) {
         ageRanges: parseVerifiedOnCell("Age Range - Verified On"),
     };
 
+    /* Stored by its official English name. A value that isn't in the list
+        is kept as is, with a warning, since the admin form won't save it. */
+    const district = row["District"]?.trim() ?? "";
+    const divisionalSecretariatCell =
+        row["Divisional Secretariat"]?.trim() ?? "";
+    const divisionalSecretariat = checkDivisionalSecretariat(
+        divisionalSecretariatCell,
+        district,
+    );
+    if ("error" in divisionalSecretariat) {
+        warnings.push(
+            `Divisional Secretariat: ${divisionalSecretariat.error} | ${facilityName}`,
+        );
+    }
+
     const googleUrl = row["Google Maps"]?.trim().replace(/^\/|\/$/g, "") ?? "";
     const coords = googleUrl ? await extractLatLng(googleUrl) : null;
 
@@ -260,7 +276,10 @@ export async function parseRow(row: Record<string, string>) {
             city: row["City"]?.trim() ?? "",
             district: row["District"]?.trim() ?? "",
             province: row["Province"]?.trim() ?? "",
-            divisionalSecretariat: row["Divisional Secretariat"]?.trim() ?? "",
+            divisionalSecretariat:
+                "name" in divisionalSecretariat
+                    ? divisionalSecretariat.name
+                    : divisionalSecretariatCell,
             google: coords?.resolvedUrl ?? googleUrl,
             latitude: coords?.latitude ?? null,
             longitude: coords?.longitude ?? null,

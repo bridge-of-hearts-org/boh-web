@@ -24,10 +24,12 @@ export default function FilterCard({
     names,
     cities,
     managedByOptions,
+    divisionalSecretariats,
 }: {
     names: string[];
     cities: string[];
     managedByOptions: string[];
+    divisionalSecretariats: string[];
 }) {
     const t = useTranslations("Filters");
     const tProvinces = useTranslations("Provinces");
@@ -44,6 +46,7 @@ export default function FilterCard({
         name: searchParams.get("name") || "",
         city: searchParams.get("city") || "",
         managedBy: searchParams.get("managedBy") || "",
+        divisionalSecretariat: searchParams.get("divisionalSecretariat") || "",
         district: (searchParams.get("district") || "") as District | "",
         province: (searchParams.get("province") || "") as Province | "",
     });
@@ -58,6 +61,8 @@ export default function FilterCard({
             name: searchParams.get("name") || "",
             city,
             managedBy: searchParams.get("managedBy") || "",
+            divisionalSecretariat:
+                searchParams.get("divisionalSecretariat") || "",
             district: (searchParams.get("district") || "") as District | "",
             province: (searchParams.get("province") || "") as Province | "",
         });
@@ -76,6 +81,7 @@ export default function FilterCard({
             activeFilters.name ||
             activeFilters.city ||
             activeFilters.managedBy ||
+            activeFilters.divisionalSecretariat ||
             activeFilters.district ||
             activeFilters.province;
 
@@ -87,6 +93,7 @@ export default function FilterCard({
             name: "",
             city: "",
             managedBy: "",
+            divisionalSecretariat: "",
             district: "",
             province: "",
         });
@@ -100,6 +107,10 @@ export default function FilterCard({
         params.set("name", data.get("name")?.toString() || "");
         params.set("city", data.get("city")?.toString() || "");
         params.set("managedBy", data.get("managedBy")?.toString() || "");
+        params.set(
+            "divisionalSecretariat",
+            data.get("divisionalSecretariat")?.toString() || "",
+        );
         params.set("district", data.get("district")?.toString() || "");
         params.set("province", data.get("province")?.toString() || "");
         params.set("sortBy", sortOptions.sortBy);
@@ -214,6 +225,23 @@ export default function FilterCard({
                                 },
                             )}
                     </select>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label htmlFor="divisionalSecretariat">
+                        {t("divisionalSecretariat")}
+                    </label>
+                    <AutocompleteInput
+                        id="divisionalSecretariat"
+                        name="divisionalSecretariat"
+                        value={activeFilters.divisionalSecretariat}
+                        options={divisionalSecretariats}
+                        onChange={(divisionalSecretariat) =>
+                            setActiveFilters({
+                                ...activeFilters,
+                                divisionalSecretariat,
+                            })
+                        }
+                    />
                 </div>
                 <div className="mt-8 flex justify-end gap-5">
                     <Button
