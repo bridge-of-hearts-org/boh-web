@@ -29,6 +29,7 @@ import Button from "@/components/Button";
 import {
     addFacility,
     createPhotoUploadToken,
+    deleteFacility,
     deleteUnusedPhotos,
     resolveLatLng,
     updateFacility,
@@ -302,6 +303,32 @@ export default function EditForm(props: EditFormProps) {
         runBusy(async () => {
             resetForm(emptyChildCareFacilityDbObject);
             await discardUnsavedUploads();
+        });
+
+    /* Deletes the saved facility after the admin confirms. The record's own
+        photos are left for scripts/cleanupOrphanPhotos.ts, so a mistaken
+        delete can be undone by restoring the record */
+    const handleDelete = () =>
+        runBusy(async () => {
+            const saved = savedDataRef.current;
+            if (
+                !confirm(
+                    `Delete "${saved.name}"?\n\nThis removes the facility from the directory and can't be undone.`,
+                )
+            ) {
+                return;
+            }
+
+            const status = await deleteFacility(saved.slug);
+            if (status !== "success") {
+                alert(status);
+                return;
+            }
+
+            /* No record uses the photos uploaded since the last save now */
+            await discardUnsavedUploads();
+            alert(`Deleted "${saved.name}"`);
+            redirect("/admin");
         });
 
     /* Adding failed, so no facility uses the uploaded photos: delete them
@@ -1574,6 +1601,19 @@ export default function EditForm(props: EditFormProps) {
                                 <ExternalLink className="h-4 w-4" />
                             </Button>
                         </Link>
+                    )}
+                    {/* Only saved facilities can be deleted */}
+                    {!props.newFacility && (
+                        <Button
+                            name="Delete Facility"
+                            type="button"
+                            variant="primary"
+                            color="red"
+                            disabled={uploadingPhotos || saving}
+                            onClick={handleDelete}
+                        >
+                            Delete Facility
+                        </Button>
                     )}
                     <Button
                         name="Reset"

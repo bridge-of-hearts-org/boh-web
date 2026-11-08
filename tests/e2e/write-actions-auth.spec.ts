@@ -92,4 +92,38 @@ test.describe("Write server actions require an admin session", () => {
         expect(adminBody).not.toContain("Unauthorized");
         expect(adminBody).toContain("no longer exists");
     });
+
+    test("deleteFacility rejects unauthenticated calls but lets admins through", async ({
+        page,
+        request,
+    }) => {
+        const existingSlug = await getExistingSlug(page);
+        const editPath = `/facility/edit/${existingSlug}`;
+
+        await login(page, editPath);
+        page.once("dialog", (dialog) => dialog.accept());
+        const action = await captureAction(page, () =>
+            page.getByRole("button", { name: "Delete Facility" }).click(),
+        );
+        expect(action.args).toEqual([existingSlug]);
+
+        /* Point both replays at a slug that doesn't exist, so no record is
+           ever deleted, whether or not the guard works */
+        const args = [`e2e-nonexistent-${Date.now()}`];
+
+        const unauthBody = await replayAction(request, editPath, action, args);
+
+        expect(unauthBody).toContain("Unauthorized");
+        expect(unauthBody).not.toContain("no longer exists");
+
+        const adminBody = await replayAction(
+            page.request,
+            editPath,
+            action,
+            args,
+        );
+
+        expect(adminBody).not.toContain("Unauthorized");
+        expect(adminBody).toContain("no longer exists");
+    });
 });

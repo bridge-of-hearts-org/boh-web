@@ -11,6 +11,7 @@ import {
 import {
     addFacility,
     createPhotoUploadToken,
+    deleteFacility,
     deleteUnusedPhotos,
     fetchAllFacilities,
     fetchDistinctCities,
@@ -39,6 +40,7 @@ vi.mock("@/utils/db", () => ({
             findUnique: vi.fn(),
             update: vi.fn(),
             create: vi.fn(),
+            delete: vi.fn(),
         },
     },
 }));
@@ -746,6 +748,64 @@ describe.each([
         facilityDb[query].mockRejectedValue("boom");
 
         expect(await action(input)).toBe("Unknown Error: boom");
+    });
+});
+
+describe("deleteFacility", () => {
+    it("refuses to delete without an admin session", async () => {
+        expect(await deleteFacility("home")).toBe(UNAUTHORIZED);
+        expect(facilityDb.delete).not.toHaveBeenCalled();
+    });
+
+    it("deletes the facility with the slug for an admin", async () => {
+        loginAsAdmin();
+
+        expect(await deleteFacility("home")).toBe("success");
+        expect(facilityDb.delete).toHaveBeenCalledWith({
+            where: { slug: "home" },
+        });
+    });
+
+    it("deletes facilities whose slug isn't in the current format", async () => {
+        loginAsAdmin();
+
+        expect(await deleteFacility("Old_Slug")).toBe("success");
+        expect(facilityDb.delete).toHaveBeenCalledWith({
+            where: { slug: "Old_Slug" },
+        });
+    });
+
+    it.each([[""], [undefined], [null], [42], [{ not: "home" }]])(
+        "refuses the slug %j",
+        async (slug) => {
+            loginAsAdmin();
+
+            expect(await deleteFacility(slug as unknown as string)).toBe(
+                "Invalid slug",
+            );
+            expect(facilityDb.delete).not.toHaveBeenCalled();
+        },
+    );
+
+    it("explains that the facility is already gone", async () => {
+        loginAsAdmin();
+        facilityDb.delete.mockRejectedValue(
+            new Prisma.PrismaClientKnownRequestError("Record not found", {
+                code: "P2025",
+                clientVersion: "test",
+            }),
+        );
+
+        expect(await deleteFacility("home")).toBe(
+            "This facility no longer exists",
+        );
+    });
+
+    it("returns the error message when the delete fails", async () => {
+        loginAsAdmin();
+        facilityDb.delete.mockRejectedValue(new Error("connection lost"));
+
+        expect(await deleteFacility("home")).toBe("connection lost");
     });
 });
 
