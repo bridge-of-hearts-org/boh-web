@@ -1,17 +1,17 @@
 import { test, expect, Page } from "@playwright/test";
 
-import { getExistingSlug, hasCredentials, login } from "./admin-helpers";
+import {
+    getExistingSlug,
+    hasCredentials,
+    login,
+    mockedActionResponse,
+} from "./admin-helpers";
 
 const inputFor = (page: Page, label: RegExp) =>
     page.locator("label").filter({ hasText: label }).locator("+ input");
 
 const deleteButton = (page: Page) =>
     page.getByRole("button", { name: "Delete Facility" });
-
-/* A server action response as the client reads it: row 0 points the action
-   result at row 1. The client doesn't check the build id ("b"). */
-const mockedActionResponse = (result: unknown) =>
-    `0:{"a":"$@1","f":"","b":"e2e-mock"}\n1:${JSON.stringify(result)}\n`;
 
 /* Answer every server action call with `result` without sending it to the
    server, and record its arguments. Nothing gets through, so these tests

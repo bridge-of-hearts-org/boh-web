@@ -105,3 +105,8 @@ export async function replayAction(
 
     return response.text();
 }
+
+/* A server action response as the client reads it: row 0 points the action
+   result at row 1. The client doesn't check the build id ("b"). */
+export const mockedActionResponse = (result: unknown) =>
+    `0:{"a":"$@1","f":"","b":"e2e-mock"}\n1:${JSON.stringify(result)}\n`;
