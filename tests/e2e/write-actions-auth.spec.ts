@@ -101,6 +101,23 @@ test.describe("Write server actions require an admin session", () => {
         const editPath = `/facility/edit/${existingSlug}`;
 
         await login(page, editPath);
+
+        /* This clicks the real Delete button on a real facility. If
+           captureAction ever missed the request, this abort keeps it from
+           reaching the server and deleting the facility */
+        await page.route("**/*", async (route) => {
+            const request = route.request();
+            if (
+                request.method() === "POST" &&
+                request.headers()["next-action"]
+            ) {
+                await route.abort();
+                return;
+            }
+
+            await route.fallback();
+        });
+
         page.once("dialog", (dialog) => dialog.accept());
         const action = await captureAction(page, () =>
             page.getByRole("button", { name: "Delete Facility" }).click(),

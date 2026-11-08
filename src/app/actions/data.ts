@@ -424,8 +424,8 @@ export async function addFacility(
 }
 
 /* Deletes the facility record. Its photos stay in Vercel Blob until
-   scripts/cleanupOrphanPhotos.ts removes them, so a record deleted by mistake
-   can be restored with its photos for a while. The slug isn't checked against
+   scripts/cleanupOrphanPhotos.ts next runs, so until then a record deleted by
+   mistake can be restored with its photos. The slug isn't checked against
    isValidSlug, so older records with irregular slugs can still be deleted. */
 export async function deleteFacility(slug: string): Promise<string> {
     if (!(await getServerAuth())) {

@@ -61,7 +61,7 @@ https://docs.google.com/spreadsheets/d/1JQdRIicCh6qPrdpfmJpKRxEiv_-qjTcURbqniMuc
 
 Photos live in Vercel Blob at `<slug>/<fileName>` for production. Every other build (local dev, Vercel previews) uses the `dev/` folder instead (`dev/<slug>/<fileName>`), chosen from `VERCEL_ENV` in `next.config.ts`, so dev uploads never touch production photos. Build photo URLs and paths with `photoUrl` / `photoBlobPath` from `src/utils/photos.ts`, never by hand. The sync and cleanup scripts take `--dev` to work on the dev folder, and `npx tsx scripts/copyPhotosToDev.ts <slug>...` copies a facility's production photos into it, e.g. for the facilities the e2e tests expect to have photos.
 
-All runtime DB reads/writes go through server actions in `src/app/actions/data.ts` (`fetchAllFacilities`, `fetchFacilityBySlug`, `fetchDistinctCities`, `updateFacility`, `addFacility`).
+All runtime DB reads/writes go through server actions in `src/app/actions/data.ts` (`fetchAllFacilities`, `fetchFacilityBySlug`, `fetchDistinctCities`, `updateFacility`, `addFacility`, `deleteFacility`). Deleting a facility leaves its photos in Vercel Blob for `scripts/cleanupOrphanPhotos.ts`.
 
 ## Key Files
 
