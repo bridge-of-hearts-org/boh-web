@@ -12,6 +12,7 @@ import {
     captureAction,
     hasCredentials,
     login,
+    mockedActionResponse,
     replayAction,
 } from "./admin-helpers";
 
@@ -143,11 +144,6 @@ const isString = (value: unknown) => typeof value === "string";
 
 /* The file name at the end of an uploaded photo's path */
 const fileNameOf = (path: string) => path.split("/").pop() ?? "";
-
-/* A server action response as the client reads it: row 0 points the action
-   result at row 1. The client doesn't check the build id ("b"). */
-const mockedActionResponse = (result: unknown) =>
-    `0:{"a":"$@1","f":"","b":"e2e-mock"}\n1:${JSON.stringify(result)}\n`;
 
 /* Answer every server action call with `saveResult` without sending it to the
    server, except the two photo actions, which are safe to run: they only

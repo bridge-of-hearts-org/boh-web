@@ -4,7 +4,8 @@
  * Lists the photos in Vercel Blob and deletes the ones no facility uses:
  * photos under `<slug>/` that the facility with that slug doesn't list in
  * `photos`, or whose slug has no facility. These are left behind when an
- * admin uploads photos and leaves the form without saving.
+ * admin uploads photos and leaves the form without saving, and when an admin
+ * deletes a facility, which leaves its photos here on purpose.
  *
  * Only photos uploaded more than a day ago are touched, so photos an admin is
  * uploading right now are safe. Don't run it while syncFacilities.ts runs.

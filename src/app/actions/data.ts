@@ -423,6 +423,31 @@ export async function addFacility(
     return "success";
 }
 
+/* Deletes the facility record. Its photos stay in Vercel Blob until
+   scripts/cleanupOrphanPhotos.ts next runs, so until then a record deleted by
+   mistake can be restored with its photos. The slug isn't checked against
+   isValidSlug, so older records with irregular slugs can still be deleted. */
+export async function deleteFacility(slug: string): Promise<string> {
+    if (!(await getServerAuth())) {
+        return UNAUTHORIZED;
+    }
+
+    if (typeof slug !== "string" || slug === "") {
+        return "Invalid slug";
+    }
+
+    try {
+        await prisma.childCareFacility.delete({
+            where: { slug: slug },
+        });
+    } catch (error) {
+        console.log("Ran into prisma error", error);
+        return describeFacilityWriteError(error);
+    }
+
+    return "success";
+}
+
 export async function resolveLatLng(
     url: string,
 ): Promise<(LatLng & { resolvedUrl: string }) | { error: string }> {

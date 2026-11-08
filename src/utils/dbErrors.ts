@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 
 /* Unique constraint failed */
 const UNIQUE_CONSTRAINT = "P2002";
-/* The record to update doesn't exist */
+/* The record to update or delete doesn't exist */
 const RECORD_NOT_FOUND = "P2025";
 
 /* Prisma names the violated constraint by its fields (["slug"]) on some
