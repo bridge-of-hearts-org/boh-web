@@ -23,6 +23,7 @@ export default function AutocompleteInput({
 }: AutocompleteInputProps) {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     // Close on any tap or click outside. onBlur alone isn't enough on iOS
     // Safari, where tapping a non-focusable area may not blur the input.
@@ -52,6 +53,7 @@ export default function AutocompleteInput({
     return (
         <div ref={wrapperRef} className="relative">
             <input
+                ref={inputRef}
                 id={id}
                 name={name}
                 type="text"
@@ -92,6 +94,8 @@ export default function AutocompleteInput({
                                 }
                                 onChange(option);
                                 setShowSuggestions(false);
+                                // Blur so the mobile keyboard closes after a pick
+                                inputRef.current?.blur();
                             }}
                         >
                             {option}

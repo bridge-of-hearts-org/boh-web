@@ -39,6 +39,19 @@ Next.js 15 App Router, Tailwind CSS, Prisma + MongoDB, Vercel hosting. Images se
 - `/facility/new` and `/facility/edit/[slug]` — Admin: add/edit a facility
 - `/admin` — Admin dashboard (requires NextAuth session); `/admin/login` — login page
 
+Page files live under `src/app/[locale]/(pages)/` (e.g. `/directory` is `src/app/[locale]/(pages)/directory/page.tsx`). The `(pages)` group keeps `loading.tsx` away from the `[locale]/[...rest]` catch-all, so unknown paths return a 404 status.
+
+## Languages
+
+Public pages are served in English at `/...` and in Sinhala at `/si/...` via `next-intl`. The URL alone decides the language (no cookie or browser detection), and `/en/...` redirects to the unprefixed path. Admin pages are English-only: `src/middleware.ts` redirects `/si/admin`, `/si/facility/new` and `/si/facility/edit/...` to the unprefixed paths. When adding an admin route, add its prefix to `adminPathPrefixes` in `src/utils/locale.ts`, which drives both that redirect and hiding the language toggle. The middleware matcher skips paths containing a dot (except under `/facility/`), so a new public route whose URLs can contain dots needs its own matcher entry.
+
+- `src/i18n/` — `next-intl` routing config, request config, and locale-aware navigation
+- `src/utils/locale.ts` — supported locales and path helpers (`localizedPath`, `isAdminPath`)
+- `messages/<locale>.json` — UI strings
+- On public pages, import `Link`, `useRouter` and `usePathname` from `@/i18n/navigation`, not `next/link` / `next/navigation`, so links keep the current language. Links to admin pages use the plain Next.js ones
+- All Sinhala text, including UI strings and facility data, must be approved by the user before it is committed
+- Facility text in Sinhala lives in the optional `translations.si` field (`name`, `description`, `address`, `city`, `managedBy`). The read server actions take the page's locale and return each field in that language, falling back to English per field (`src/utils/facilityTranslations.ts`). `fetchFacilityBySlug` without a locale returns the stored record, as the admin edit form needs. Directory name, city and managed-by searches match either language. The sync script reads the Sinhala text from `<English column> (Sinhala)` columns, e.g. `Name (Sinhala)`
+
 ## Data Flow
 
 Facility data originates in a Google Sheet (the **Database sheet**) with one tab per province:
@@ -74,6 +87,17 @@ All runtime DB reads/writes go through server actions in `src/app/actions/data.t
   3. Send the same reviewer the new commit to re-review, and repeat until it reports no issues. Every commit pushed to the PR, including test-only fixes, goes through at least one review round
   4. Tell the user how many rounds ran and what was fixed
 - Always apply a label when creating issues via `gh issue create --label <label>`; available labels: `bug`, `enhancement`, `documentation`, `duplicate`, `good first issue`, `help wanted`, `invalid`, `question`, `wontfix`
+
+# Releases
+
+- Production deploys go `dev` → `master` through a release PR (head `dev`, base `master`, merge commit); Vercel deploys `master` to bridgeofhearts.lk
+- Versions and changelogs live only in GitHub Releases and their tags. There is no `CHANGELOG.md`, and `package.json` is not bumped per release
+- Versioning is semver on 0.x: bump the minor version (e.g. `v0.2.0`) when a release contains any new feature or behaviour change, and the patch version (e.g. `v0.2.1`) for a fixes-only release. `v1.0.0` is reserved for when the site is declared complete
+- Title the release PR exactly `Release vX.Y.Z`. Its description is the changelog, with these sections in order, omitting empty ones: `## Added`, `## Changed`, `## Fixed` (each bullet links its PR and issue numbers, e.g. `- Directory listing photo carousels (#77, #5)`), and `## Known issues` (non-blocking follow-ups from the release review)
+- Merging the release PR runs `.github/workflows/release.yml`, which tags the merge commit `vX.Y.Z` and publishes a GitHub Release with the PR description as its notes (minus any Claude Code attribution footer). It fails rather than overwrite an existing tag, and fails if a PR from `dev` or one titled like a release doesn't match the exact title format
+- For a manual release, run the workflow's `workflow_dispatch` trigger with `version`, `notes` and optionally `target` (a commit SHA; defaults to the `master` head), e.g. `gh workflow run release.yml -f version=v0.1.0 -f target=c09e6f31ebfa53db39a2950b995612bb030e561d -F notes=@notes.md`
+- Only the highest version among all releases is marked Latest. A lower version is published with `--latest=false`
+- The workflow only runs once it is on `master`, so the first release that ships it (`v0.2.0`) is published automatically, and the `v0.1.0` baseline (`c09e6f3`, what was live before) is dispatched by hand afterwards. Since `v0.2.0` is higher, the baseline is not marked Latest
 
 # Testing
 

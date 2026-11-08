@@ -131,6 +131,7 @@ describe("parseRow", () => {
                 "https://example.com/2.jpg",
             ],
             sources: ["Sheet A", "Sheet B"],
+            translations: undefined,
             sheetVerification: {
                 phones: [],
                 emails: [],
@@ -153,6 +154,25 @@ describe("parseRow", () => {
             contact: { phone: [], email: [], website: "" },
             photoUrls: [],
             sources: [],
+        });
+    });
+
+    it("reads the Sinhala columns into the translations", async () => {
+        const result = await parseRow({
+            ...row,
+            "Name (Sinhala)": " සිංහල නම ",
+            "City (Sinhala)": "මහනුවර",
+            "Address (Sinhala)": "",
+        });
+
+        expect(result?.translations).toEqual({
+            si: {
+                name: "සිංහල නම",
+                description: null,
+                address: null,
+                city: "මහනුවර",
+                managedBy: null,
+            },
         });
     });
 

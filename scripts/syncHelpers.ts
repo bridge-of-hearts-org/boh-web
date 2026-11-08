@@ -22,6 +22,7 @@ import {
     verifyAgeRanges,
     verifyOccupancy,
 } from "../src/utils/verification";
+import { parseSheetTranslations } from "../src/utils/facilityTranslations";
 
 // --- Image helpers ---
 
@@ -296,6 +297,9 @@ export async function parseRow(row: Record<string, string>) {
                   .map((s) => s.trim())
                   .filter(Boolean)
             : [],
+        /* Undefined when the sheet has no translation columns, which leaves
+            the saved translations as they are */
+        translations: parseSheetTranslations(row),
         /* Merged with the saved verification by mergeSheetVerification, not written as is */
         sheetVerification: sheetVerification,
         warnings: warnings,

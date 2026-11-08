@@ -1,4 +1,5 @@
 import { VerifiedValue } from "@prisma/client";
+import { useTranslations } from "next-intl";
 
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { findVerifiedDate } from "@/utils/verification";
@@ -11,6 +12,8 @@ type PropsType = {
 };
 
 export default function PhoneNumberList(props: PropsType) {
+    const t = useTranslations("Verified");
+
     return (
         <span>
             {props.numbers.length == 0 && "-"}
@@ -36,7 +39,7 @@ export default function PhoneNumberList(props: PropsType) {
                                 </a>
                                 {verifiedAt && (
                                     <VerifiedBadge
-                                        label={`Phone number ${number}`}
+                                        label={t("phone", { number })}
                                         verifiedAt={verifiedAt}
                                     />
                                 )}

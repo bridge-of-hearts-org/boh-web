@@ -3,6 +3,9 @@
 export type MenuItem = {
     label: string;
     href: string;
+    /* The item's key in the "Nav" messages. The English-only Admin item has
+       none and always shows its label. */
+    messageKey?: "home" | "directory" | "about" | "contact";
 };
 
 export const adminMenuItem: MenuItem = {
@@ -11,10 +14,10 @@ export const adminMenuItem: MenuItem = {
 };
 
 export const mainMenuItems: MenuItem[] = [
-    { label: "Home", href: "/" },
-    { label: "Directory", href: "/directory" },
-    { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
+    { label: "Home", href: "/", messageKey: "home" },
+    { label: "Directory", href: "/directory", messageKey: "directory" },
+    { label: "About", href: "/about", messageKey: "about" },
+    { label: "Contact", href: "/contact", messageKey: "contact" },
 ];
 
 /* Items for the hamburger menu on small screens. The header's Admin
@@ -31,4 +34,14 @@ export function getMobileMenuItems(inAdminSession: boolean): MenuItem[] {
 /* Admin page for editing the facility with the given slug */
 export function facilityEditPath(slug: string): string {
     return `/facility/edit/${slug}`;
+}
+
+/* A path with an optional query string, e.g. ("/directory", "page=2") gives
+   "/directory?page=2" */
+export function pathWithSearch(pathname: string, search: string): string {
+    if (!search) {
+        return pathname;
+    }
+
+    return `${pathname}?${search}`;
 }

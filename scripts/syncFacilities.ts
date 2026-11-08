@@ -4,6 +4,11 @@
  * Pulls children's home data from a Google Sheet tab, downloads photos,
  * upserts facilities into the database, and uploads photos to Vercel Blob.
  *
+ * Sinhala text is read from the optional "Name (Sinhala)", "Description
+ * (Sinhala)", "Address (Sinhala)", "City (Sinhala)" and "Managed By (Sinhala)"
+ * columns. An empty cell falls back to English on the site. A tab without any
+ * of these columns leaves the saved translations unchanged.
+ *
  * Photos go to production's photo folder. Pass --dev when syncing into the
  * dev database, so they go to the dev folder instead.
  *
@@ -196,6 +201,8 @@ async function syncSheet(sheetName: string, photoFolder: string) {
                     photos: finalPhotos,
                     sources: facilityData.sources,
                     verification: verification,
+                    /* Undefined leaves the saved translations unchanged */
+                    translations: facilityData.translations,
                 },
             });
 

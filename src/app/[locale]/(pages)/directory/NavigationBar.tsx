@@ -1,0 +1,90 @@
+"use client";
+import React from "react";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+
+import { useRouter } from "@/i18n/navigation";
+
+import Button from "@/components/Button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import Form from "next/form";
+
+type NavigationProps = {
+    currentPage: number;
+    totalPages: number;
+};
+
+export default function NavigationBar(props: NavigationProps) {
+    const t = useTranslations("Pagination");
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
+    /* Parsed once from the URL by the directory page, so an invalid page counts as page 1 */
+    const currentPage = props.currentPage;
+
+    const handleClick = (pageNumber: number) => {
+        const params = new URLSearchParams(searchParams);
+        params.set("page", pageNumber.toString());
+
+        router.push(`/directory/?${params.toString()}`);
+    };
+
+    return (
+        <div className="flex items-center gap-9">
+            {currentPage > 1 && (
+                <Button
+                    name={`Go to the previous page`}
+                    variant="secondary"
+                    color="black"
+                    className="bg-white shadow-md"
+                    onClick={() => handleClick(currentPage - 1)}
+                >
+                    <ChevronLeft />
+                </Button>
+            )}
+            <div className="flex items-center gap-3">
+                <span>{t("page")}</span>
+                <Form action={() => {}}>
+                    <div className="flex items-center gap-5 text-sm">
+                        <select
+                            name="sortBy"
+                            value={currentPage}
+                            className="border-gray-200 bg-white"
+                            onChange={(e) => {
+                                handleClick(Number(e.target.value));
+                            }}
+                        >
+                            {Array.from(
+                                { length: props.totalPages },
+                                (_, i) => (
+                                    <option key={i} value={i + 1}>
+                                        {i + 1}
+                                    </option>
+                                ),
+                            )}
+                        </select>
+                    </div>
+                </Form>
+                <span>
+                    {t.rich("ofTotal", {
+                        total: props.totalPages,
+                        b: (chunks) => (
+                            <span className="font-bold">{chunks}</span>
+                        ),
+                    })}
+                </span>
+            </div>
+            {currentPage < props.totalPages && (
+                <Button
+                    name={`Go to next page`}
+                    variant="secondary"
+                    color="black"
+                    className="bg-white shadow-md"
+                    onClick={() => handleClick(currentPage + 1)}
+                >
+                    <ChevronRight />
+                </Button>
+            )}
+        </div>
+    );
+}

@@ -84,6 +84,21 @@ type Verification {
     ageRanges VerifiedAgeRanges?
 }
 
+// A facility's text in another language. A missing or empty field falls
+// back to the English value.
+type FacilityTranslation {
+    name        String?
+    description String?
+    address     String?
+    city        String?
+    managedBy   String?
+}
+
+// One entry per language besides English, so Tamil can add a `ta` entry
+type FacilityTranslations {
+    si FacilityTranslation?
+}
+
 type PhotoEntry {
     fileName String
     source   String
@@ -107,6 +122,8 @@ model ChildCareFacility {
     sources      String[]
     // Optional so existing documents without it need no migration
     verification Verification?
+    // Optional for the same reason
+    translations FacilityTranslations?
 
     @@map("facilities")
 }

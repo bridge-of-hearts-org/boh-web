@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter as useNextRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Menu } from "lucide-react";
 import Button from "./Button";
-import { getMobileMenuItems } from "@/utils/navigation";
+import LanguageToggle from "./LanguageToggle";
+import { useRouter } from "@/i18n/navigation";
+import { adminMenuItem, getMobileMenuItems } from "@/utils/navigation";
 
 type HamburgerMenuProps = {
     inAdminSession?: boolean;
@@ -14,7 +17,9 @@ type HamburgerMenuProps = {
 export default function HamburgerMenu({
     inAdminSession = false,
 }: HamburgerMenuProps) {
+    const t = useTranslations("Nav");
     const router = useRouter();
+    const nextRouter = useNextRouter();
     const [menuVisible, setMenuVisible] = useState(false);
 
     const menuItemStyle =
@@ -22,7 +27,13 @@ export default function HamburgerMenu({
 
     const handleMenuItemClick = (href: string) => {
         setMenuVisible(false);
-        router.push(href);
+
+        /* Admin pages are English-only, so that link has no locale prefix */
+        if (href === adminMenuItem.href) {
+            nextRouter.push(href);
+        } else {
+            router.push(href);
+        }
     };
 
     return (
@@ -56,9 +67,16 @@ export default function HamburgerMenu({
                                 className={menuItemStyle}
                                 onClick={() => handleMenuItemClick(item.href)}
                             >
-                                {item.label}
+                                {item.messageKey
+                                    ? t(item.messageKey)
+                                    : item.label}
                             </div>
                         ))}
+                        <LanguageToggle
+                            separatorClassName="block h-px w-full bg-white/30"
+                            className={`block ${menuItemStyle}`}
+                            onClick={() => setMenuVisible(false)}
+                        />
                     </div>
                 </>
             )}

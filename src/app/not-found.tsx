@@ -1,15 +1,15 @@
-import Button from "@/components/Button";
-import Link from "next/link";
+"use client";
 
-export default function NotFound() {
+import NextError from "next/error";
+
+/* For requests the locale middleware doesn't handle (e.g. a missing file).
+   Missing pages render [locale]/not-found.tsx instead. */
+export default function GlobalNotFound() {
     return (
-        <div className="mt-10 flex flex-col items-center justify-center gap-10">
-            <h2 className="text-2xl font-semibold">Page Not Found</h2>
-            <Link href="/">
-                <Button name="Return Home" variant="secondary" color="black">
-                    Return Home
-                </Button>
-            </Link>
-        </div>
+        <html lang="en">
+            <body>
+                <NextError statusCode={404} />
+            </body>
+        </html>
     );
 }

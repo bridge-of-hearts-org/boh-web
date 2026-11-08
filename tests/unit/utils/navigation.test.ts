@@ -5,6 +5,7 @@ import {
     facilityEditPath,
     getMobileMenuItems,
     mainMenuItems,
+    pathWithSearch,
 } from "@/utils/navigation";
 
 describe("getMobileMenuItems", () => {
@@ -37,5 +38,17 @@ describe("facilityEditPath", () => {
         expect(facilityEditPath("sunshine-home-kandy")).toBe(
             "/facility/edit/sunshine-home-kandy",
         );
+    });
+});
+
+describe("pathWithSearch", () => {
+    it("appends the query string", () => {
+        expect(pathWithSearch("/directory", "page=2&city=Kandy")).toBe(
+            "/directory?page=2&city=Kandy",
+        );
+    });
+
+    it("returns the path alone when there is no query string", () => {
+        expect(pathWithSearch("/about", "")).toBe("/about");
     });
 });

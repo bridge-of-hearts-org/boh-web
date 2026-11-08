@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 import { photoFolderFor } from "./src/utils/photoFolder";
 
@@ -143,4 +144,7 @@ const nextConfig: NextConfig = {
     },
 };
 
-export default nextConfig;
+/* Loads the next-intl request config from src/i18n/request.ts */
+const withNextIntl = createNextIntlPlugin();
+
+export default withNextIntl(nextConfig);

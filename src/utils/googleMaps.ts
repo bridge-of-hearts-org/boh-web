@@ -3,8 +3,6 @@ import { useSyncExternalStore } from "react";
 /* Shared by the client-side maps (the directory map and the facility page map) */
 
 export const MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
-export const MAP_LOAD_ERROR_TEXT =
-    "The map could not be loaded. Please try again later.";
 
 declare global {
     interface Window {

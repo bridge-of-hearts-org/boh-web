@@ -60,6 +60,7 @@ test.describe("Name autocomplete in directory filter", () => {
         await suggestions.first().click();
         await expect(nameInput).toHaveValue(suggestionText);
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
+        await expect(nameInput).not.toBeFocused();
     });
 
     test("dropdown closes when the name input loses focus", async ({
@@ -137,5 +138,17 @@ test.describe("Name autocomplete on a touch device", () => {
         await suggestions.first().tap();
         await expect(nameInput).toHaveValue(suggestionText);
         await expect(page.locator("#name-suggestions")).not.toBeVisible();
+    });
+
+    test("tapping a name blurs the input to close the keyboard", async ({
+        page,
+    }) => {
+        const nameInput = page.getByLabel("Name");
+        await nameInput.tap();
+        const suggestions = page.locator("#name-suggestions li");
+        await expect(suggestions.first()).toBeVisible({ timeout: 5000 });
+        await expect(nameInput).toBeFocused();
+        await suggestions.first().tap();
+        await expect(nameInput).not.toBeFocused();
     });
 });
